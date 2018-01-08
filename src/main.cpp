@@ -13,13 +13,12 @@
 #include <iostream>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/opencv.hpp>
+#include <unistd.h>
 
 #include <TagDetector.h>
 
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Geometry>
-
-#define DEFAULT_TAG_FAMILY "Tag36h11"
 
 #include <chrono> // for cross platform waiting
 #include <thread>
@@ -27,31 +26,32 @@
 #define GAIN1 .82f
 #define GAIN2 .23f
 
-Eigen::Matrix4f getRelativeTransform(double tag_size,const cv::Point2f tag_p[], double fx, double fy, double px, double py);
+Eigen::Matrix4f getRelativeTransform(double tag_size,const cv::Point2f tagPts[], double fx, double fy, double px, double py);
 
 int main()
 {
-  TagDetectorParams p; //leave defaults for now
-/*
-    p.sigma = ;
-    p.segSigma = ;
-    p.thetaThresh = ;
-    p.magThresh = ;
-    p.adaptiveThresholdValue = ;
-    p.adaptiveThresholdRadius = ;
-*/
-  TagFamily fam(DEFAULT_TAG_FAMILY);
-  TagDetector detector(fam, p);
+  /* AprilTag Declarations and Initialization */
+  TagDetectorParams tag_params; //leave defaults for now
+  /*
+    tag_params.sigma = ;
+    tag_params.segSigma = ;
+    tag_params.thetaThresh = ;
+    tag_params.magThresh = ;
+    tag_params.adaptiveThresholdValue = ;
+    tag_params.adaptiveThresholdRadius = ;
+  */
+  TagFamily tag_family("Tag36h11");
+  TagDetector tag_detector(tag_family, tag_params);
   TagDetectionArray detections;
 
-  Eigen::Matrix4f myT;
-  Eigen::Matrix4f cameraInTagT;
-  Eigen::Vector3f eulerAngles;
-  float Xpos;
-  float Ypos;
-  float rotationAngle;
+  Eigen::Matrix4f my_t;
+  Eigen::Matrix4f camera_in_tag_t;
+  Eigen::Vector3f euler_angles;
+  float x_pos;
+  float y_pos;
+  float rotation_angle;
 
-  //these need loaded from a camera calibration
+  // These should be loaded from a camera calibration
   float camfx = 730;
   float camfy = 730;
   float campx = 320;
@@ -59,34 +59,36 @@ int main()
 
   float tagsize = .0505;
 
-  //control system stuff
-  float tagX       =0;
-  float error      =0;
-  float output     =0;
-  float prevOutput =0;
-  float prevError  =0;
+  /* Control System Variables */
+  float tagX       = 0;
+  float error      = 0;
+  float output     = 0;
+  float prevOutput = 0;
+  float prevError  = 0;
 
-  //can stuff
-  //PositionCanSensor posSensor(40, (char*)"can0");
+  /* Camera Declarations and Initialization */
+  cv::VideoCapture camera(0);
+  while(!camera.isOpened())
+  {
+    std::cout << "Unable to open video0, waiting 5 seconds and trying again..." << std::endl;
+    sleep(5);
+    camera.open(0);
+  }
 
-  //camera stuff
-  cv::VideoCapture cap(0);
-  if(!cap.isOpened()) return -1;
+  cv::Mat captured_image(480, 640, CV_8UC3, cv::Scalar(69,42,200));
+  cv::Mat gs_image(480, 640, CV_8UC3, cv::Scalar(69,42,200));
 
-  cv::Mat img(480, 640, CV_8UC3, cv::Scalar(69,42,200));
-  cv::Mat img2(480, 640, CV_8UC3, cv::Scalar(69,42,200));
+  cv::Point2d optical_center(240, 320);
 
-  cv::Point2d opticalCenter(240, 320);
-
-  std::cout <<"Warming up camera (2 seconds)" <<std::endl;
-
+  // TODO check if camera is good to go
+  std::cout << "Warming up camera (2 seconds)" << std::endl;
   cv::waitKey(2000); //let camera warm up
-
-  std::cout <<"Camera hot!" <<std::endl;
+  std::cout << "Camera hot!" << std::endl;
 
   //init_file(); //for dynamixel
 
-  //for loop timing
+
+  // For loop timing
   std::chrono::system_clock::time_point calc_start;
   std::chrono::system_clock::time_point calc_end;
   std::chrono::milliseconds calc_time;
@@ -97,75 +99,70 @@ int main()
   {
     calc_start = std::chrono::system_clock::now();
 
-    cap >> img;
-    cv::cvtColor(img, img2, cv::COLOR_BGR2GRAY);
+    camera >> captured_image;
+    cv::cvtColor(captured_image, gs_image, cv::COLOR_BGR2GRAY);
 
-    detector.process(img2, opticalCenter, detections);
+    tag_detector.process(gs_image, optical_center, detections);
+    std::cout << detections.size() << " tags detected" << std::endl;
 
-    for(size_t index=0;index<detections.size(); ++index)
+    for (int i = 0; i < detections.size(); i++)
     {
-      const TagDetection& currDetection = detections[index];
-      //get transform from camera to tag (tag in camera coord)
-      myT = getRelativeTransform(tagsize, currDetection.p, camfx, camfy, campx, campy);
-      //want to center dynamixel/camera on tag so make tag be in center
-      tagX = currDetection.cxy.x;
+
+    }
+
+    // Austin's Code
+    /*for(size_t index = 0; index < detections.size(); ++index)
+    {
+      const TagDetection& current_detection = detections[index];
+
+      // Get transform from camera to tag (tag in camera coord)
+      my_t = getRelativeTransform(tagsize, current_detection.p, camfx, camfy, campx, campy);
+
+      // Want to center dynamixel/camera on tag so make tag be in center
+      tagX = current_detection.cxy.x;
       error= tagX - 160; //positive error means turn CCW, negative means turn CW
       output = GAIN1 * prevOutput + GAIN2 * prevError;
       //set_velocity(output);
       prevOutput = output;
       prevError = error;
 
-      //need to get inverse (camera in tag coords)
-      cameraInTagT = myT.inverse();
-      Eigen::Matrix3f wRo = cameraInTagT.topLeftCorner(3,3);
+      // Need to get inverse (camera in tag coords)
+      camera_in_tag_t = my_t.inverse();
+      Eigen::Matrix3f wRo = camera_in_tag_t.topLeftCorner(3,3);
 
-      eulerAngles = wRo.eulerAngles(1,2,0);
-      std::cout <<"Found tag with ID: " <<currDetection.id <<std::endl;
-      std::cout << "X: " <<cameraInTagT(0, 3)<<std::endl;
-      std::cout << "Y: " <<cameraInTagT(1, 3)<<std::endl;
-      std::cout << "Z: " <<cameraInTagT(2, 3)<<std::endl;
+      euler_angles = wRo.eulerAngles(1,2,0);
+      std::cout <<"Found tag with ID: " <<current_detection.id <<std::endl;
+      std::cout << "X: " <<camera_in_tag_t(0, 3)<<std::endl;
+      std::cout << "Y: " <<camera_in_tag_t(1, 3)<<std::endl;
+      std::cout << "Z: " <<camera_in_tag_t(2, 3)<<std::endl;
       std::cout << "rotAngles: " <<std::endl
-                <<eulerAngles(0) << std::endl
-                <<eulerAngles(1) << std::endl
-                <<eulerAngles(2) << std::endl;
-      //std::cout << "angle: " <<rotationAngle<<std::endl;
+                <<euler_angles(0) << std::endl
+                <<euler_angles(1) << std::endl
+                <<euler_angles(2) << std::endl;
+      //std::cout << "angle: " <<rotation_angle<<std::endl;
 
       //actual X = Z measurement
       //actual Y = X measurement
       //actual theta = first rotAngle
-      rotationAngle = eulerAngles(0) > M_PI/2 ? eulerAngles(0) - M_PI : eulerAngles(0);
-      Xpos = cameraInTagT(2,3);
-      Ypos = cameraInTagT(0,3);
-      std::cout <<"Actual Data: " <<std::endl
-                <<"X    : " << Xpos <<std::endl
-                <<"Y    : " << Ypos <<std::endl
-                <<"Theta: " << rotationAngle<<std::endl;
-
-      /*if (posSensor.sendData(Xpos, Ypos, rotationAngle, 0) == PositionCanSensor::SendStatus::WRITE_FAILED)
-      {
-        std::cout <<"CAN WRITE ERRRORORORORO!!!!"<<std::endl;
-      }
-      else
-      {
-        std::cout <<"can write success" <<std::endl;
-      }*/
+      rotation_angle = euler_angles(0) > M_PI/2 ? euler_angles(0) - M_PI : euler_angles(0);
+      x_pos = camera_in_tag_t(2,3);
+      y_pos = camera_in_tag_t(0,3);
+      std::cout << "Actual Data: " << std::endl
+                << "X    : " << x_pos << std::endl
+                << "Y    : " << y_pos << std::endl
+                << "Theta: " << rotation_angle << std::endl;
 
 
       calc_end = std::chrono::system_clock::now();
       calc_time = std::chrono::duration_cast<std::chrono::milliseconds>(calc_end - calc_start);
 
-      if (calc_time > std::chrono::milliseconds(25)) std::cout <<"TOO SLOW" <<std::endl;
-      else
-      {
-        std::this_thread::sleep_for(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::milliseconds(25) - (calc_end - calc_start)));
-      }
-
-    }
+      std::cout << "Calculation Time: " << calc_time.count() << std::endl;
+    }*/
   }
   #pragma clang diagnostic pop
 }
 
-Eigen::Matrix4f getRelativeTransform(double tag_size,const cv::Point2f tag_p[], double fx, double fy, double px, double py)
+Eigen::Matrix4f getRelativeTransform(double tag_size, const cv::Point2f tagPts[], double fx, double fy, double px, double py)
 {
   std::vector<cv::Point3f> objPts;
   std::vector<cv::Point2f> imgPts;
@@ -175,10 +172,10 @@ Eigen::Matrix4f getRelativeTransform(double tag_size,const cv::Point2f tag_p[], 
   objPts.push_back(cv::Point3f( s, s, 0));
   objPts.push_back(cv::Point3f(-s, s, 0));
 
-  imgPts.push_back(tag_p[0]);
-  imgPts.push_back(tag_p[1]);
-  imgPts.push_back(tag_p[2]);
-  imgPts.push_back(tag_p[3]);
+  imgPts.push_back(tagPts[0]);
+  imgPts.push_back(tagPts[1]);
+  imgPts.push_back(tagPts[2]);
+  imgPts.push_back(tagPts[3]);
 
   cv::Mat rvec, tvec;
   cv::Matx33f cameraMatrix(
