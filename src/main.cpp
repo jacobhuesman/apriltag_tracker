@@ -28,11 +28,8 @@
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
 
-#include <raspicam/raspicam_cv.h>
+#include <raspicam/raspicam.h>
 
-
-#define GAIN1 .82f
-#define GAIN2 .23f
 
 typedef struct {
   float fx;
@@ -52,14 +49,7 @@ int main(int argc, char **argv)
    */
   /* AprilTag */
   TagDetectorParams tag_params; //leave defaults for now
-  /*
-    tag_params.sigma = ;
-    tag_params.segSigma = ;
-    tag_params.thetaThresh = ;
-    tag_params.magThresh = ;
-    tag_params.adaptiveThresholdValue = ;
-    tag_params.adaptiveThresholdRadius = ;
-  */
+  // TODO check out other tag params
   tag_params.newQuadAlgorithm = true;
   tag_params.adaptiveThresholdValue = 12; //TODO figure out what this means
 
@@ -83,12 +73,12 @@ int main(int argc, char **argv)
 
   /* Camera */
   //cv::VideoCapture camera(0);
-  raspicam::RaspiCam_Cv camera;
-  /*camera.set(CV_CAP_PROP_FRAME_WIDTH, 1280.0);
-  camera.set(CV_CAP_PROP_FRAME_HEIGHT, 960.0);*/
-  camera.set(CV_CAP_PROP_FRAME_WIDTH,  640.0);
-  camera.set(CV_CAP_PROP_FRAME_HEIGHT, 480.0);
-  camera.set(CV_CAP_PROP_FORMAT, CV_8UC1);
+  raspicam::RaspiCam camera;
+  camera.setWidth(640);
+  camera.setHeight(480);
+  camera.setFormat(raspicam::RASPICAM_FORMAT_GRAY);
+  camera.setRotation(180);
+
   while(!camera.isOpened())
   {
     std::cout << "Unable to open camera, waiting 1 second and trying again..." << std::endl;
@@ -96,14 +86,12 @@ int main(int argc, char **argv)
     camera.open();
     //camera.open(0);
   }
-  int camera_mode = (int)camera.get(CV_CAP_PROP_MODE);
-  int frame_width =  (int)camera.get(CV_CAP_PROP_FRAME_WIDTH);
-  int frame_height = (int)camera.get(CV_CAP_PROP_FRAME_HEIGHT);
-  double camera_fps = camera.get(CV_CAP_PROP_FPS);
+  int frame_width =  (int)camera.getWidth();
+  int frame_height = (int)camera.getHeight();
+  double camera_fps = camera.getFrameRate();
   std::cout << "Frame width: " << frame_width << ", frame height: " << frame_height;
-  std::cout << ", fps: " << camera_fps << ", mode: " << camera_mode << std::endl;
+  std::cout << ", fps: " << camera_fps << std::endl;
 
-  //cv::Mat captured_image_mat(frame_height, frame_width, CV_8UC3, cv::Scalar(69,42,200));
   cv::Mat gs_image(frame_height, frame_width, CV_8UC1, cv::Scalar(69,42,200));
   cv::Point2d optical_center(frame_height/2, frame_width/2);
 
@@ -145,7 +133,7 @@ int main(int argc, char **argv)
     //camera >> captured_img.image;
     camera.grab();
     calc_point[1] = std::chrono::system_clock::now();
-    camera.retrieve(captured_img.image);
+    camera.retrieve(captured_img.image.data);
     calc_point[2] = std::chrono::system_clock::now();
     //cv::cvtColor(captured_img.image, gs_image, cv::COLOR_BGR2GRAY);
     calc_point[3] = std::chrono::system_clock::now();
