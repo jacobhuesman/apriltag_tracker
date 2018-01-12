@@ -40,6 +40,7 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 find_package(Eigen3 REQUIRED)
 include_directories(${Eigen3_INCLUDE_DIRS})
 include_directories(${catkin_INCLUDE_DIRS})
+include_directories(include)
 
 set(raspicam_DIR /usr/local/lib/cmake)
 find_package(raspicam REQUIRED)

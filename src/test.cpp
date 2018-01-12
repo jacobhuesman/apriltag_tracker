@@ -1,6 +1,11 @@
 #include <unistd.h>
 #include <signal.h>
 #include <iostream>
+#include <string>
+#include <getopt.h>
+#include <cstdint>
+
+#include <comm_layer_defs.h>
 
 #include "mraa.hpp"
 #include "math.h"
@@ -18,22 +23,87 @@ void sig_handler(int signo)
   }
 }
 
-uint8_t rx_buf[MAX_BUFFER_LENGTH];
-uint8_t tx_buf[MAX_BUFFER_LENGTH];
-int main(int argc, char *argv[])
+//TODO add error checking for both setPosition and getPosition
+void setPosition(uint16_t position)
 {
+  CLMessage32 message;
+
   mraa::I2c i2c(0);
 
   i2c.address(I2C_ADDR);
-  tx_buf[0] = 0x40;
-  tx_buf[1] = 0x00;
-  tx_buf[2] = (char)argc;
-  tx_buf[3] = 0x25;
-  i2c.write(tx_buf, 4); 
+  message.cl.instruction = DYN_SET_POSITION;
+  message.cl.data = position;
+  message.cl.checksum = 0;
+  for (int i = 0; i < 3; i++)
+  {
+    message.cl.checksum += message.data8[i];
+  }
+  int status = i2c.write(message.data8, 4);
+}
+
+void getPosition(uint16_t *position)
+{
+  CLMessage32 message;
+
+  mraa::I2c i2c(0);
 
   i2c.address(I2C_ADDR);
-  int worked = i2c.read(rx_buf, 4);
+  message.cl.instruction = DYN_GET_POSITION_INSTRUCTION;
+  message.cl.data = 0;
+  message.cl.checksum = 0;
+  for (int i = 0; i < 3; i++)
+  {
+    message.cl.checksum += message.data8[i];
+  }
+  int status = i2c.write(message.data8, 4);
 
-  std::cout << "Read: " << worked << std::endl;
-  std::cout << (int)rx_buf[0] << ":" << (int)rx_buf[1] << ":" << (int)rx_buf[2] << ":" << (int)rx_buf[3] <<  std::endl;
+  i2c.address(I2C_ADDR);
+  int bytes_read = i2c.read(message.data8, 4);
+  *position = message.cl.data;
+}
+
+
+int main(int argc, char *argv[])
+{
+  int c;
+  uint16_t position;
+  while ((c = getopt(argc, argv, "s:gh")) != -1)
+  {
+    switch (c)
+    {
+      case 's':
+      {
+        position = (uint16_t)std::stoi(optarg);
+        std::cout << "Setting position: " << position << std::endl;
+        setPosition(position);
+        break;
+      }
+      case 'g':
+      {
+        getPosition(&position);
+        std::cout << "Read position: " << position << std::endl;
+        break;
+      }
+      case 'h':
+      {
+        std::cout << "Options: " << std::endl;
+        std::cout << " -s <pos> : set position" << std::endl;
+        std::cout << " -g       : get position" << std::endl;
+        std::cout << " -h       : get help"     << std::endl;
+        break;
+      }
+      case '?':
+      {
+        std::cout << "Invalid option" << std::endl;
+        abort();
+      }
+      default:
+      {
+        std::cout << "Please select an option" << std::endl;
+        abort();
+      }
+    }
+  }
+
+
 }
