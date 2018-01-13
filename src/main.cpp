@@ -1,16 +1,7 @@
 #include <iostream>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/opencv.hpp>
+
 #include <unistd.h>
 #include <string>
-
-#include <TagDetector.h>
-
-#include <eigen3/Eigen/Dense>
-#include <eigen3/Eigen/Geometry>
-
-#include <chrono>
-#include <thread>
 
 #include <ros/ros.h>
 #include <image_transport/image_transport.h>
@@ -21,80 +12,17 @@
 #include <apriltag_tracker/AprilTagDetection.h>
 #include <apriltag_tracker/AprilTagDetectionArray.h>
 
-#include <raspicam/raspicam.h>
+#include <apriltag_tracker.h>
 
-#include <host_comm_layer.h>
-
-
-typedef struct {
-  float fx;
-  float fy;
-  float px;
-  float py;
-} CameraConfig;
-
-Eigen::Matrix4f getRelativeTransform(CameraConfig cfg, float tag_size, const cv::Point2f tagPts[]);
-void draw(cv::Mat& image, const cv::Point2f p[], at::Point cxy, size_t id);
 
 
 int main(int argc, char **argv)
 {
-  /*
-   * Declarations and Configuration
-   */
-  /* AprilTag */
-  TagDetectorParams tag_params; //leave defaults for now
-  // TODO check out other tag params
-  tag_params.newQuadAlgorithm = true;
-  tag_params.adaptiveThresholdValue = 12; //TODO figure out what this means
+  // Initialize tracker
+  AprilTagTracker::AprilTagTracker tracker;
+  tracker.servo->setPosition(512);
 
-  TagFamily tag_family("Tag36h11");
-  TagDetector tag_detector(tag_family, tag_params);
-  TagDetectionArray detections;
-
-  Eigen::Matrix4f my_t;
-  Eigen::Matrix4f camera_in_tag_t;
-  Eigen::Vector3f euler_angles;
-
-  // These should be loaded from a camera calibration
-  CameraConfig cam0_config;
-  cam0_config.fx = 730;
-  cam0_config.fy = 730;
-  cam0_config.px = 320;
-  cam0_config.py = 240;
-
-  float tag_size = .0505;
-
-  /* Servo */
-  HostCommLayer servo(0x11);
-  servo.setPosition(512);
-
-  /* Camera */
-  //cv::VideoCapture camera(0);
-  raspicam::RaspiCam camera;
-  camera.setWidth(640);
-  camera.setHeight(480);
-  camera.setFormat(raspicam::RASPICAM_FORMAT_GRAY);
-  camera.setRotation(180);
-
-  while(!camera.isOpened())
-  {
-    std::cout << "Unable to open camera, waiting 1 second and trying again..." << std::endl;
-    sleep(1);
-    camera.open();
-    //camera.open(0);
-  }
-  int frame_width =  (int)camera.getWidth();
-  int frame_height = (int)camera.getHeight();
-  double camera_fps = camera.getFrameRate();
-  std::cout << "Frame width: " << frame_width << ", frame height: " << frame_height;
-  std::cout << ", fps: " << camera_fps << std::endl;
-
-  cv::Mat gs_image(frame_height, frame_width, CV_8UC1, cv::Scalar(69,42,200));
-  cv::Point2d optical_center(frame_height/2, frame_width/2);
-
-
-  /* ROS */
+  // Initialize ROS
   ros::init(argc, argv, "apriltag_detector");
   ros::NodeHandle nh;
   tf::TransformBroadcaster tf_pub;
@@ -104,66 +32,21 @@ int main(int argc, char **argv)
 
   std_msgs::Header image_header;
   image_header.frame_id = "camera";
-  //cv_bridge::CvImage captured_img(image_header, sensor_msgs::image_encodings::BGR8, captured_image_mat);
   cv_bridge::CvImage captured_img(image_header, sensor_msgs::image_encodings::MONO8, gs_image);
 
-
-  /* Timing Info */
-  std::chrono::system_clock::time_point calc_point[10];
-  std::chrono::milliseconds calc_time[10];
-  long running_count = 0;
-  long iterations = 0;
-
-
-  /*
-   * Start
-   */
-  // TODO check if camera is good to go
-  //std::cout << "Warming up camera (2 seconds)" << std::endl;
-  //cv::waitKey(2000); //let camera warm up
-  //std::cout << "Camera hot!" << std::endl;
 
   // Note: Entire loop must take less than 33ms
   #pragma clang diagnostic push
   #pragma clang diagnostic ignored "-Wmissing-noreturn"
   while(ros::ok())
   {
-
-    // Grab image
-    calc_point[0] = std::chrono::system_clock::now();
-    //camera >> captured_img.image;
-    camera.grab();
-    ros::Time capture_time = ros::Time::now();
-    calc_point[1] = std::chrono::system_clock::now();
-    camera.retrieve(captured_img.image.data);
-    calc_point[2] = std::chrono::system_clock::now();
-    //cv::cvtColor(captured_img.image, gs_image, cv::COLOR_BGR2GRAY);
-    calc_point[3] = std::chrono::system_clock::now();
-
-    // Process image
-    tag_detector.process(gs_image, optical_center, detections);
-    calc_point[4] = std::chrono::system_clock::now();
-
-    // Communicate with servo
-    if (detections.size() == 1)
-    {
-      const double fov = 62.2;
-      const double degrees_per_pixel = fov / 640.0;
-      const double dyn_resolution = 0.29;
-      double rotation = (degrees_per_pixel * (double)(detections[0].cxy.x - 320)) / dyn_resolution;
-      uint16_t position;
-      servo.getPosition(&position);
-      std::cout << "Original position: " << position;
-      servo.setPosition((uint16_t)((double)position - rotation));
-      std::cout << ", corrected position: " << position - rotation << std::endl;
-    }
-
+    // Get image and track
+    tracker.getAndProcessImage();
+    tracker.adjustServo();
 
     // Output data
-    //std::cout << detections.size() << " tags detected" << std::endl;
-    //TODO Add tag sizes
     apriltag_tracker::AprilTagDetectionArray tag_detection_array;
-    for (int i = 0; i < detections.size(); i++)
+    for (int i = 0; i < tracker.tag_detections.size(); i++)
     {
       // Get transform
       /* Transform */
@@ -246,56 +129,3 @@ int main(int argc, char **argv)
   #pragma clang diagnostic pop
 }
 
-Eigen::Matrix4f getRelativeTransform(CameraConfig cfg, float tag_size, const cv::Point2f tagPts[])
-{
-  std::vector<cv::Point3f> objPts;
-  std::vector<cv::Point2f> imgPts;
-  float s = tag_size/2.0f;
-  objPts.emplace_back(cv::Point3f(-s,-s, 0));
-  objPts.emplace_back(cv::Point3f( s,-s, 0));
-  objPts.emplace_back(cv::Point3f( s, s, 0));
-  objPts.emplace_back(cv::Point3f(-s, s, 0));
-
-  imgPts.push_back(tagPts[0]);
-  imgPts.push_back(tagPts[1]);
-  imgPts.push_back(tagPts[2]);
-  imgPts.push_back(tagPts[3]);
-
-  cv::Mat rvec, tvec;
-  cv::Matx33f cameraMatrix(
-      cfg.fx,      0, cfg.px,
-      0,      cfg.fy, cfg.py,
-      0,           0,      1);
-  cv::Vec4f distParam(0,0,0,0); // all 0?
-  cv::solvePnP(objPts, imgPts, cameraMatrix, distParam, rvec, tvec);
-  cv::Matx33f r;
-  cv::Rodrigues(rvec, r);
-  Eigen::Matrix3f wRo;
-  wRo << r(0,0), r(0,1), r(0,2), r(1,0), r(1,1), r(1,2), r(2,0), r(2,1), r(2,2);
-
-  Eigen::Matrix4f T;
-  T.topLeftCorner(3,3) = wRo;
-  T.col(3).head(3) << tvec.at<float>(0), tvec.at<float>(1), tvec.at<float>(2);
-  T.row(3) << 0,0,0,1;
-
-  return T;
-}
-
-void draw(cv::Mat& image, const cv::Point2f p[], at::Point cxy, size_t id)
-{
-  // plot outline
-  cv::line(image, p[0], p[1], cv::Scalar(255,0,0,0) );
-  cv::line(image, p[1], p[2], cv::Scalar(0,255,0,0) );
-  cv::line(image, p[2], p[3], cv::Scalar(0,0,255,0) );
-  cv::line(image, p[3], p[0], cv::Scalar(255,0,255,0) );
-
-  // mark center
-  cv::circle(image, cv::Point2f(cxy.x, cxy.y), 8, cv::Scalar(0,0,255,0), 2);
-
-  // print ID
-  std::ostringstream strSt;
-  strSt << "#" << id;
-  cv::putText(image, strSt.str(),
-              cv::Point2f(cxy.x + 10, cxy.y + 10),
-              cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0,0,255));
-}

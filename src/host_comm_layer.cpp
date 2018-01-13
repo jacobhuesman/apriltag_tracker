@@ -6,24 +6,27 @@
 #include <comm_layer_defs.h>
 #include <iostream>
 
-HostCommLayer::HostCommLayer(uint8_t i2c_address)
+namespace HostCommLayer
+{
+
+Dynamixel::Dynamixel(uint8_t i2c_address)
 {
   i2c = new mraa::I2c(0);
   this->address = i2c_address;
 }
 
-HostCommLayer::HostCommLayer(uint8_t i2c_address, uint8_t i2c_bus)
+Dynamixel::Dynamixel(uint8_t i2c_address, uint8_t i2c_bus)
 {
   i2c = new mraa::I2c(i2c_bus);
   this->address = i2c_address;
 }
 
-HostCommLayer::~HostCommLayer()
+Dynamixel::~Dynamixel()
 {
   delete i2c;
 }
 
-uint8_t HostCommLayer::computeChecksum(CLMessage32 message)
+uint8_t Dynamixel::computeChecksum(CLMessage32 message)
 {
   uint8_t checksum = 0;
   for (int i = 0; i < 3; i++)
@@ -34,7 +37,7 @@ uint8_t HostCommLayer::computeChecksum(CLMessage32 message)
 }
 
 //TODO add error checking for both setPosition and getPosition
-uint8_t HostCommLayer::setPosition(uint16_t position)
+uint8_t Dynamixel::setPosition(uint16_t position)
 {
   CLMessage32 message;
   i2c->address(address);
@@ -48,7 +51,7 @@ uint8_t HostCommLayer::setPosition(uint16_t position)
   return CL_OK;
 }
 
-uint8_t HostCommLayer::getPositionTx()
+uint8_t Dynamixel::getPositionTx()
 {
   CLMessage32 message;
   i2c->address(address);
@@ -62,11 +65,11 @@ uint8_t HostCommLayer::getPositionTx()
   return CL_OK;
 }
 
-uint8_t HostCommLayer::getPositionRx(uint16_t *position)
+uint8_t Dynamixel::getPositionRx(uint16_t *position)
 {
   CLMessage32 message;
   i2c->address(address);
-  if ((uint8_t)i2c->read(message.data8, 4) != 4)
+  if ((uint8_t) i2c->read(message.data8, 4) != 4)
   {
     return CL_RX_ERROR;
   }
@@ -78,7 +81,7 @@ uint8_t HostCommLayer::getPositionRx(uint16_t *position)
   return CL_OK;
 }
 
-uint8_t HostCommLayer::getPosition(uint16_t *position)
+uint8_t Dynamixel::getPosition(uint16_t *position)
 {
   if (getPositionTx() != CL_OK)
   {
@@ -101,7 +104,7 @@ uint8_t HostCommLayer::getPosition(uint16_t *position)
   }
 }
 
-uint8_t HostCommLayer::getTestMessage(CLMessage32 *test_msg)
+uint8_t Dynamixel::getTestMessage(CLMessage32 *test_msg)
 {
   CLMessage32 message;
 
@@ -119,13 +122,13 @@ uint8_t HostCommLayer::getTestMessage(CLMessage32 *test_msg)
   }
 
   i2c->address(address);
-  if ((uint8_t)i2c->read(message.data8, 4) != 4)
+  if ((uint8_t) i2c->read(message.data8, 4) != 4)
   {
     return CL_RX_ERROR;
   }
   *test_msg = message;
   return CL_OK;
-
+}
 
 }
 

@@ -6,11 +6,12 @@
 #include <host_comm_layer.h>
 #include <comm_layer_defs.h>
 
+using namespace HostCommLayer;
 
 int main(int argc, char *argv[])
 {
   /* I2C */
-  HostCommLayer board(0x11);
+  Dynamixel servo(0x11);
 
   /* Other */
   uint16_t position;
@@ -25,12 +26,12 @@ int main(int argc, char *argv[])
       {
         position = (uint16_t)std::stoi(optarg);
         std::cout << "Setting position: " << position << std::endl;
-        board.setPosition(position);
+        servo.setPosition(position);
         break;
       }
       case 'g':
       {
-        board.getPosition(&position);
+        servo.getPosition(&position);
         std::cout << "Read position: " << position << std::endl;
         break;
       }
@@ -53,10 +54,10 @@ int main(int argc, char *argv[])
         for (i = 0; i < 1000; i++)
         {
           start = std::chrono::system_clock::now();
-          if(board.getPosition(&position) != CL_OK)
+          if(servo.getPosition(&position) != CL_OK)
           {
             // Try again
-            if(board.getPosition(&position) != CL_OK)
+            if(servo.getPosition(&position) != CL_OK)
             {
               continue;
             }

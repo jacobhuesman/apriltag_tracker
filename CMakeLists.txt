@@ -46,6 +46,7 @@ set(raspicam_DIR /usr/local/lib/cmake)
 find_package(raspicam REQUIRED)
 include_directories()
 
+add_library(AprilTagTracker src/apriltag_tracker.cpp)
 add_library(HostCommLayer src/host_comm_layer.cpp)
 target_link_libraries(HostCommLayer mraa)
 

@@ -8,24 +8,30 @@
 
 #include <comm_layer_defs.h>
 
-class HostCommLayer
+namespace HostCommLayer
 {
-public:
-  explicit HostCommLayer(uint8_t i2c_address);
-  HostCommLayer(uint8_t i2c_address, uint8_t i2c_bus);
-  ~HostCommLayer();
+  class Dynamixel
+  {
+  public:
+    explicit Dynamixel(uint8_t i2c_address);
+    Dynamixel(uint8_t i2c_address, uint8_t i2c_bus);
+    ~Dynamixel();
 
-  uint8_t computeChecksum(CLMessage32 message);
-  uint8_t setPosition(uint16_t position);
-  uint8_t getPositionTx();
-  uint8_t getPositionRx(uint16_t *position);
-  uint8_t getPosition(uint16_t *position);
-  uint8_t getTestMessage(CLMessage32 *test_msg);
+    uint8_t computeChecksum(CLMessage32 message);
+    uint8_t setPosition(uint16_t position);
+    uint8_t getPositionTx();
+    uint8_t getPositionRx(uint16_t *position);
+    uint8_t getPosition(uint16_t *position);
+    uint8_t getTestMessage(CLMessage32 *test_msg);
 
-private:
-  uint8_t address;
-  mraa::I2c *i2c;
-  long errors;
-};
+    const float resolution = 0.29; // Degrees
+
+  private:
+    uint8_t address;
+    mraa::I2c *i2c;
+    long errors;
+  };
+}
+
 
 #endif //PROJECT_HOST_COMM_LAYER_H
