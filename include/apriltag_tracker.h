@@ -9,6 +9,8 @@
 #include <opencv2/opencv.hpp>
 
 #include <geometry_msgs/PoseStamped.h>
+#include <apriltag_tracker/AprilTagDetection.h>
+#include <apriltag_tracker/AprilTagDetectionArray.h>
 
 #include <TagDetector.h>
 #include <raspicam/raspicam.h>
@@ -38,11 +40,14 @@ public:
   ~AprilTagTracker();
 
   Eigen::Matrix4f getRelativeTransform(const cv::Point2f tagPts[]);
-  void draw(cv::Mat& image, const cv::Point2f p[], at::Point cxy, size_t id);
+  void drawDetections(cv::Mat *image);
   void getAndProcessImage();
   void getAndProcessImage(cv::Mat *image);
   void adjustServo();
+  void outputTimingInfo();
+  void populateAprilTagDetectionsArray(apriltag_tracker::AprilTagDetectionArray *tag_detection_array);
 
+  cv::Mat *image_gs;
   HostCommLayer::Dynamixel *servo;
 
 private:
@@ -57,7 +62,6 @@ private:
   CameraProperties camera_properties;
   raspicam::RaspiCam camera;
   cv::Point2d *camera_optical_center;
-  cv::Mat *image_gs;
 
   // Transform
   Eigen::Matrix4f transform_matrix;

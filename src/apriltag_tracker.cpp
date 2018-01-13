@@ -47,8 +47,8 @@ namespace AprilTagTracker
   AprilTagTracker::~AprilTagTracker()
   {
     delete tag_family;
-    delete tag_detector;
-    delete tag_detections;
+    delete &tag_detector;
+    delete &tag_detections;
     delete servo;
   }
 
@@ -88,23 +88,33 @@ namespace AprilTagTracker
     return T;
   }
 
-  void AprilTagTracker::draw(cv::Mat& image, const cv::Point2f p[], at::Point cxy, size_t id)
+  void AprilTagTracker::drawDetections(cv::Mat *image)
   {
-    // plot outline
-    cv::line(image, p[0], p[1], cv::Scalar(255,0,0,0) );
-    cv::line(image, p[1], p[2], cv::Scalar(0,255,0,0) );
-    cv::line(image, p[2], p[3], cv::Scalar(0,0,255,0) );
-    cv::line(image, p[3], p[0], cv::Scalar(255,0,255,0) );
+    cv::Point2f *p;
+    cv::Point2f cxy;
+    size_t id;
+    for (int i = 0; i < tag_detections.size(); i++)
+    {
+      p = tag_detections[i].p;
+      cxy = tag_detections[i].cxy;
+      id = tag_detections[i].id;
 
-    // mark center
-    cv::circle(image, cv::Point2f(cxy.x, cxy.y), 8, cv::Scalar(0,0,255,0), 2);
+      // plot outline
+      cv::line(*image, p[0], p[1], cv::Scalar(255,0,0,0) );
+      cv::line(*image, p[1], p[2], cv::Scalar(0,255,0,0) );
+      cv::line(*image, p[2], p[3], cv::Scalar(0,0,255,0) );
+      cv::line(*image, p[3], p[0], cv::Scalar(255,0,255,0) );
 
-    // print ID
-    std::ostringstream strSt;
-    strSt << "#" << id;
-    cv::putText(image, strSt.str(),
-                cv::Point2f(cxy.x + 10, cxy.y + 10),
-                cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0,0,255));
+      // mark center
+      cv::circle(*image, cv::Point2f(cxy.x, cxy.y), 8, cv::Scalar(0,0,255,0), 2);
+
+      // print ID
+      std::ostringstream strSt;
+      strSt << "#" << id;
+      cv::putText(*image, strSt.str(),
+                  cv::Point2f(cxy.x + 10, cxy.y + 10),
+                  cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0,0,255));
+    }
   }
 
 void AprilTagTracker::getAndProcessImage()
@@ -120,7 +130,7 @@ void AprilTagTracker::getAndProcessImage()
   get_and_process_data_time_points[2] = std::chrono::system_clock::now();
 
   // Process image
-  tag_detector->process(*image_gs, *camera_optical_center, *tag_detections);
+  tag_detector->process(*image_gs, *camera_optical_center, tag_detections);
   get_and_process_data_time_points[3] = std::chrono::system_clock::now();
 
 }
@@ -146,6 +156,42 @@ void AprilTagTracker::adjustServo()
     servo->setPosition((uint16_t)((double)position - rotation));
     std::cout << ", corrected position: " << position - rotation << std::endl;
   }
+}
+
+void AprilTagTracker::populateAprilTagDetectionsArray(apriltag_tracker::AprilTagDetectionArray *tag_detection_array)
+{
+  for (int i = 0; i < tag_detections.size(); i++)
+  {
+    // Get transform
+    /* Transform */
+    Eigen::Matrix4f transform = getRelativeTransform(tag_detections[i].p);
+    Eigen::Matrix3f rotation = transform.block(0, 0, 3, 3);
+    Eigen::Quaternion<float> rotation_q = Eigen::Quaternion<float>(rotation);
+
+    // Build tag
+    geometry_msgs::PoseStamped tag_pose;
+    tag_pose.pose.position.x = transform(0, 3);
+    tag_pose.pose.position.y = transform(1, 3);
+    tag_pose.pose.position.z = transform(2, 3);
+    tag_pose.pose.orientation.x = rotation_q.x();
+    tag_pose.pose.orientation.y = rotation_q.y();
+    tag_pose.pose.orientation.z = rotation_q.z();
+    tag_pose.pose.orientation.w = rotation_q.w();
+    tag_pose.header.frame_id ="camera";
+    tag_pose.header.stamp = capture_time;
+    tag_pose.header.seq = 0; // TODO make into sequence
+
+    apriltag_tracker::AprilTagDetection tag_detection;
+    tag_detection.pose = tag_pose;
+    tag_detection.id = (int)tag_detections[i].id;
+    tag_detection.size = tag_size;
+    tag_detection_array->detections.push_back(tag_detection);
+  }
+}
+
+void AprilTagTracker::outputTimingInfo()
+{
+
 }
 
 
