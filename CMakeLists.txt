@@ -46,6 +46,9 @@ set(raspicam_DIR /usr/local/lib/cmake)
 find_package(raspicam REQUIRED)
 include_directories()
 
+add_library(HostCommLayer src/host_comm_layer.cpp)
+target_link_libraries(HostCommLayer mraa)
+
 add_executable(apriltag_tracker src/main.cpp)
 add_dependencies(apriltag_tracker apriltag_tracker_generate_messages_cpp)
 target_link_libraries(apriltag_tracker ${Eigen3_LIBS})
@@ -55,4 +58,4 @@ target_link_libraries(apriltag_tracker ${catkin_LIBRARIES})
 target_link_libraries(apriltag_tracker ${OpenCV_LIBS})
 
 add_executable(test_i2c src/test.cpp)
-target_link_libraries(test_i2c mraa)
+target_link_libraries(test_i2c HostCommLayer)

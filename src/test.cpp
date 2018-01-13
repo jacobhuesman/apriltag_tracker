@@ -1,73 +1,23 @@
 #include <unistd.h>
-#include <signal.h>
 #include <iostream>
-#include <string>
-#include <getopt.h>
-#include <cstdint>
+#include <iomanip>
+#include <chrono>
 
+#include <host_comm_layer.h>
 #include <comm_layer_defs.h>
-
-#include "mraa.hpp"
-#include "math.h"
-
-#define MAX_BUFFER_LENGTH 6
-#define I2C_ADDR 0x11
-
-int running = 0;
-
-void sig_handler(int signo)
-{
-  if (signo == SIGINT) {
-      printf("closing nicely\n");
-      running = -1;
-  }
-}
-
-//TODO add error checking for both setPosition and getPosition
-void setPosition(uint16_t position)
-{
-  CLMessage32 message;
-
-  mraa::I2c i2c(0);
-
-  i2c.address(I2C_ADDR);
-  message.cl.instruction = DYN_SET_POSITION;
-  message.cl.data = position;
-  message.cl.checksum = 0;
-  for (int i = 0; i < 3; i++)
-  {
-    message.cl.checksum += message.data8[i];
-  }
-  int status = i2c.write(message.data8, 4);
-}
-
-void getPosition(uint16_t *position)
-{
-  CLMessage32 message;
-
-  mraa::I2c i2c(0);
-
-  i2c.address(I2C_ADDR);
-  message.cl.instruction = DYN_GET_POSITION_INSTRUCTION;
-  message.cl.data = 0;
-  message.cl.checksum = 0;
-  for (int i = 0; i < 3; i++)
-  {
-    message.cl.checksum += message.data8[i];
-  }
-  int status = i2c.write(message.data8, 4);
-
-  i2c.address(I2C_ADDR);
-  int bytes_read = i2c.read(message.data8, 4);
-  *position = message.cl.data;
-}
 
 
 int main(int argc, char *argv[])
 {
-  int c;
+  /* I2C */
+  HostCommLayer board(0x11);
+
+  /* Other */
   uint16_t position;
-  while ((c = getopt(argc, argv, "s:gh")) != -1)
+
+  /* Start */
+  int c;
+  while ((c = getopt(argc, argv, "s:ght")) != -1)
   {
     switch (c)
     {
@@ -75,12 +25,12 @@ int main(int argc, char *argv[])
       {
         position = (uint16_t)std::stoi(optarg);
         std::cout << "Setting position: " << position << std::endl;
-        setPosition(position);
+        board.setPosition(position);
         break;
       }
       case 'g':
       {
-        getPosition(&position);
+        board.getPosition(&position);
         std::cout << "Read position: " << position << std::endl;
         break;
       }
@@ -90,6 +40,35 @@ int main(int argc, char *argv[])
         std::cout << " -s <pos> : set position" << std::endl;
         std::cout << " -g       : get position" << std::endl;
         std::cout << " -h       : get help"     << std::endl;
+        break;
+      }
+      case 't':
+      {
+        std::cout << "Running getPosition test" << std::endl;
+        std::chrono::system_clock::time_point start, end;
+        std::chrono::microseconds difference;
+        long running_count = 0;
+        CLMessage32 test_msg;
+        long i = 0;
+        for (i = 0; i < 1000; i++)
+        {
+          start = std::chrono::system_clock::now();
+          if(board.getPosition(&position) != CL_OK)
+          {
+            // Try again
+            if(board.getPosition(&position) != CL_OK)
+            {
+              continue;
+            }
+          }
+          end = std::chrono::system_clock::now();
+          difference = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+          std::cout << "Test " << std::setw(3) << i << " time: " << std::setw(8) << difference.count();
+          std::cout << "us, position: " << std::setw(4) << position << std::endl;
+          running_count += difference.count();
+          //usleep(1000);
+        }
+        std::cout << "Test results: " << running_count/i << "us" << std::endl;
         break;
       }
       case '?':
@@ -104,6 +83,4 @@ int main(int argc, char *argv[])
       }
     }
   }
-
-
 }
