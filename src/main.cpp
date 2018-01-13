@@ -23,6 +23,8 @@
 
 #include <raspicam/raspicam.h>
 
+#include <host_comm_layer.h>
+
 
 typedef struct {
   float fx;
@@ -63,6 +65,9 @@ int main(int argc, char **argv)
 
   float tag_size = .0505;
 
+  /* Servo */
+  HostCommLayer servo(0x11);
+  servo.setPosition(512);
 
   /* Camera */
   //cv::VideoCapture camera(0);
@@ -139,6 +144,21 @@ int main(int argc, char **argv)
     tag_detector.process(gs_image, optical_center, detections);
     calc_point[4] = std::chrono::system_clock::now();
 
+    // Communicate with servo
+    if (detections.size() == 1)
+    {
+      const double fov = 62.2;
+      const double degrees_per_pixel = fov / 640.0;
+      const double dyn_resolution = 0.29;
+      double rotation = (degrees_per_pixel * (double)(detections[0].cxy.x - 320)) / dyn_resolution;
+      uint16_t position;
+      servo.getPosition(&position);
+      std::cout << "Original position: " << position;
+      servo.setPosition((uint16_t)((double)position - rotation));
+      std::cout << ", corrected position: " << position - rotation << std::endl;
+    }
+
+
     // Output data
     //std::cout << detections.size() << " tags detected" << std::endl;
     //TODO Add tag sizes
@@ -211,6 +231,12 @@ int main(int argc, char **argv)
     std::cout << ", pub_img: "      << std::setw(2) << calc_time[6].count();
     std::cout << ", total: "        << std::setw(2) << calc_time[7].count();
     std::cout << ", avg_tot_time: " << std::setw(2) << running_count / iterations;
+    if (detections.size() > 0)
+    {
+      std::cout << ", cxy: " << detections[0].cxy.x << ", " << detections[0].cxy.y;
+      std::cout << ", hxy: " << std::setw(3) << detections[0].cxy.x << ", ";
+      std::cout << detections[0].cxy.y << std::endl;
+    }
     std::cout << std::endl;
 
     //std::string image_path = "/home/nrmc/ws/test_images/image" + std::to_string(iterations) + ".jpg";

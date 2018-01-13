@@ -56,6 +56,8 @@ target_link_libraries(apriltag_tracker apriltags)
 target_link_libraries(apriltag_tracker raspicam ${raspicam_LIBS})
 target_link_libraries(apriltag_tracker ${catkin_LIBRARIES})
 target_link_libraries(apriltag_tracker ${OpenCV_LIBS})
+target_link_libraries(apriltag_tracker HostCommLayer)
+
 
 add_executable(test_i2c src/test.cpp)
 target_link_libraries(test_i2c HostCommLayer)
