@@ -61,7 +61,6 @@ private:
   // Camera
   CameraProperties camera_properties;
   raspicam::RaspiCam camera;
-  cv::Point2d *camera_optical_center;
 
   // Transform
   Eigen::Matrix4f transform_matrix;

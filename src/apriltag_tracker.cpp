@@ -46,10 +46,10 @@ namespace AprilTagTracker
 
   AprilTagTracker::~AprilTagTracker()
   {
-    delete tag_family;
-    delete &tag_detector;
-    delete &tag_detections;
+    delete image_gs;
     delete servo;
+    delete tag_family;
+    delete tag_detector;
   }
 
   Eigen::Matrix4f AprilTagTracker::getRelativeTransform(const cv::Point2f tagPts[])
@@ -130,7 +130,7 @@ void AprilTagTracker::getAndProcessImage()
   get_and_process_data_time_points[2] = std::chrono::system_clock::now();
 
   // Process image
-  tag_detector->process(*image_gs, *camera_optical_center, tag_detections);
+  tag_detector->process(*image_gs, camera_properties.optical_center, tag_detections);
   get_and_process_data_time_points[3] = std::chrono::system_clock::now();
 
 }
@@ -148,7 +148,7 @@ void AprilTagTracker::adjustServo()
   // TODO implement using multiple tags
   if (tag_detections.size() == 1)
   {
-    float difference = tag_detections[0].cxy.x - camera_properties.fov.x / 2;
+    float difference = tag_detections[0].cxy.x - camera_properties.width / 2;
     float rotation = camera_properties.degrees_per_pixel.x * difference / servo->resolution;
     uint16_t position;
     servo->getPosition(&position);
