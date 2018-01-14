@@ -5,6 +5,7 @@
 #include <cv_bridge/cv_bridge.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <tf/transform_broadcaster.h>
+#include <camera_info_manager/camera_info_manager.h>
 
 #include <apriltag_tracker/AprilTagDetection.h>
 #include <apriltag_tracker/AprilTagDetectionArray.h>
@@ -25,11 +26,14 @@ int main(int argc, char **argv)
   tf::TransformBroadcaster tf_pub;
   ros::Publisher detections_pub = nh.advertise<apriltag_tracker::AprilTagDetection>("tag_detections", 1);
   image_transport::ImageTransport it(nh);
-  image_transport::Publisher image_pub = it.advertise("tag_detections_image", 1);
+  image_transport::Publisher image_detections_pub = it.advertise("tag_detections_image", 1);
+  image_transport::Publisher image_pub = it.advertise("camera_image", 1);
   std_msgs::Header image_header;
   image_header.frame_id = "camera";
   cv_bridge::CvImage cv_bridge_image(image_header, sensor_msgs::image_encodings::MONO8, *tracker.image_gs);
 
+  camera_info_manager::CameraInfoManager camera_info(nh, "camera",
+                                                     "package://apriltag_tracker/calibrations/${NAME}.yaml");
 
   // Note: Entire loop must take less than 33ms
   #pragma clang diagnostic push
@@ -38,7 +42,7 @@ int main(int argc, char **argv)
   {
     // Get image and track
     tracker.getAndProcessImage();
-    tracker.adjustServo();
+    //tracker.adjustServo();
 
     // Send Transforms
     apriltag_tracker::AprilTagDetectionArray tag_detection_array;
@@ -52,8 +56,14 @@ int main(int argc, char **argv)
     }
 
     // Publish images
-    tracker.drawDetections(tracker.image_gs);
+    // TODO check
     image_pub.publish(cv_bridge_image.toImageMsg());
+    tracker.drawDetections(tracker.image_gs);
+    image_detections_pub.publish(cv_bridge_image.toImageMsg());
+    ros::spinOnce();
+
+
+    // TODO look into using image_geometry ROS library
 
 
     // Timing info

@@ -49,6 +49,7 @@ public:
 
   cv::Mat *image_gs;
   HostCommLayer::Dynamixel *servo;
+  CameraProperties camera_properties;
 
 private:
   // Tag
@@ -59,7 +60,6 @@ private:
   float tag_size; //TODO Create an array of tags, their sizes and their priorities
 
   // Camera
-  CameraProperties camera_properties;
   raspicam::RaspiCam camera;
 
   // Transform

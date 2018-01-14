@@ -13,7 +13,8 @@ find_package(catkin REQUIRED COMPONENTS
     std_msgs
     cmake_modules
     cv_bridge
-    image_transport)
+    image_transport
+    camera_info_manager)
 
 add_message_files(
     FILES
