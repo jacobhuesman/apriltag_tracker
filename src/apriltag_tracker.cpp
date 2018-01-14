@@ -24,10 +24,10 @@ namespace AprilTagTracker
       usleep(500000);
       camera.open();
     }
-    camera_properties.fx = 730;
-    camera_properties.fy = 730;
-    camera_properties.px = 320;
-    camera_properties.py = 240;
+    camera_properties.K.val[0] = 503.382;
+    camera_properties.K.val[2] = 319.145;
+    camera_properties.K.val[4] = 502.282;
+    camera_properties.K.val[5] = 237.571;
     camera_properties.fov.x = 62.2; // TODO measure
     camera_properties.fov.y = 48.8; // TODO measure
     camera_properties.width = camera.getWidth();
@@ -40,8 +40,28 @@ namespace AprilTagTracker
     // TODO what do the scalars do?
     image_gs = new cv::Mat(camera.getHeight(), camera.getWidth(), CV_8UC1, cv::Scalar(69,42,200));
 
-    float degrees_per_pixel = camera_properties.fov.x / camera.getWidth();
     float dyn_resolution = 0.29;
+  }
+
+  AprilTagTracker::AprilTagTracker(sensor_msgs::CameraInfo camera_info) : AprilTagTracker::AprilTagTracker()
+  {
+    this->camera_properties.width = camera_info.width;
+    this->camera_properties.height = camera_info.height;
+    this->camera_properties.binning_x = camera_info.binning_x;
+    this->camera_properties.binning_y = camera_info.binning_y;
+    for (int i = 0; i < camera_info.D.size(); i++)
+    {
+      this->camera_properties.D.push_back((float)camera_info.D[i]);
+    }
+    for (int i = 0; i < 9; i++)
+    {
+      this->camera_properties.K.val[i] = (float)camera_info.K[i];
+      this->camera_properties.R.val[i] = (float)camera_info.R[i];
+    }
+    for (int i = 0; i < 12; i++)
+    {
+      this->camera_properties.P.val[i] = (float)camera_info.P[i];
+    }
   }
 
   AprilTagTracker::~AprilTagTracker()
@@ -56,7 +76,7 @@ namespace AprilTagTracker
   {
     std::vector<cv::Point3f> objPts;
     std::vector<cv::Point2f> imgPts;
-    float s = tag_size/2.0f;
+    float s = tag_size / 2.0f;
     objPts.emplace_back(cv::Point3f(-s,-s, 0));
     objPts.emplace_back(cv::Point3f( s,-s, 0));
     objPts.emplace_back(cv::Point3f( s, s, 0));
@@ -68,13 +88,8 @@ namespace AprilTagTracker
     imgPts.push_back(tagPts[3]);
 
     cv::Mat rvec, tvec;
-    CameraProperties cfg = camera_properties;
-    cv::Matx33f cameraMatrix(
-        cfg.fx,      0, cfg.px,
-             0, cfg.fy, cfg.py,
-             0,      0,      1);
-    cv::Vec4f distParam(0,0,0,0); // all 0?
-    cv::solvePnP(objPts, imgPts, cameraMatrix, distParam, rvec, tvec);
+    // TODO make sure the properties are accurate
+    cv::solvePnP(objPts, imgPts, camera_properties.K, camera_properties.D, rvec, tvec);
     cv::Matx33f r;
     cv::Rodrigues(rvec, r);
     Eigen::Matrix3f wRo;

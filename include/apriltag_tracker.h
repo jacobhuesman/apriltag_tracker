@@ -16,27 +16,39 @@
 #include <raspicam/raspicam.h>
 
 #include <host_comm_layer.h>
+#include <sensor_msgs/CameraInfo.h>
 
 namespace AprilTagTracker
 {
 
-typedef struct {
-  float fx;
-  float fy;
-  float px;
-  float py;
-  float width;
-  float height;
+// See sensor_msgs::CameraInfo for descriptions
+struct CameraProperties
+{
+  // Derived from CameraInfo message
+  uint32_t height;
+  uint32_t width;
+  std::vector<float> D; // Distortion Parameters
+  cv::Matx33f K;        // Intrinsic camera matrix for the raw (distorted) images
+  cv::Matx33f P;        // Projection/camera matrix, intrinsic (camera) matrix for processed (rectified) image.
+  cv::Matx34f R;        // Rectification matrix (stereo cameras only)
+
+  // TODO check to make sure P has the right row/column order
+
+  uint32_t binning_x;
+  uint32_t binning_y;
+  // TODO add ROI
+
+  // Additional parameters
   cv::Point2f fov;
   cv::Point2f optical_center;
   cv::Point2f degrees_per_pixel;
-
-} CameraProperties;
+};
 
 class AprilTagTracker
 {
 public:
   AprilTagTracker();
+  AprilTagTracker(sensor_msgs::CameraInfo camera_info);
   ~AprilTagTracker();
 
   Eigen::Matrix4f getRelativeTransform(const cv::Point2f tagPts[]);

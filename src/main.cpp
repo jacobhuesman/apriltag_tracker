@@ -16,14 +16,22 @@
 
 int main(int argc, char **argv)
 {
-  // Initialize tracker
-  AprilTagTracker::AprilTagTracker tracker;
-  tracker.servo->setPosition(512);
-
   // Initialize ROS
   ros::init(argc, argv, "apriltag_detector");
   ros::NodeHandle nh;
   tf::TransformBroadcaster tf_pub;
+  camera_info_manager::CameraInfoManager camera_info(nh, "camera",
+                                                     "package://apriltag_tracker/calibrations/${NAME}.yaml");
+
+  // Initialize tracker
+  if (!camera_info.isCalibrated())
+  {
+    ROS_WARN("Using uncalibrated camera!");
+  }
+  AprilTagTracker::AprilTagTracker tracker(camera_info.getCameraInfo());
+  tracker.servo->setPosition(512);
+
+  // Add publishers
   ros::Publisher detections_pub = nh.advertise<apriltag_tracker::AprilTagDetection>("tag_detections", 1);
   image_transport::ImageTransport it(nh);
   image_transport::Publisher image_detections_pub = it.advertise("tag_detections_image", 1);
@@ -32,8 +40,6 @@ int main(int argc, char **argv)
   image_header.frame_id = "camera";
   cv_bridge::CvImage cv_bridge_image(image_header, sensor_msgs::image_encodings::MONO8, *tracker.image_gs);
 
-  camera_info_manager::CameraInfoManager camera_info(nh, "camera",
-                                                     "package://apriltag_tracker/calibrations/${NAME}.yaml");
 
   // Note: Entire loop must take less than 33ms
   #pragma clang diagnostic push
