@@ -57,13 +57,14 @@ target_link_libraries(AprilTagTracker HostCommLayer)
 add_library(HostCommLayer src/host_comm_layer.cpp)
 target_link_libraries(HostCommLayer mraa)
 
-add_executable(apriltag_tracker src/main.cpp)
+add_executable(apriltag_tracker src/apriltag_tracker_node.cpp)
 add_dependencies(apriltag_tracker apriltag_tracker_generate_messages_cpp)
 target_link_libraries(apriltag_tracker ${catkin_LIBRARIES})
 target_link_libraries(apriltag_tracker ${OpenCV_LIBS})
 target_link_libraries(apriltag_tracker AprilTagTracker)
 
-add_executable(test_i2c src/test.cpp)
-target_link_libraries(test_i2c HostCommLayer)
+add_executable(i2c_test src/util/i2c_test.cpp)
+target_link_libraries(i2c_test HostCommLayer)
 
-add_executable(speedtest src/speedtest.cpp)
+add_executable(speed_test src/util/speed_test.cpp)
+
