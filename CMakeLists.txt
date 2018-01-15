@@ -67,3 +67,8 @@ add_executable(test_i2c src/test.cpp)
 target_link_libraries(test_i2c HostCommLayer)
 
 add_executable(speedtest src/speedtest.cpp)
+
+add_executable(tftest src/tftest.cpp)
+target_link_libraries(tftest ${catkin_LIBRARIES})
+
+
