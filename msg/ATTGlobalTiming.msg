@@ -1,0 +1,7 @@
+int64 iteration
+int64 average_processing_time
+int64 max_processing_time
+int64 image_grab_dt
+int64 max_image_grab_dt
+int64 misses
+float64 percent_missed

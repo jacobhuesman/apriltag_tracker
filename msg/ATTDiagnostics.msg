@@ -1,0 +1,3 @@
+uint8 thread
+ATTLocalTiming local_timing
+ATTGlobalTiming global_timing

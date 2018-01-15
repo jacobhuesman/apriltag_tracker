@@ -20,6 +20,9 @@ add_message_files(
     FILES
     AprilTagDetection.msg
     AprilTagDetectionArray.msg
+    ATTLocalTiming.msg
+    ATTGlobalTiming.msg
+    ATTDiagnostics.msg
 )
 
 generate_messages(DEPENDENCIES
@@ -62,3 +65,5 @@ target_link_libraries(apriltag_tracker AprilTagTracker)
 
 add_executable(test_i2c src/test.cpp)
 target_link_libraries(test_i2c HostCommLayer)
+
+add_executable(speedtest src/speedtest.cpp)
