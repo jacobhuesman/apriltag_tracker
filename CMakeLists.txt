@@ -14,7 +14,9 @@ find_package(catkin REQUIRED COMPONENTS
     cmake_modules
     cv_bridge
     image_transport
-    camera_info_manager)
+    camera_info_manager
+    dynamic_reconfigure
+    )
 
 add_message_files(
     FILES
@@ -28,6 +30,10 @@ add_message_files(
 generate_messages(DEPENDENCIES
     std_msgs
     geometry_msgs
+)
+
+generate_dynamic_reconfigure_options(
+    cfg/tftest.cfg
 )
 
 catkin_package(
@@ -69,6 +75,7 @@ target_link_libraries(test_i2c HostCommLayer)
 add_executable(speedtest src/speedtest.cpp)
 
 add_executable(tftest src/tftest.cpp)
+add_dependencies(tftest ${PROJECT_NAME}_gencfg)
 target_link_libraries(tftest ${catkin_LIBRARIES})
 
 

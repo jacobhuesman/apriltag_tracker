@@ -38,6 +38,7 @@
   <run_depend>image_transport_plugins</run_depend>
   <run_depend>cv_bridge</run_depend>
   <run_depend>camera_info_manager</run_depend>
+  <run_depend>rospy</run_depend>
 
 
   <export>
