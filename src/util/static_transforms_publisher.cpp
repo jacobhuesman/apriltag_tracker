@@ -37,7 +37,7 @@ int main(int argc, char** argv){
   servo_base_link_to_servo_joint_tf.transform.rotation.z = q.getZ();
   servo_base_link_to_servo_joint_tf.transform.rotation.w = q.getW();
 
-  q.setRPY(0.0, 0.0, 0.0);
+  q.setRPY(M_PI_2, 0.0, M_PI_2);
   geometry_msgs::TransformStamped map_to_tag04_tf;
   map_to_tag04_tf.header.seq = 0;
   map_to_tag04_tf.header.frame_id = "map";

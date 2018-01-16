@@ -90,7 +90,8 @@ void trackerThread(ros::NodeHandle nh, sensor_msgs::CameraInfo camera_info, uint
       tag_message = tf2::toMsg(tag_transform);
 
       tag_message.header.frame_id = "camera_optical";
-      tag_message.child_frame_id = "tag" + std::to_string(tag_detection_array.detections[i].id);
+      tag_message.child_frame_id = std::string("tag") + std::to_string(tag_detection_array.detections[i].id) + "_estimate";
+
       tag_message.header.stamp = ros::Time::now();
       pubs->tf.sendTransform(tag_message);
     }
@@ -204,7 +205,7 @@ int main(int argc, char **argv)
   // Initialize camera
   // TODO parametrize and load from camera calibration
   camera = new raspicam::RaspiCam;
-  camera->setWidth(960);
+  camera->setWidth(640);
   camera->setHeight(480);
   camera->setShutterSpeed(8000); // 10000, 8000
   camera->setBrightness(80);  // 70, 80

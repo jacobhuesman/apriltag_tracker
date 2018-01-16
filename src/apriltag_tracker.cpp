@@ -5,7 +5,7 @@ namespace AprilTagTracker
   AprilTagTracker::AprilTagTracker(raspicam::RaspiCam *camera, boost::mutex *camera_mutex)
   {
     tag_params.newQuadAlgorithm = true;
-    tag_params.adaptiveThresholdValue = 12; //TODO figure out what this means and parameterize
+    //tag_params.adaptiveThresholdValue = 12; //TODO figure out what this means and parameterize
     //tag_params.adaptiveThresholdValue = 20; //TODO figure out what this means and parameterize
     tag_family = new TagFamily("Tag36h11");
     tag_detector = new TagDetector(*tag_family, tag_params);
