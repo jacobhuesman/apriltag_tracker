@@ -44,11 +44,52 @@ std::chrono::system_clock::time_point global_time_stamp[2];
 const bool publish_plain_image = false;
 const bool publish_pose_estimate = true;
 
-void trackerThread(ros::NodeHandle nh, sensor_msgs::CameraInfo camera_info, uint8_t thread_id)
+std::vector<AprilTagTracker::TagInfo> *tag_info;
+
+void initializeTagInfoVector(std::vector<AprilTagTracker::TagInfo> *tag_info)
+{
+  tf2_ros::Buffer tfBuffer;
+  tf2_ros::TransformListener tfListener(tfBuffer);
+
+  // Tag 4
+  AprilTagTracker::TagInfo tag;
+  tag.id = 4;
+  tag.seq = 0;
+  tag.priority = 0;
+  tag.size = 0.203;
+  tag.mutex = new boost::mutex;
+  tag_info->push_back(tag);
+
+  for (int i = 0; i < tag_info->size(); i++)
+  {
+    std::string tag_name = "tag" + std::to_string((*tag_info)[i].id);
+    bool transformed;
+    do
+    {
+      transformed = tfBuffer.canTransform("map", tag_name, ros::Time(0), ros::Duration(1));
+      if (!transformed)
+      {
+        std::stringstream ss;
+        ss << "Unable to find transform from " << "map" << " to " << tag_name;
+        ROS_WARN("%s", ss.str().c_str());
+      }
+    } while(ros::ok() && !transformed);
+    ROS_INFO("Found transform for tag%i", (*tag_info)[i].id);
+
+    geometry_msgs::TransformStamped transform_msg;
+    transform_msg = tfBuffer.lookupTransform("map", tag_name, ros::Time(0));
+    tf2::fromMsg(transform_msg.transform, (*tag_info)[i].map_to_tag_tf);
+  }
+
+
+
+}
+
+void trackerThread(ros::NodeHandle nh, sensor_msgs::CameraInfo camera_info, uint8_t thread_id,
+                   tf2::Transform camera_optical_to_base_link_tf)
 {
   timing_mutex.lock();
-  AprilTagTracker::AprilTagTracker tracker(camera_info, camera, camera_mutex);
-
+  AprilTagTracker::AprilTagTracker tracker(camera_info, camera, camera_mutex, tag_info, camera_optical_to_base_link_tf);
 
   std_msgs::Header image_header;
   image_header.frame_id = "camera";
@@ -80,21 +121,16 @@ void trackerThread(ros::NodeHandle nh, sensor_msgs::CameraInfo camera_info, uint
     // Send Transforms
     time_stamp[3] = std::chrono::system_clock::now();
     apriltag_tracker::AprilTagDetectionArray tag_detection_array;
-    tracker.calculateAprilTagTransforms(&tag_detection_array); // TODO publish this array
+    tracker.calculateTransforms(&tag_detection_array);
     time_stamp[4] = std::chrono::system_clock::now();
     for (int i = 0; i < tag_detection_array.detections.size(); i++)
     {
-      tf2::Stamped<tf2::Transform> tag_transform;
-      geometry_msgs::TransformStamped tag_message;
-      tf2::fromMsg(tag_detection_array.detections[i].pose, tag_transform);
-      tag_message = tf2::toMsg(tag_transform);
-
-      tag_message.header.frame_id = "camera_optical";
-      tag_message.child_frame_id = std::string("tag") + std::to_string(tag_detection_array.detections[i].id) + "_estimate";
-
-      tag_message.header.stamp = ros::Time::now();
-      pubs->tf.sendTransform(tag_message);
+      pubs->tf.sendTransform(tag_detection_array.detections[i].transform);
     }
+    geometry_msgs::TransformStamped pose_estimate_msg;
+    tracker.estimateRobotPose(&pose_estimate_msg);
+
+    pubs->tf.sendTransform(pose_estimate_msg); // TODO should be pose msg
     time_stamp[5] = std::chrono::system_clock::now();
     pubs->detections.publish(tag_detection_array);
 
@@ -176,25 +212,29 @@ int main(int argc, char **argv)
   pubs->image = it.advertise("camera_image", 1);
   pubs->detections_image = it.advertise("tag_detections_image", 1);
 
+  // Initialize tags
+  tag_info = new std::vector<AprilTagTracker::TagInfo>;
+  initializeTagInfoVector(tag_info);
 
-  if (publish_pose_estimate)
+  // Get camera_transform
+  tf2_ros::Buffer tfBuffer;
+  tf2_ros::TransformListener tfListener(tfBuffer);
+  bool transformed;
+  do
   {
-
-  }
-
-  int ss;
-  int brt;
-  int crt;
-  int shp;
-  int sat;
-  int bv;
-
-  /*nh.getParam("/apriltag_detector/ss", ss);
-  nh.getParam("/apriltag_detector/brt", brt);
-  nh.getParam("/apriltag_detector/crt", crt);*/
-
-  std::cout << "ss: " << ss << ", brt: " << brt << std::endl;
-
+    transformed = tfBuffer.canTransform("base_link", "camera_optical", ros::Time(0), ros::Duration(1));
+    if (!transformed)
+    {
+      std::stringstream ss;
+      ss << "Unable to find transform from " << "base_link" << " to " << "camera_optical";
+      ROS_WARN("%s", ss.str().c_str());
+    }
+  } while(ros::ok() && !transformed);
+  ROS_INFO("Found transform");
+  geometry_msgs::TransformStamped transform_msg;
+  tf2::Stamped<tf2::Transform> camera_optical_to_base_link_tf;
+  transform_msg = tfBuffer.lookupTransform("camera_optical", "base_link", ros::Time(0));
+  tf2::fromMsg(transform_msg, camera_optical_to_base_link_tf);
 
   // Initialize tracker
   if (!camera_info.isCalibrated())
@@ -204,6 +244,7 @@ int main(int argc, char **argv)
 
   // Initialize camera
   // TODO parametrize and load from camera calibration
+  // TODO wrap camera and camera parameters together in a class
   camera = new raspicam::RaspiCam;
   camera->setWidth(640);
   camera->setHeight(480);
@@ -223,10 +264,10 @@ int main(int argc, char **argv)
 
   // Start threads
   camera_mutex = new boost::mutex;
-  boost::thread thread0(trackerThread, nh, camera_info.getCameraInfo(), 0);
-  boost::thread thread1(trackerThread, nh, camera_info.getCameraInfo(), 1);
-  boost::thread thread2(trackerThread, nh, camera_info.getCameraInfo(), 2);
-  boost::thread thread3(trackerThread, nh, camera_info.getCameraInfo(), 3);
+  boost::thread thread0(trackerThread, nh, camera_info.getCameraInfo(), 0, camera_optical_to_base_link_tf);
+  boost::thread thread1(trackerThread, nh, camera_info.getCameraInfo(), 1, camera_optical_to_base_link_tf);
+  boost::thread thread2(trackerThread, nh, camera_info.getCameraInfo(), 2, camera_optical_to_base_link_tf);
+  boost::thread thread3(trackerThread, nh, camera_info.getCameraInfo(), 3, camera_optical_to_base_link_tf);
   thread0.join();
   thread1.join();
   thread2.join();

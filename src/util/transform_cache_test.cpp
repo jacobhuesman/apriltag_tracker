@@ -39,7 +39,7 @@ int main(int argc, char** argv){
       ROS_WARN("%s", ss.str().c_str());
     }
   } while(ros::ok() && !transformed);
-  ROS_INFO("Found tranform");
+  ROS_INFO("Found transform");
 
   geometry_msgs::TransformStamped transform_msg;
 

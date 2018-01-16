@@ -56,6 +56,7 @@ include_directories(${catkin_INCLUDE_DIRS})
 include_directories(include)
 
 add_library(AprilTagTracker src/apriltag_tracker.cpp)
+add_dependencies(AprilTagTracker ${${PROJECT_NAME}_EXPORTED_TARGETS})
 target_link_libraries(AprilTagTracker raspicam ${raspicam_LIBS})
 target_link_libraries(AprilTagTracker ${Eigen3_LIBS})
 target_link_libraries(AprilTagTracker ${catkin_LIBRARIES})

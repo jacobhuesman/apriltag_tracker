@@ -1,18 +1,22 @@
 #include <apriltag_tracker.h>
+#include <geometry_msgs/TransformStamped.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+
 
 namespace AprilTagTracker
 {
-  AprilTagTracker::AprilTagTracker(raspicam::RaspiCam *camera, boost::mutex *camera_mutex)
+  AprilTagTracker::AprilTagTracker(raspicam::RaspiCam *camera, boost::mutex *camera_mutex,
+                                   std::vector<TagInfo> *tag_info, tf2::Transform camera_optical_to_base_link_tf)
   {
     tag_params.newQuadAlgorithm = true;
     //tag_params.adaptiveThresholdValue = 12; //TODO figure out what this means and parameterize
     //tag_params.adaptiveThresholdValue = 20; //TODO figure out what this means and parameterize
     tag_family = new TagFamily("Tag36h11");
     tag_detector = new TagDetector(*tag_family, tag_params);
-    tag_size = .0505;
 
     servo = new HostCommLayer::Dynamixel(0x11);
 
+    this->tag_info = tag_info;
     this->camera = camera;
     this->camera_mutex = camera_mutex;
     camera_properties.K.val[0] = 503.382;
@@ -27,14 +31,16 @@ namespace AprilTagTracker
     camera_properties.optical_center.y = camera_properties.height / 2;
     camera_properties.degrees_per_pixel.x = camera_properties.fov.x / camera_properties.width;
     camera_properties.degrees_per_pixel.y = camera_properties.fov.y / camera_properties.height;
+    camera_properties.camera_optical_to_base_link_tf = camera_optical_to_base_link_tf;
 
     // TODO what do the scalars do?
     image_gs = new cv::Mat(camera->getHeight(), camera->getWidth(), CV_8UC1, cv::Scalar(69,42,200));
   }
 
   AprilTagTracker::AprilTagTracker(sensor_msgs::CameraInfo camera_info, raspicam::RaspiCam *camera,
-                                   boost::mutex *camera_mutex)
-      : AprilTagTracker::AprilTagTracker(camera, camera_mutex)
+                                   boost::mutex *camera_mutex, std::vector<TagInfo> *tag_info,
+                                   tf2::Transform camera_optical_to_base_link_tf)
+      : AprilTagTracker::AprilTagTracker(camera, camera_mutex, tag_info, camera_optical_to_base_link_tf)
   {
     this->camera_properties.width = camera_info.width;
     this->camera_properties.height = camera_info.height;
@@ -63,7 +69,7 @@ namespace AprilTagTracker
     delete tag_detector;
   }
 
-  Eigen::Matrix4d AprilTagTracker::getRelativeTransform(const cv::Point2d tagPts[])
+  Eigen::Matrix4d AprilTagTracker::getRelativeTransform(const cv::Point2d tagPts[], double tag_size)
   {
     std::vector<cv::Point3d> objPts;
     std::vector<cv::Point2d> imgPts;
@@ -158,39 +164,57 @@ void AprilTagTracker::adjustServo()
   }
 }
 
-void AprilTagTracker::calculateAprilTagTransforms(apriltag_tracker::AprilTagDetectionArray *tag_detection_array)
+void AprilTagTracker::calculateTransforms(apriltag_tracker::AprilTagDetectionArray *tag_detection_array)
 {
   for (int i = 0; i < tag_detections.size(); i++)
   {
-    // Get transform
-    /* Transform */
-    Eigen::Matrix4d transform = getRelativeTransform(tag_detections[i].p);
-    Eigen::Matrix3d rotation = transform.block(0, 0, 3, 3);
-    Eigen::Quaternion<double> rotation_q = Eigen::Quaternion<double>(rotation);
+    for (int j = 0; j < tag_info->size(); j++)
+    {
+      if (tag_detections[i].id == (*tag_info)[j].id)
+      {
+        // Get transform
+        /* Transform */
+        Eigen::Matrix4d transform = getRelativeTransform(tag_detections[i].p, (*tag_info)[j].size);
+        Eigen::Matrix3d rotation = transform.block(0, 0, 3, 3);
+        Eigen::Quaternion<double> rotation_q = Eigen::Quaternion<double>(rotation);
 
-    // Build tag
-    geometry_msgs::PoseStamped tag_pose;
-    tag_pose.pose.position.x = transform(0, 3);
-    tag_pose.pose.position.y = transform(1, 3);
-    tag_pose.pose.position.z = transform(2, 3);
-    tag_pose.pose.orientation.x = rotation_q.x();
-    tag_pose.pose.orientation.y = rotation_q.y();
-    tag_pose.pose.orientation.z = rotation_q.z();
-    tag_pose.pose.orientation.w = rotation_q.w();
-    tag_pose.header.frame_id ="camera";
-    tag_pose.header.stamp = capture_time;
-    tag_pose.header.seq = 0; // TODO make into sequence
+        // Build detection
+        apriltag_tracker::AprilTagDetection tag_detection;
+        tag_detection.id = (int)tag_detections[i].id;
+        tag_detection.size = (*tag_info)[j].size;
+        tag_detection.transform.header.stamp = capture_time;
+        tag_detection.transform.header.seq = (*tag_info)[j].seq++;
+        tag_detection.transform.header.frame_id = "camera_optical";
+        tag_detection.transform.child_frame_id = std::string("tag") + std::to_string(tag_detections[i].id) + "_estimate";
+        tag_detection.transform.transform.translation.x = transform(0, 3);
+        tag_detection.transform.transform.translation.y = transform(1, 3);
+        tag_detection.transform.transform.translation.z = transform(2, 3);
+        tag_detection.transform.transform.rotation.x = rotation_q.x();
+        tag_detection.transform.transform.rotation.y = rotation_q.y();
+        tag_detection.transform.transform.rotation.z = rotation_q.z();
+        tag_detection.transform.transform.rotation.w = rotation_q.w();
 
-    apriltag_tracker::AprilTagDetection tag_detection;
-    tag_detection.pose = tag_pose;
-    tag_detection.id = (int)tag_detections[i].id;
-    tag_detection.size = tag_size;
-    tag_detection_array->detections.push_back(tag_detection);
+        tag_detection_array->detections.push_back(tag_detection);
+
+        // Build transform
+        tf2::Stamped<tf2::Transform> tag_transform;
+        tf2::fromMsg(tag_detection.transform, tag_transform);
+        (*tag_info)[j].mutex->lock();
+        (*tag_info)[j].tag_transform = tag_transform;
+        (*tag_info)[j].mutex->unlock();
+      }
+    }
   }
 }
 
-void AprilTagTracker::estimateRobotPose()
+void AprilTagTracker::estimateRobotPose(geometry_msgs::TransformStamped *pose_estimate_msg)
 {
+
+  tf2::Transform pose_estimate = (*tag_info)[0].map_to_tag_tf * (*tag_info)[0].tag_transform.inverse()
+                                 * camera_properties.camera_optical_to_base_link_tf;
+  tf2::Stamped<tf2::Transform> pose_estimate_stamped(pose_estimate, (*tag_info)[0].tag_transform.stamp_, "map");
+  *pose_estimate_msg = tf2::toMsg(pose_estimate_stamped);
+  pose_estimate_msg->child_frame_id = "base_link";
 
 }
 

@@ -9,8 +9,11 @@
 #include <opencv2/opencv.hpp>
 
 #include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/TransformStamped.h>
 #include <apriltag_tracker/AprilTagDetection.h>
 #include <apriltag_tracker/AprilTagDetectionArray.h>
+#include <tf2/transform_datatypes.h>
+#include <tf2/LinearMath/Transform.h>
 
 #include <TagDetector.h>
 #include <raspicam/raspicam.h>
@@ -33,7 +36,6 @@ struct CameraProperties
   cv::Matx34d R;        // Rectification matrix (stereo cameras only)
 
   // TODO check to make sure P has the right row/column order
-
   uint32_t binning_x;
   uint32_t binning_y;
   // TODO add ROI
@@ -42,24 +44,43 @@ struct CameraProperties
   cv::Point2d fov;
   cv::Point2d optical_center;
   cv::Point2d degrees_per_pixel;
+
+  // Transform
+  tf2::Transform camera_optical_to_base_link_tf;
 };
+
+struct TagInfo
+{
+  boost::mutex *mutex;
+  int id;
+  unsigned int seq;
+  double goodness;
+  double priority;
+  double size;
+  tf2::Transform map_to_tag_tf;
+  tf2::Stamped<tf2::Transform> tag_transform;
+};
+
+
 
 class AprilTagTracker
 {
 public:
-  AprilTagTracker(raspicam::RaspiCam *camera, boost::mutex *camera_mutex);
-  AprilTagTracker(sensor_msgs::CameraInfo camera_info, raspicam::RaspiCam *camera, boost::mutex *camera_mutex);
+  AprilTagTracker(raspicam::RaspiCam *camera, boost::mutex *camera_mutex, std::vector<TagInfo> *tag_info,
+                  tf2::Transform camera_optical_to_base_link_tf);
+  AprilTagTracker(sensor_msgs::CameraInfo camera_info, raspicam::RaspiCam *camera, boost::mutex *camera_mutex,
+                  std::vector<TagInfo> *tag_info, tf2::Transform camera_optical_to_base_link_tf);
   ~AprilTagTracker();
 
-  Eigen::Matrix4d getRelativeTransform(const cv::Point2d tagPts[]);
+  Eigen::Matrix4d getRelativeTransform(const cv::Point2d tagPts[], double tag_size);
   void drawDetections(cv::Mat *image);
   void getImage();
   void getImage(cv::Mat *image);
   void processImage();
   void adjustServo();
   void outputTimingInfo();
-  void calculateAprilTagTransforms(apriltag_tracker::AprilTagDetectionArray *tag_detection_array);
-  void estimateRobotPose();
+  void calculateTransforms(apriltag_tracker::AprilTagDetectionArray *tag_detection_array);
+  void estimateRobotPose(geometry_msgs::TransformStamped *pose_estimate_msg);
 
   cv::Mat *image_gs;
   HostCommLayer::Dynamixel *servo;
@@ -71,7 +92,7 @@ private:
   TagFamily *tag_family;
   TagDetector *tag_detector;
   TagDetectionArray tag_detections;
-  double tag_size; //TODO Create an array of tags, their sizes and their priorities
+  std::vector<TagInfo> *tag_info;
 
   // Camera
   boost::mutex *camera_mutex;
@@ -85,7 +106,6 @@ private:
 
   // Timing
   ros::Time capture_time;
-
 };
 
 }
