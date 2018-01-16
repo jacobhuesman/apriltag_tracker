@@ -1,7 +1,3 @@
-//
-// Created by nmach on 1/12/18.
-//
-
 #include <host_comm_layer.h>
 #include <comm_layer_defs.h>
 #include <iostream>
