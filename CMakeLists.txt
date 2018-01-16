@@ -7,7 +7,9 @@ find_package(catkin REQUIRED COMPONENTS
     roscpp
     sensor_msgs
     geometry_msgs
-    tf
+    tf2
+    tf2_ros
+    tf2_geometry_msgs
     message_generation
     nodelet
     std_msgs
@@ -39,7 +41,8 @@ generate_dynamic_reconfigure_options(
 catkin_package(
     #INCLUDE_DIRS include
     #LIBRARIES apriltag_detector
-    CATKIN_DEPENDS roscpp sensor_msgs geometry_msgs tf message_runtime nodelet std_msgs cv_bridge image_transport
+    CATKIN_DEPENDS roscpp sensor_msgs geometry_msgs tf2 tf2_ros tf2_geometry_msgs
+    message_runtime nodelet std_msgs cv_bridge image_transport
 )
 
 set(raspicam_DIR /usr/local/lib/cmake)
@@ -64,7 +67,7 @@ add_library(HostCommLayer src/host_comm_layer.cpp)
 target_link_libraries(HostCommLayer mraa)
 
 add_executable(apriltag_tracker src/apriltag_tracker_node.cpp)
-add_dependencies(apriltag_tracker apriltag_tracker_generate_messages_cpp)
+add_dependencies(apriltag_tracker ${${PROJECT_NAME}_EXPORTED_TARGETS})
 target_link_libraries(apriltag_tracker ${catkin_LIBRARIES})
 target_link_libraries(apriltag_tracker ${OpenCV_LIBS})
 target_link_libraries(apriltag_tracker AprilTagTracker)
@@ -78,4 +81,9 @@ add_executable(tf_test src/util/tf_test.cpp)
 add_dependencies(tf_test ${PROJECT_NAME}_gencfg)
 target_link_libraries(tf_test ${catkin_LIBRARIES})
 
+add_executable(transform_cache_test src/util/transform_cache_test.cpp)
+target_link_libraries(transform_cache_test ${catkin_LIBRARIES})
+
+add_executable(static_transforms_publisher src/util/static_transforms_publisher.cpp)
+target_link_libraries(static_transforms_publisher ${catkin_LIBRARIES})
 

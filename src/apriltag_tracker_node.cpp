@@ -1,11 +1,14 @@
 #include <iostream>
+#include <sstream>
 #include <cmath>
 
 #include <ros/ros.h>
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
 #include <geometry_msgs/PoseStamped.h>
-#include <tf/transform_broadcaster.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <camera_info_manager/camera_info_manager.h>
 
 #include <apriltag_tracker/AprilTagDetection.h>
@@ -19,8 +22,9 @@
 raspicam::RaspiCam *camera;
 boost::mutex *camera_mutex;
 
-struct Publishers {
-  tf::TransformBroadcaster tf;
+struct Publishers
+{
+  tf2_ros::TransformBroadcaster tf;
   ros::Publisher detections;
   ros::Publisher diagnostics;
   image_transport::Publisher image;
@@ -37,9 +41,8 @@ long max_image_grab_dt = 0;
 long misses = 0;
 std::chrono::system_clock::time_point global_time_stamp[2];
 
-
-
 const bool publish_plain_image = false;
+const bool publish_pose_estimate = true;
 
 void trackerThread(ros::NodeHandle nh, sensor_msgs::CameraInfo camera_info, uint8_t thread_id)
 {
@@ -77,14 +80,19 @@ void trackerThread(ros::NodeHandle nh, sensor_msgs::CameraInfo camera_info, uint
     // Send Transforms
     time_stamp[3] = std::chrono::system_clock::now();
     apriltag_tracker::AprilTagDetectionArray tag_detection_array;
-    tracker.calculateTransforms(&tag_detection_array); // TODO publish this array
+    tracker.calculateAprilTagTransforms(&tag_detection_array); // TODO publish this array
     time_stamp[4] = std::chrono::system_clock::now();
     for (int i = 0; i < tag_detection_array.detections.size(); i++)
     {
-      tf::Stamped<tf::Transform> tag_transform;
-      tf::poseStampedMsgToTF(tag_detection_array.detections[i].pose, tag_transform);
-      pubs->tf.sendTransform(tf::StampedTransform(tag_transform, tag_transform.stamp_, tag_transform.frame_id_,
-                                                "tag" + tag_detection_array.detections[i].id));
+      tf2::Stamped<tf2::Transform> tag_transform;
+      geometry_msgs::TransformStamped tag_message;
+      tf2::fromMsg(tag_detection_array.detections[i].pose, tag_transform);
+      tag_message = tf2::toMsg(tag_transform);
+
+      tag_message.header.frame_id = "camera_optical";
+      tag_message.child_frame_id = "tag" + std::to_string(tag_detection_array.detections[i].id);
+      tag_message.header.stamp = ros::Time::now();
+      pubs->tf.sendTransform(tag_message);
     }
     time_stamp[5] = std::chrono::system_clock::now();
     pubs->detections.publish(tag_detection_array);
@@ -166,6 +174,12 @@ int main(int argc, char **argv)
   pubs->diagnostics = nh.advertise<apriltag_tracker::ATTDiagnostics>("diagnostics", 1);
   pubs->image = it.advertise("camera_image", 1);
   pubs->detections_image = it.advertise("tag_detections_image", 1);
+
+
+  if (publish_pose_estimate)
+  {
+
+  }
 
   int ss;
   int brt;

@@ -158,7 +158,7 @@ void AprilTagTracker::adjustServo()
   }
 }
 
-void AprilTagTracker::calculateTransforms(apriltag_tracker::AprilTagDetectionArray *tag_detection_array)
+void AprilTagTracker::calculateAprilTagTransforms(apriltag_tracker::AprilTagDetectionArray *tag_detection_array)
 {
   for (int i = 0; i < tag_detections.size(); i++)
   {
@@ -187,6 +187,11 @@ void AprilTagTracker::calculateTransforms(apriltag_tracker::AprilTagDetectionArr
     tag_detection.size = tag_size;
     tag_detection_array->detections.push_back(tag_detection);
   }
+}
+
+void AprilTagTracker::estimateRobotPose()
+{
+
 }
 
 void AprilTagTracker::outputTimingInfo()

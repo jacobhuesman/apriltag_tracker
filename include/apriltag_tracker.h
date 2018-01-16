@@ -58,7 +58,8 @@ public:
   void processImage();
   void adjustServo();
   void outputTimingInfo();
-  void calculateTransforms(apriltag_tracker::AprilTagDetectionArray *tag_detection_array);
+  void calculateAprilTagTransforms(apriltag_tracker::AprilTagDetectionArray *tag_detection_array);
+  void estimateRobotPose();
 
   cv::Mat *image_gs;
   HostCommLayer::Dynamixel *servo;
