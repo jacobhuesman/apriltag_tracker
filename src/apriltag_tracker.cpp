@@ -214,7 +214,7 @@ void AprilTagTracker::estimateRobotPose(geometry_msgs::TransformStamped *pose_es
                                  * camera_properties.camera_optical_to_base_link_tf;
   tf2::Stamped<tf2::Transform> pose_estimate_stamped(pose_estimate, (*tag_info)[0].tag_transform.stamp_, "map");
   *pose_estimate_msg = tf2::toMsg(pose_estimate_stamped);
-  pose_estimate_msg->child_frame_id = "base_link";
+  pose_estimate_msg->child_frame_id = "apriltag_tracker_pose_estimate";
 
 }
 
