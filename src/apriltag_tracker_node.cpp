@@ -51,8 +51,16 @@ void initializeTagInfoVector(std::vector<AprilTagTracker::TagInfo> *tag_info)
   tf2_ros::Buffer tfBuffer;
   tf2_ros::TransformListener tfListener(tfBuffer);
 
-  // Tag 3
+  // Tag 1
   AprilTagTracker::TagInfo tag;
+  tag.id = 1;
+  tag.seq = 0;
+  tag.priority = 0;
+  tag.size = 0.42545;
+  tag.mutex = new boost::mutex;
+  tag_info->push_back(tag);
+
+  // Tag 3
   tag.id = 3;
   tag.seq = 0;
   tag.priority = 0;
