@@ -5,8 +5,7 @@
 
 namespace AprilTagTracker
 {
-  AprilTagTracker::AprilTagTracker(raspicam::RaspiCam *camera, boost::mutex *camera_mutex,
-                                   std::vector<TagInfo> *tag_info, tf2::Transform camera_optical_to_base_link_tf)
+  AprilTagTracker::AprilTagTracker(apriltag_tracker::Camera *camera, std::vector<TagInfo> *tag_info, tf2::Transform camera_optical_to_base_link_tf)
   {
     tag_params.newQuadAlgorithm = true;
     //tag_params.adaptiveThresholdValue = 12; //TODO figure out what this means and parameterize
@@ -17,53 +16,14 @@ namespace AprilTagTracker
     servo = new HostCommLayer::Dynamixel(0x11);
 
     this->tag_info = tag_info;
-    this->camera = camera;
-    this->camera_mutex = camera_mutex;
-    camera_properties.K.val[0] = 503.382;
-    camera_properties.K.val[2] = 319.145;
-    camera_properties.K.val[4] = 502.282;
-    camera_properties.K.val[5] = 237.571;
-    camera_properties.fov.x = 62.2; // TODO measure
-    camera_properties.fov.y = 48.8; // TODO measure
-    camera_properties.width = camera->getWidth();
-    camera_properties.height = camera->getHeight();
-    camera_properties.optical_center.x = camera_properties.width / 2;
-    camera_properties.optical_center.y = camera_properties.height / 2;
-    camera_properties.degrees_per_pixel.x = camera_properties.fov.x / camera_properties.width;
-    camera_properties.degrees_per_pixel.y = camera_properties.fov.y / camera_properties.height;
-    camera_properties.camera_optical_to_base_link_tf = camera_optical_to_base_link_tf;
 
     // TODO what do the scalars do?
-    image_gs = new cv::Mat(camera->getHeight(), camera->getWidth(), CV_8UC1, cv::Scalar(69,42,200));
-  }
 
-  AprilTagTracker::AprilTagTracker(sensor_msgs::CameraInfo camera_info, raspicam::RaspiCam *camera,
-                                   boost::mutex *camera_mutex, std::vector<TagInfo> *tag_info,
-                                   tf2::Transform camera_optical_to_base_link_tf)
-      : AprilTagTracker::AprilTagTracker(camera, camera_mutex, tag_info, camera_optical_to_base_link_tf)
-  {
-    this->camera_properties.width = camera_info.width;
-    this->camera_properties.height = camera_info.height;
-    this->camera_properties.binning_x = camera_info.binning_x;
-    this->camera_properties.binning_y = camera_info.binning_y;
-    for (int i = 0; i < camera_info.D.size(); i++)
-    {
-      this->camera_properties.D.push_back(camera_info.D[i]);
-    }
-    for (int i = 0; i < 9; i++)
-    {
-      this->camera_properties.K.val[i] = camera_info.K[i];
-      this->camera_properties.R.val[i] = camera_info.R[i];
-    }
-    for (int i = 0; i < 12; i++)
-    {
-      this->camera_properties.P.val[i] = camera_info.P[i];
-    }
+    this->camera = camera;
   }
 
   AprilTagTracker::~AprilTagTracker()
   {
-    delete image_gs;
     delete servo;
     delete tag_family;
     delete tag_detector;
@@ -86,7 +46,7 @@ namespace AprilTagTracker
 
     cv::Mat rvec, tvec;
     // TODO make sure the properties are accurate
-    cv::solvePnP(objPts, imgPts, camera_properties.K, camera_properties.D, rvec, tvec);
+    cv::solvePnP(objPts, imgPts, camera->getK(), camera->getD(), rvec, tvec);
     cv::Matx33d r;
     cv::Rodrigues(rvec, r);
     Eigen::Matrix3d wRo;
@@ -100,7 +60,7 @@ namespace AprilTagTracker
     return T;
   }
 
-  void AprilTagTracker::drawDetections(cv::Mat *image)
+  void AprilTagTracker::drawDetections()
   {
     cv::Point2d *p;
     cv::Point2d cxy;
@@ -112,6 +72,7 @@ namespace AprilTagTracker
       id = tag_detections[i].id;
 
       // plot outline
+      cv::Mat *image = camera->getImagePtr();
       cv::line(*image, p[0], p[1], cv::Scalar(255,0,0,0) );
       cv::line(*image, p[1], p[2], cv::Scalar(0,255,0,0) );
       cv::line(*image, p[2], p[3], cv::Scalar(0,0,255,0) );
@@ -129,24 +90,10 @@ namespace AprilTagTracker
     }
   }
 
-void AprilTagTracker::getImage()
-{
-  camera_mutex->lock();
-  camera->grab();
-  capture_time = ros::Time::now();
-  camera->retrieve(image_gs->data);
-  camera_mutex->unlock();
-}
-
-void AprilTagTracker::getImage(cv::Mat *image)
-{
-  AprilTagTracker::getImage();
-  image = image_gs; // Return result
-}
-
 void AprilTagTracker::processImage()
 {
-  tag_detector->process(*image_gs, camera_properties.optical_center, tag_detections);
+  // TODO there is a full image copy here, see if we can pass by reference
+  tag_detector->process(camera->getImage(), camera->getOpticalCenter(), tag_detections);
 }
 
 void AprilTagTracker::adjustServo()
@@ -154,8 +101,8 @@ void AprilTagTracker::adjustServo()
   // TODO implement using multiple tags
   if (tag_detections.size() == 1)
   {
-    double difference = tag_detections[0].cxy.x - camera_properties.width / 2;
-    double rotation = camera_properties.degrees_per_pixel.x * difference / servo->resolution;
+    double difference = tag_detections[0].cxy.x - camera->getWidth() / 2;
+    double rotation = camera->getDegreesPerPixel().x * difference / servo->resolution;
     uint16_t position;
     servo->getPosition(&position);
     std::cout << "Original position: " << position;
@@ -182,7 +129,7 @@ void AprilTagTracker::calculateTransforms(apriltag_tracker::AprilTagDetectionArr
         apriltag_tracker::AprilTagDetection tag_detection;
         tag_detection.id = (int)tag_detections[i].id;
         tag_detection.size = (*tag_info)[j].size;
-        tag_detection.transform.header.stamp = capture_time;
+        tag_detection.transform.header.stamp = camera->getCaptureTime();
         tag_detection.transform.header.seq = (*tag_info)[j].seq++;
         tag_detection.transform.header.frame_id = "camera_optical";
         tag_detection.transform.child_frame_id = std::string("tag") + std::to_string(tag_detections[i].id) + "_estimate";
@@ -210,12 +157,11 @@ void AprilTagTracker::calculateTransforms(apriltag_tracker::AprilTagDetectionArr
 void AprilTagTracker::estimateRobotPose(geometry_msgs::TransformStamped *pose_estimate_msg)
 {
 
-  tf2::Transform pose_estimate = (*tag_info)[0].map_to_tag_tf * (*tag_info)[0].tag_transform.inverse()
-                                 * camera_properties.camera_optical_to_base_link_tf;
+  tf2::Transform pose_estimate = (*tag_info)[0].map_to_tag_tf * (*tag_info)[0].tag_transform.inverse();
+                                 //* camera_optical_to_base_link_tf; TODO add back
   tf2::Stamped<tf2::Transform> pose_estimate_stamped(pose_estimate, (*tag_info)[0].tag_transform.stamp_, "map");
   *pose_estimate_msg = tf2::toMsg(pose_estimate_stamped);
   pose_estimate_msg->child_frame_id = "apriltag_tracker_pose_estimate";
-
 }
 
 void AprilTagTracker::outputTimingInfo()
