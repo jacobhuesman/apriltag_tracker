@@ -16,7 +16,6 @@
 
 #include <apriltag_tracker.h>
 #include <raspicam/raspicamtypes.h>
-#include <apriltag_tracker/AprilTagTrackerConfig.h>
 
 
 struct Publishers
