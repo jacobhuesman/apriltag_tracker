@@ -34,9 +34,10 @@ generate_messages(DEPENDENCIES
     geometry_msgs
 )
 
+
 generate_dynamic_reconfigure_options(
-    cfg/tftest.cfg
-    cfg/apriltag_tracker.cfg
+    cfg/TFTest.cfg
+    cfg/DynamicCamera.cfg
 )
 
 catkin_package(
@@ -65,7 +66,6 @@ target_link_libraries(Camera ${OpenCV_LIBS})
 
 add_library(AprilTagTracker src/apriltag_tracker.cpp)
 add_dependencies(AprilTagTracker ${${PROJECT_NAME}_EXPORTED_TARGETS})
-add_dependencies(AprilTagTracker ${PROJECT_NAME}_gencfg)
 target_link_libraries(AprilTagTracker raspicam ${raspicam_LIBS})
 target_link_libraries(AprilTagTracker ${Eigen3_LIBS})
 target_link_libraries(AprilTagTracker ${catkin_LIBRARIES})
@@ -76,6 +76,8 @@ target_link_libraries(AprilTagTracker Camera)
 
 add_library(HostCommLayer src/host_comm_layer.cpp)
 target_link_libraries(HostCommLayer mraa)
+target_link_libraries(HostCommLayer ${catkin_LIBRARIES})
+
 
 add_executable(apriltag_tracker src/apriltag_tracker_node.cpp)
 add_dependencies(apriltag_tracker ${${PROJECT_NAME}_EXPORTED_TARGETS})

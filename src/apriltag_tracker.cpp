@@ -5,7 +5,8 @@
 
 namespace AprilTagTracker
 {
-  AprilTagTracker::AprilTagTracker(apriltag_tracker::Camera *camera, std::vector<TagInfo> *tag_info, tf2::Transform camera_optical_to_base_link_tf)
+  AprilTagTracker::AprilTagTracker(apriltag_tracker::Camera *camera, HostCommLayer::Dynamixel *servo,
+                                   std::vector<TagInfo> *tag_info, tf2::Transform camera_optical_to_base_link_tf)
   {
     tag_params.newQuadAlgorithm = true;
     //tag_params.adaptiveThresholdValue = 12; //TODO figure out what this means and parameterize
@@ -13,8 +14,7 @@ namespace AprilTagTracker
     tag_family = new TagFamily("Tag36h11");
     tag_detector = new TagDetector(*tag_family, tag_params);
 
-    servo = new HostCommLayer::Dynamixel(0x11);
-
+    this->servo = servo;
     this->tag_info = tag_info;
 
     // TODO what do the scalars do?
@@ -24,7 +24,6 @@ namespace AprilTagTracker
 
   AprilTagTracker::~AprilTagTracker()
   {
-    delete servo;
     delete tag_family;
     delete tag_detector;
   }
@@ -103,11 +102,7 @@ void AprilTagTracker::adjustServo()
   {
     double difference = tag_detections[0].cxy.x - camera->getWidth() / 2;
     double rotation = camera->getDegreesPerPixel().x * difference / servo->resolution;
-    uint16_t position;
-    servo->getPosition(&position);
-    std::cout << "Original position: " << position;
-    servo->setPosition((uint16_t)((double)position - rotation));
-    std::cout << ", corrected position: " << position - rotation << std::endl;
+    uint16_t position = servo->adjustServo(-(int16_t)rotation);
   }
 }
 

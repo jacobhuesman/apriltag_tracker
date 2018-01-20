@@ -98,11 +98,11 @@ void initializeTagInfoVector(std::vector<AprilTagTracker::TagInfo> *tag_info)
 
 
 // TODO hold tfs in tracker object
-void trackerThread(ros::NodeHandle nh, apriltag_tracker::Camera *camera, uint8_t thread_id,
-                   tf2::Transform camera_optical_to_base_link_tf)
+void trackerThread(ros::NodeHandle nh, apriltag_tracker::Camera *camera, HostCommLayer::Dynamixel *servo,
+                   uint8_t thread_id, tf2::Transform camera_optical_to_base_link_tf)
 {
   timing_mutex.lock();
-  AprilTagTracker::AprilTagTracker tracker(camera, tag_info, camera_optical_to_base_link_tf);
+  AprilTagTracker::AprilTagTracker tracker(camera, servo, tag_info, camera_optical_to_base_link_tf);
 
   // Timing info
   std::chrono::system_clock::time_point time_stamp[12];
@@ -125,7 +125,7 @@ void trackerThread(ros::NodeHandle nh, apriltag_tracker::Camera *camera, uint8_t
     time_stamp[1] = std::chrono::system_clock::now();
     tracker.processImage();
     time_stamp[2] = std::chrono::system_clock::now();
-    //tracker.adjustServo();
+    tracker.adjustServo();
 
     // Send Transforms
     time_stamp[3] = std::chrono::system_clock::now();
@@ -245,6 +245,9 @@ int main(int argc, char **argv)
   transform_msg = tfBuffer.lookupTransform("camera_optical", "base_link", ros::Time(0));
   tf2::fromMsg(transform_msg, camera_optical_to_base_link_tf);
 
+  // Initialize servo
+  HostCommLayer::Dynamixel *servo = new HostCommLayer::Dynamixel(0x11);
+
   // Initialize Camera Objects
   apriltag_tracker::CameraMaster camera_master(nh);
   apriltag_tracker::Camera *camera0 = camera_master.generateCameraObject();
@@ -253,10 +256,10 @@ int main(int argc, char **argv)
   apriltag_tracker::Camera *camera3 = camera_master.generateCameraObject();
 
   // Start threads
-  boost::thread thread0(trackerThread, nh, camera0, 0, camera_optical_to_base_link_tf);
-  boost::thread thread1(trackerThread, nh, camera1, 1, camera_optical_to_base_link_tf);
-  boost::thread thread2(trackerThread, nh, camera2, 2, camera_optical_to_base_link_tf);
-  boost::thread thread3(trackerThread, nh, camera3, 3, camera_optical_to_base_link_tf);
+  boost::thread thread0(trackerThread, nh, camera0, servo, 0, camera_optical_to_base_link_tf);
+  boost::thread thread1(trackerThread, nh, camera1, servo, 1, camera_optical_to_base_link_tf);
+  boost::thread thread2(trackerThread, nh, camera2, servo, 2, camera_optical_to_base_link_tf);
+  boost::thread thread3(trackerThread, nh, camera3, servo, 3, camera_optical_to_base_link_tf);
 
   ros::spin();
 

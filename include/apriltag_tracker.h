@@ -42,7 +42,7 @@ struct TagInfo
 class AprilTagTracker
 {
 public:
-  AprilTagTracker(apriltag_tracker::Camera *camera, std::vector<TagInfo> *tag_info,
+  AprilTagTracker(apriltag_tracker::Camera *camera, HostCommLayer::Dynamixel *servo, std::vector<TagInfo> *tag_info,
                   tf2::Transform camera_optical_to_base_link_tf);
   ~AprilTagTracker();
 

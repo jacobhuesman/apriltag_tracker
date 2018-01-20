@@ -126,5 +126,29 @@ uint8_t Dynamixel::getTestMessage(CLMessage32 *test_msg)
   return CL_OK;
 }
 
+uint16_t  Dynamixel::adjustServo(int16_t adjustment)
+{
+  mutex.lock();
+  uint16_t current_position;
+  getPosition(&current_position);
+  //std::cout << "Current_position: " << current_position;
+  int16_t next_position = current_position + adjustment;
+  if (next_position > 1024)
+  {
+    setPosition(1024);
+  }
+  else if (next_position < 0)
+  {
+    setPosition(0);
+  }
+  else
+  {
+    setPosition((uint16_t)next_position);
+  }
+  //std::cout << ", next_position: " << next_position << std::endl;
+  mutex.unlock();
+  return current_position;
+}
+
 }
 
