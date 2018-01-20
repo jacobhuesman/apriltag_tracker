@@ -10,6 +10,7 @@
 #include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <camera_info_manager/camera_info_manager.h>
+#include <dynamic_reconfigure/server.h>
 
 #include <apriltag_tracker/AprilTagDetection.h>
 #include <apriltag_tracker/AprilTagDetectionArray.h>
@@ -17,6 +18,7 @@
 
 #include <apriltag_tracker.h>
 #include <raspicam/raspicamtypes.h>
+#include <apriltag_tracker/AprilTagTrackerConfig.h>
 
 
 raspicam::RaspiCam *camera;
@@ -51,8 +53,16 @@ void initializeTagInfoVector(std::vector<AprilTagTracker::TagInfo> *tag_info)
   tf2_ros::Buffer tfBuffer;
   tf2_ros::TransformListener tfListener(tfBuffer);
 
-  // Tag 1
+  // Tag 4
   AprilTagTracker::TagInfo tag;
+  tag.id = 4;
+  tag.seq = 0;
+  tag.priority = 0;
+  tag.size = 0.203;
+  tag.mutex = new boost::mutex;
+  tag_info->push_back(tag);
+
+  // Tag 1
   tag.id = 1;
   tag.seq = 0;
   tag.priority = 0;
@@ -62,14 +72,6 @@ void initializeTagInfoVector(std::vector<AprilTagTracker::TagInfo> *tag_info)
 
   // Tag 3
   tag.id = 3;
-  tag.seq = 0;
-  tag.priority = 0;
-  tag.size = 0.203;
-  tag.mutex = new boost::mutex;
-  tag_info->push_back(tag);
-
-  // Tag 4
-  tag.id = 4;
   tag.seq = 0;
   tag.priority = 0;
   tag.size = 0.203;
@@ -96,9 +98,30 @@ void initializeTagInfoVector(std::vector<AprilTagTracker::TagInfo> *tag_info)
     transform_msg = tfBuffer.lookupTransform("map", tag_name, ros::Time(0));
     tf2::fromMsg(transform_msg.transform, (*tag_info)[i].map_to_tag_tf);
   }
+}
 
-
-
+// TODO add setCaptureSize?
+void reconfigureCallback(apriltag_tracker::AprilTagTrackerConfig &config, uint32_t level) {
+  ROS_INFO("Reconfigure - Height: %d,  Width: %d, Brightness: %d, Contrast: %d, Shutter Speed: %d, "
+               "Video Stabilization: %s",
+           config.height, config.width, config.brightness, config.contrast,
+           config.shutter_speed, config.video_stabilization?"True":"False");
+  camera_mutex->lock();
+  camera->release();
+  camera->setWidth(AprilTagTracker::CameraWidth[config.width]);
+  camera->setHeight(AprilTagTracker::CameraHeight[config.height]);
+  camera->setShutterSpeed((unsigned int)config.shutter_speed);
+  camera->setBrightness((unsigned int)config.brightness);
+  camera->setContrast((unsigned int)config.contrast);
+  camera->setVideoStabilization(config.video_stabilization);
+  camera->open();
+  while(!camera->isOpened()) // TODO add failure condition
+  {
+    std::cout << "Unable to open camera, waiting 0.5 seconds and trying again..." << std::endl;
+    usleep(500000);
+    camera->open();
+  }
+  camera_mutex->unlock();
 }
 
 void trackerThread(ros::NodeHandle nh, sensor_msgs::CameraInfo camera_info, uint8_t thread_id,
@@ -216,6 +239,27 @@ void trackerThread(ros::NodeHandle nh, sensor_msgs::CameraInfo camera_info, uint
 
 int main(int argc, char **argv)
 {
+  // Initialize camera
+  // TODO parametrize and load from camera calibration
+  // TODO wrap camera and camera parameters together in a class
+  camera_mutex = new boost::mutex;
+  camera = new raspicam::RaspiCam;
+  camera->setWidth(640);
+  camera->setHeight(480);
+  camera->setShutterSpeed(8000); // 10000, 8000
+  camera->setBrightness(80);  // 70, 80
+  camera->setContrast(100);    // 100
+  camera->setVideoStabilization(true);
+  camera->setFormat(raspicam::RASPICAM_FORMAT_GRAY);
+  camera->setRotation(180);
+  camera->open();
+  while(!camera->isOpened()) // TODO add failure condition
+  {
+    std::cout << "Unable to open camera, waiting 0.5 seconds and trying again..." << std::endl;
+    usleep(500000);
+    camera->open();
+  }
+
   // Initialize ROS
   ros::init(argc, argv, "apriltag_detector");
   ros::NodeHandle nh;
@@ -227,6 +271,11 @@ int main(int argc, char **argv)
   pubs->diagnostics = nh.advertise<apriltag_tracker::ATTDiagnostics>("diagnostics", 1);
   pubs->image = it.advertise("camera_image", 1);
   pubs->detections_image = it.advertise("tag_detections_image", 1);
+
+  dynamic_reconfigure::Server<apriltag_tracker::AprilTagTrackerConfig> server;
+  dynamic_reconfigure::Server<apriltag_tracker::AprilTagTrackerConfig>::CallbackType f;
+  f = boost::bind(&reconfigureCallback, _1, _2);
+  server.setCallback(f);
 
   // Initialize tags
   tag_info = new std::vector<AprilTagTracker::TagInfo>;
@@ -258,32 +307,14 @@ int main(int argc, char **argv)
     ROS_WARN("Using uncalibrated camera!");
   }
 
-  // Initialize camera
-  // TODO parametrize and load from camera calibration
-  // TODO wrap camera and camera parameters together in a class
-  camera = new raspicam::RaspiCam;
-  camera->setWidth(640);
-  camera->setHeight(480);
-  camera->setShutterSpeed(8000); // 10000, 8000
-  camera->setBrightness(80);  // 70, 80
-  camera->setContrast(100);    // 100
-  camera->setVideoStabilization(true);
-  camera->setFormat(raspicam::RASPICAM_FORMAT_GRAY);
-  camera->setRotation(180);
-  camera->open();
-  while(!camera->isOpened()) // TODO add failure condition
-  {
-    std::cout << "Unable to open camera, waiting 0.5 seconds and trying again..." << std::endl;
-    usleep(500000);
-    camera->open();
-  }
-
   // Start threads
-  camera_mutex = new boost::mutex;
   boost::thread thread0(trackerThread, nh, camera_info.getCameraInfo(), 0, camera_optical_to_base_link_tf);
   boost::thread thread1(trackerThread, nh, camera_info.getCameraInfo(), 1, camera_optical_to_base_link_tf);
   boost::thread thread2(trackerThread, nh, camera_info.getCameraInfo(), 2, camera_optical_to_base_link_tf);
   boost::thread thread3(trackerThread, nh, camera_info.getCameraInfo(), 3, camera_optical_to_base_link_tf);
+
+  ros::spin();
+
   thread0.join();
   thread1.join();
   thread2.join();

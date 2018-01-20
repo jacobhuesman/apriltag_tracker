@@ -36,6 +36,7 @@ generate_messages(DEPENDENCIES
 
 generate_dynamic_reconfigure_options(
     cfg/tftest.cfg
+    cfg/apriltag_tracker.cfg
 )
 
 catkin_package(
@@ -57,6 +58,7 @@ include_directories(include)
 
 add_library(AprilTagTracker src/apriltag_tracker.cpp)
 add_dependencies(AprilTagTracker ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(AprilTagTracker ${PROJECT_NAME}_gencfg)
 target_link_libraries(AprilTagTracker raspicam ${raspicam_LIBS})
 target_link_libraries(AprilTagTracker ${Eigen3_LIBS})
 target_link_libraries(AprilTagTracker ${catkin_LIBRARIES})
