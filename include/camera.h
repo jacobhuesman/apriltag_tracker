@@ -10,6 +10,8 @@
 #include <ros/ros.h>
 #include <camera_info_manager/camera_info_manager.h>
 #include <apriltag_tracker/AprilTagTrackerConfig.h>
+#include <dynamic_reconfigure/server.h>
+
 
 
 namespace apriltag_tracker {
@@ -58,9 +60,11 @@ public:
   uint32_t getHeight();
   sensor_msgs::ImagePtr getImageMsg();
   ros::Time getCaptureTime();
-
   cv::Mat getImage();
   cv::Mat* getImagePtr();
+
+  void setupCapture();
+
 
 private:
   // Shared objects
@@ -71,8 +75,6 @@ private:
 
   // Private objects
   cv_bridge::CvImage *capture;
-
-  void setupCapture();
 };
 
 
@@ -86,11 +88,14 @@ private:
   raspicam::RaspiCam *camera;
   boost::mutex *camera_mutex;
   CameraProperties *properties;
+  std::vector<apriltag_tracker::Camera*> cameras;
 
   camera_info_manager::CameraInfoManager *manager_camera_info;
+  dynamic_reconfigure::Server<apriltag_tracker::AprilTagTrackerConfig> *server;
 
   void setupCamera();
   void setupProperties();
+  void reconfigureCallback(apriltag_tracker::AprilTagTrackerConfig &config, uint32_t level);
 };
 
 }

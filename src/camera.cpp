@@ -4,16 +4,51 @@ namespace apriltag_tracker {
 
 CameraMaster::CameraMaster(ros::NodeHandle nh)
 {
-  // TODO update depending on camera and config
-  std::string info_path = "package://apriltag_tracker/calibrations/${NAME}.yaml";
-  manager_camera_info = new camera_info_manager::CameraInfoManager(nh, "camera", info_path);
-
   camera_mutex = new boost::mutex;
   camera = new raspicam::RaspiCam;
   properties = new CameraProperties;
 
   setupCamera();
+
+  // TODO update depending on camera and config
+  std::string info_path = "package://apriltag_tracker/calibrations/${NAME}.yaml";
+  manager_camera_info = new camera_info_manager::CameraInfoManager(nh, "camera", info_path);
+
+  server = new dynamic_reconfigure::Server<apriltag_tracker::AprilTagTrackerConfig>;
+  dynamic_reconfigure::Server<apriltag_tracker::AprilTagTrackerConfig>::CallbackType f;
+  f = boost::bind(&CameraMaster::reconfigureCallback, this, _1, _2 );
+  server->setCallback(f);
+
   setupProperties();
+}
+
+// TODO add setCaptureSize?
+void CameraMaster::reconfigureCallback(apriltag_tracker::AprilTagTrackerConfig &config, uint32_t level) {
+  ROS_INFO("Reconfigure - Height: %d,  Width: %d, Brightness: %d, Contrast: %d, Shutter Speed: %d, "
+               "Video Stabilization: %s",
+           config.height, config.width, config.brightness, config.contrast,
+           config.shutter_speed, config.video_stabilization?"True":"False");
+  camera_mutex->lock();
+  camera->release(); // TODO check to see if releasing the camera is necessary
+  camera->setWidth(CameraWidth[config.width]);
+  camera->setHeight(CameraHeight[config.height]);
+  camera->setShutterSpeed((unsigned int)config.shutter_speed);
+  camera->setBrightness((unsigned int)config.brightness);
+  camera->setContrast((unsigned int)config.contrast);
+  camera->setVideoStabilization(config.video_stabilization);
+  camera->open();
+  while(!camera->isOpened()) // TODO add failure condition
+  {
+    std::cout << "Unable to open camera, waiting 0.5 seconds and trying again..." << std::endl;
+    usleep(500000);
+    camera->open();
+  }
+  setupProperties();
+  for (int i = 0; i < cameras.size(); i++)
+  {
+    cameras[i]->setupCapture();
+  }
+  camera_mutex->unlock();
 }
 
 void CameraMaster::setupCamera()
@@ -67,9 +102,12 @@ void CameraMaster::setupProperties()
 
     this->properties->binning_x = camera_info.binning_x;
     this->properties->binning_y = camera_info.binning_y;
+    if (this->properties->D.size() != camera_info.D.size()){
+      this->properties->D.resize(camera_info.D.size());
+    }
     for (int i = 0; i < camera_info.D.size(); i++)
     {
-      this->properties->D.push_back(camera_info.D[i]);
+      this->properties->D[i] = camera_info.D[i];
     }
     for (int i = 0; i < 9; i++)
     {
@@ -85,7 +123,8 @@ void CameraMaster::setupProperties()
 
 Camera* CameraMaster::generateCameraObject()
 {
-  return new Camera(this->camera, camera_mutex, properties);
+  cameras.push_back(new Camera(this->camera, camera_mutex, properties));
+  return cameras.back();
 }
 
 Camera::Camera(raspicam::RaspiCam *camera, boost::mutex *camera_mutex,
