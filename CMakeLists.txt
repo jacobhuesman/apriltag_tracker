@@ -88,9 +88,9 @@ target_link_libraries(i2c_test HostCommLayer)
 
 add_executable(speed_test src/util/speed_test.cpp)
 
-add_executable(tf_test src/util/tf_test.cpp)
-add_dependencies(tf_test ${PROJECT_NAME}_gencfg)
-target_link_libraries(tf_test ${catkin_LIBRARIES})
+#add_executable(tf_test src/util/tf_test.cpp)
+#add_dependencies(tf_test ${PROJECT_NAME}_gencfg)
+#target_link_libraries(tf_test ${catkin_LIBRARIES})
 
 add_executable(transform_cache_test src/util/transform_cache_test.cpp)
 target_link_libraries(transform_cache_test ${catkin_LIBRARIES})

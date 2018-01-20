@@ -9,7 +9,7 @@
 #include <cv_bridge/cv_bridge.h>
 #include <ros/ros.h>
 #include <camera_info_manager/camera_info_manager.h>
-#include <apriltag_tracker/AprilTagTrackerConfig.h>
+#include <apriltag_tracker/DynamicCameraConfig.h>
 #include <dynamic_reconfigure/server.h>
 
 
@@ -91,11 +91,11 @@ private:
   std::vector<apriltag_tracker::Camera*> cameras;
 
   camera_info_manager::CameraInfoManager *manager_camera_info;
-  dynamic_reconfigure::Server<apriltag_tracker::AprilTagTrackerConfig> *server;
+  dynamic_reconfigure::Server<apriltag_tracker::DynamicCameraConfig> *server;
 
   void setupCamera();
   void setupProperties();
-  void reconfigureCallback(apriltag_tracker::AprilTagTrackerConfig &config, uint32_t level);
+  void reconfigureCallback(apriltag_tracker::DynamicCameraConfig &config, uint32_t level);
 };
 
 }

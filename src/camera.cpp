@@ -14,8 +14,8 @@ CameraMaster::CameraMaster(ros::NodeHandle nh)
   std::string info_path = "package://apriltag_tracker/calibrations/${NAME}.yaml";
   manager_camera_info = new camera_info_manager::CameraInfoManager(nh, "camera", info_path);
 
-  server = new dynamic_reconfigure::Server<apriltag_tracker::AprilTagTrackerConfig>;
-  dynamic_reconfigure::Server<apriltag_tracker::AprilTagTrackerConfig>::CallbackType f;
+  server = new dynamic_reconfigure::Server<apriltag_tracker::DynamicCameraConfig>;
+  dynamic_reconfigure::Server<apriltag_tracker::DynamicCameraConfig>::CallbackType f;
   f = boost::bind(&CameraMaster::reconfigureCallback, this, _1, _2 );
   server->setCallback(f);
 
@@ -23,18 +23,31 @@ CameraMaster::CameraMaster(ros::NodeHandle nh)
 }
 
 // TODO add setCaptureSize?
-void CameraMaster::reconfigureCallback(apriltag_tracker::AprilTagTrackerConfig &config, uint32_t level) {
+void CameraMaster::reconfigureCallback(apriltag_tracker::DynamicCameraConfig &config, uint32_t level) {
   ROS_INFO("Reconfigure - Height: %d,  Width: %d, Brightness: %d, Contrast: %d, Shutter Speed: %d, "
-               "Video Stabilization: %s",
+               "FPS: %d, Video Stabilization: %s",
            config.height, config.width, config.brightness, config.contrast,
-           config.shutter_speed, config.video_stabilization?"True":"False");
+           config.shutter_speed, config.fps, config.video_stabilization?"True":"False");
   camera_mutex->lock();
   camera->release(); // TODO check to see if releasing the camera is necessary
   camera->setWidth(CameraWidth[config.width]);
   camera->setHeight(CameraHeight[config.height]);
-  camera->setShutterSpeed((unsigned int)config.shutter_speed);
-  camera->setBrightness((unsigned int)config.brightness);
-  camera->setContrast((unsigned int)config.contrast);
+  if (config.shutter_speed != -1)
+  {
+    camera->setShutterSpeed((unsigned int)config.shutter_speed);
+  }
+  if (config.brightness != -1)
+  {
+    camera->setBrightness((unsigned int)config.brightness);
+  }
+  if (config.contrast != -1)
+  {
+    camera->setContrast((unsigned int)config.contrast);
+  }
+  if (config.fps != -1)
+  {
+    camera->setFrameRate((unsigned int)config.fps);
+  }
   camera->setVideoStabilization(config.video_stabilization);
   camera->open();
   while(!camera->isOpened()) // TODO add failure condition
@@ -58,12 +71,6 @@ void CameraMaster::setupCamera()
   {
     camera->release();
   }
-  camera->setWidth(640);
-  camera->setHeight(480);
-  camera->setShutterSpeed(8000); // 10000, 8000
-  camera->setBrightness(80);  // 70, 80
-  camera->setContrast(100);    // 100
-  camera->setVideoStabilization(true);
   camera->setFormat(raspicam::RASPICAM_FORMAT_GRAY);
   camera->setRotation(180);
   camera->open();
