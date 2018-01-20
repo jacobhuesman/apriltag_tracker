@@ -36,6 +36,7 @@ generate_messages(DEPENDENCIES
 
 generate_dynamic_reconfigure_options(
     cfg/tftest.cfg
+    cfg/apriltag_tracker.cfg
 )
 
 catkin_package(
@@ -55,14 +56,23 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(${catkin_INCLUDE_DIRS})
 include_directories(include)
 
+add_library(Camera src/camera.cpp)
+add_dependencies(Camera ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(Camera ${PROJECT_NAME}_gencfg)
+target_link_libraries(Camera raspicam ${raspicam_LIBS})
+target_link_libraries(Camera ${catkin_LIBRARIES})
+target_link_libraries(Camera ${OpenCV_LIBS})
+
 add_library(AprilTagTracker src/apriltag_tracker.cpp)
 add_dependencies(AprilTagTracker ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(AprilTagTracker ${PROJECT_NAME}_gencfg)
 target_link_libraries(AprilTagTracker raspicam ${raspicam_LIBS})
 target_link_libraries(AprilTagTracker ${Eigen3_LIBS})
 target_link_libraries(AprilTagTracker ${catkin_LIBRARIES})
 target_link_libraries(AprilTagTracker ${OpenCV_LIBS})
 target_link_libraries(AprilTagTracker apriltags)
 target_link_libraries(AprilTagTracker HostCommLayer)
+target_link_libraries(AprilTagTracker Camera)
 
 add_library(HostCommLayer src/host_comm_layer.cpp)
 target_link_libraries(HostCommLayer mraa)
@@ -78,9 +88,9 @@ target_link_libraries(i2c_test HostCommLayer)
 
 add_executable(speed_test src/util/speed_test.cpp)
 
-add_executable(tf_test src/util/tf_test.cpp)
-add_dependencies(tf_test ${PROJECT_NAME}_gencfg)
-target_link_libraries(tf_test ${catkin_LIBRARIES})
+#add_executable(tf_test src/util/tf_test.cpp)
+#add_dependencies(tf_test ${PROJECT_NAME}_gencfg)
+#target_link_libraries(tf_test ${catkin_LIBRARIES})
 
 add_executable(transform_cache_test src/util/transform_cache_test.cpp)
 target_link_libraries(transform_cache_test ${catkin_LIBRARIES})

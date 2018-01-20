@@ -9,7 +9,6 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include <camera_info_manager/camera_info_manager.h>
 
 #include <apriltag_tracker/AprilTagDetection.h>
 #include <apriltag_tracker/AprilTagDetectionArray.h>
@@ -17,10 +16,8 @@
 
 #include <apriltag_tracker.h>
 #include <raspicam/raspicamtypes.h>
+#include <apriltag_tracker/AprilTagTrackerConfig.h>
 
-
-raspicam::RaspiCam *camera;
-boost::mutex *camera_mutex;
 
 struct Publishers
 {
@@ -46,13 +43,22 @@ const bool publish_pose_estimate = true;
 
 std::vector<AprilTagTracker::TagInfo> *tag_info;
 
+// TODO use some kind of xml and load from there
 void initializeTagInfoVector(std::vector<AprilTagTracker::TagInfo> *tag_info)
 {
   tf2_ros::Buffer tfBuffer;
   tf2_ros::TransformListener tfListener(tfBuffer);
 
-  // Tag 1
+  // Tag 4
   AprilTagTracker::TagInfo tag;
+  tag.id = 4;
+  tag.seq = 0;
+  tag.priority = 0;
+  tag.size = 0.203;
+  tag.mutex = new boost::mutex;
+  tag_info->push_back(tag);
+
+  // Tag 1
   tag.id = 1;
   tag.seq = 0;
   tag.priority = 0;
@@ -62,14 +68,6 @@ void initializeTagInfoVector(std::vector<AprilTagTracker::TagInfo> *tag_info)
 
   // Tag 3
   tag.id = 3;
-  tag.seq = 0;
-  tag.priority = 0;
-  tag.size = 0.203;
-  tag.mutex = new boost::mutex;
-  tag_info->push_back(tag);
-
-  // Tag 4
-  tag.id = 4;
   tag.seq = 0;
   tag.priority = 0;
   tag.size = 0.203;
@@ -96,20 +94,15 @@ void initializeTagInfoVector(std::vector<AprilTagTracker::TagInfo> *tag_info)
     transform_msg = tfBuffer.lookupTransform("map", tag_name, ros::Time(0));
     tf2::fromMsg(transform_msg.transform, (*tag_info)[i].map_to_tag_tf);
   }
-
-
-
 }
 
-void trackerThread(ros::NodeHandle nh, sensor_msgs::CameraInfo camera_info, uint8_t thread_id,
+
+// TODO hold tfs in tracker object
+void trackerThread(ros::NodeHandle nh, apriltag_tracker::Camera *camera, uint8_t thread_id,
                    tf2::Transform camera_optical_to_base_link_tf)
 {
   timing_mutex.lock();
-  AprilTagTracker::AprilTagTracker tracker(camera_info, camera, camera_mutex, tag_info, camera_optical_to_base_link_tf);
-
-  std_msgs::Header image_header;
-  image_header.frame_id = "camera";
-  cv_bridge::CvImage cv_bridge_image(image_header, sensor_msgs::image_encodings::MONO8, *tracker.image_gs);
+  AprilTagTracker::AprilTagTracker tracker(camera, tag_info, camera_optical_to_base_link_tf);
 
   // Timing info
   std::chrono::system_clock::time_point time_stamp[12];
@@ -124,7 +117,7 @@ void trackerThread(ros::NodeHandle nh, sensor_msgs::CameraInfo camera_info, uint
   {
     // Get image, process it, and track
     time_stamp[0] = std::chrono::system_clock::now();
-    tracker.getImage();
+    tracker.camera->grabImage();
     timing_mutex.lock();
     global_time_stamp[1] = global_time_stamp[0];
     global_time_stamp[0] = std::chrono::system_clock::now();
@@ -154,12 +147,12 @@ void trackerThread(ros::NodeHandle nh, sensor_msgs::CameraInfo camera_info, uint
     time_stamp[6] = std::chrono::system_clock::now();
     if (publish_plain_image)
     {
-      pubs->image.publish(cv_bridge_image.toImageMsg());
+      pubs->image.publish(tracker.camera->getImageMsg());
     }
     time_stamp[7] = std::chrono::system_clock::now();
-    tracker.drawDetections(tracker.image_gs);
+    tracker.drawDetections();
     time_stamp[8] = std::chrono::system_clock::now();
-    pubs->detections_image.publish(cv_bridge_image.toImageMsg());
+    pubs->detections_image.publish(tracker.camera->getImageMsg());
 
     time_stamp[9] = std::chrono::system_clock::now();
     ros::spinOnce();
@@ -175,7 +168,7 @@ void trackerThread(ros::NodeHandle nh, sensor_msgs::CameraInfo camera_info, uint
     calc_time[11] = std::chrono::duration_cast<std::chrono::microseconds>(time_stamp[10] - time_stamp[1]);
     running_count += calc_time[11].count();
     iterations++;
-    diagnostics.local_timing.image_capture_time       = cv_bridge_image.header.stamp;
+    diagnostics.local_timing.image_capture_time       = camera->getCaptureTime();
     diagnostics.local_timing.get_image                = calc_time[0].count();
     diagnostics.local_timing.process_image            = calc_time[1].count();
     diagnostics.local_timing.adjust_servo             = calc_time[2].count();
@@ -219,8 +212,7 @@ int main(int argc, char **argv)
   // Initialize ROS
   ros::init(argc, argv, "apriltag_detector");
   ros::NodeHandle nh;
-  camera_info_manager::CameraInfoManager camera_info(nh, "camera",
-                                                     "package://apriltag_tracker/calibrations/${NAME}.yaml");
+
   image_transport::ImageTransport it(nh);
   pubs = new Publishers;
   pubs->detections = nh.advertise<apriltag_tracker::AprilTagDetectionArray>("tag_detections", 1);
@@ -233,6 +225,7 @@ int main(int argc, char **argv)
   initializeTagInfoVector(tag_info);
 
   // Get camera_transform
+  // TODO separate into own class
   tf2_ros::Buffer tfBuffer;
   tf2_ros::TransformListener tfListener(tfBuffer);
   bool transformed;
@@ -252,38 +245,21 @@ int main(int argc, char **argv)
   transform_msg = tfBuffer.lookupTransform("camera_optical", "base_link", ros::Time(0));
   tf2::fromMsg(transform_msg, camera_optical_to_base_link_tf);
 
-  // Initialize tracker
-  if (!camera_info.isCalibrated())
-  {
-    ROS_WARN("Using uncalibrated camera!");
-  }
-
-  // Initialize camera
-  // TODO parametrize and load from camera calibration
-  // TODO wrap camera and camera parameters together in a class
-  camera = new raspicam::RaspiCam;
-  camera->setWidth(640);
-  camera->setHeight(480);
-  camera->setShutterSpeed(8000); // 10000, 8000
-  camera->setBrightness(80);  // 70, 80
-  camera->setContrast(100);    // 100
-  camera->setVideoStabilization(true);
-  camera->setFormat(raspicam::RASPICAM_FORMAT_GRAY);
-  camera->setRotation(180);
-  camera->open();
-  while(!camera->isOpened()) // TODO add failure condition
-  {
-    std::cout << "Unable to open camera, waiting 0.5 seconds and trying again..." << std::endl;
-    usleep(500000);
-    camera->open();
-  }
+  // Initialize Camera Objects
+  apriltag_tracker::CameraMaster camera_master(nh);
+  apriltag_tracker::Camera *camera0 = camera_master.generateCameraObject();
+  apriltag_tracker::Camera *camera1 = camera_master.generateCameraObject();
+  apriltag_tracker::Camera *camera2 = camera_master.generateCameraObject();
+  apriltag_tracker::Camera *camera3 = camera_master.generateCameraObject();
 
   // Start threads
-  camera_mutex = new boost::mutex;
-  boost::thread thread0(trackerThread, nh, camera_info.getCameraInfo(), 0, camera_optical_to_base_link_tf);
-  boost::thread thread1(trackerThread, nh, camera_info.getCameraInfo(), 1, camera_optical_to_base_link_tf);
-  boost::thread thread2(trackerThread, nh, camera_info.getCameraInfo(), 2, camera_optical_to_base_link_tf);
-  boost::thread thread3(trackerThread, nh, camera_info.getCameraInfo(), 3, camera_optical_to_base_link_tf);
+  boost::thread thread0(trackerThread, nh, camera0, 0, camera_optical_to_base_link_tf);
+  boost::thread thread1(trackerThread, nh, camera1, 1, camera_optical_to_base_link_tf);
+  boost::thread thread2(trackerThread, nh, camera2, 2, camera_optical_to_base_link_tf);
+  boost::thread thread3(trackerThread, nh, camera3, 3, camera_optical_to_base_link_tf);
+
+  ros::spin();
+
   thread0.join();
   thread1.join();
   thread2.join();
