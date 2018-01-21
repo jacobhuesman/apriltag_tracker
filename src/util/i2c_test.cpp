@@ -51,23 +51,16 @@ int main(int argc, char *argv[])
         long running_count = 0;
         CLMessage32 test_msg;
         long i = 0;
-        for (i = 0; i < 1000; i++)
+        for (i = 0; i < 100000; i++)
         {
           start = std::chrono::system_clock::now();
-          if(servo.getPosition(&position) != CL_OK)
-          {
-            // Try again
-            if(servo.getPosition(&position) != CL_OK)
-            {
-              continue;
-            }
-          }
+          position = servo.adjustPosition(0);
           end = std::chrono::system_clock::now();
           difference = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
           std::cout << "Test " << std::setw(3) << i << " time: " << std::setw(8) << difference.count();
           std::cout << "us, position: " << std::setw(4) << position << std::endl;
           running_count += difference.count();
-          //usleep(1000);
+          usleep(100);
         }
         std::cout << "Test results: " << running_count/i << "us" << std::endl;
         break;

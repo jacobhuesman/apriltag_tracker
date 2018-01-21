@@ -100,9 +100,9 @@ void AprilTagTracker::adjustServo()
   // TODO implement using multiple tags
   if (tag_detections.size() == 1)
   {
-    double difference = tag_detections[0].cxy.x - camera->getWidth() / 2;
+    double difference = (tag_detections[0].cxy.x - camera->getWidth() / 2) * 2.0;
     double rotation = camera->getDegreesPerPixel().x * difference / servo->resolution;
-    uint16_t position = servo->adjustServo(-(int16_t)rotation);
+    uint16_t position = servo->adjustPosition(-(int16_t) rotation);
   }
 }
 

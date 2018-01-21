@@ -19,10 +19,11 @@ namespace HostCommLayer
     ~Dynamixel();
 
     // Thread-Safe
-    uint16_t adjustServo(int16_t adjustment);
+    uint16_t adjustPosition(int16_t adjustment);
 
 
     // Not Thread-Safe
+    void resetI2c();
     uint8_t computeChecksum(CLMessage32 message);
     uint8_t setPosition(uint16_t position);
     uint8_t getPositionTx();

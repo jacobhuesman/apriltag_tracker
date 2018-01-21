@@ -11,6 +11,13 @@ Dynamixel::Dynamixel(uint8_t i2c_address)
   this->address = i2c_address;
 }
 
+void Dynamixel::resetI2c()
+{
+  delete i2c;
+  usleep(100);
+  i2c = new mraa::I2c(0);
+}
+
 Dynamixel::Dynamixel(uint8_t i2c_address, uint8_t i2c_bus)
 {
   i2c = new mraa::I2c(i2c_bus);
@@ -69,6 +76,10 @@ uint8_t Dynamixel::getPositionRx(uint16_t *position)
   {
     return CL_RX_ERROR;
   }
+  if (message.cl.instruction == CL_ERROR) // TODO change to something more descriptive
+  {
+    return CL_ERROR;
+  }
   if (computeChecksum(message) != message.cl.checksum)
   {
     return CL_CHECKSUM_ERROR;
@@ -79,15 +90,18 @@ uint8_t Dynamixel::getPositionRx(uint16_t *position)
 
 uint8_t Dynamixel::getPosition(uint16_t *position)
 {
+  uint8_t status;
   if (getPositionTx() != CL_OK)
   {
     errors++;
     std::cout << "TX Error!" << std::endl;
-    return CL_TX_ERROR;
+    resetI2c();
+    status = CL_TX_ERROR;
   }
-  uint8_t status = getPositionRx(position);
+  status = getPositionRx(position);
   if (status != CL_OK)
   {
+    resetI2c();
     if (status == CL_RX_ERROR)
     {
       std::cout << "RX error!" << std::endl;
@@ -96,8 +110,8 @@ uint8_t Dynamixel::getPosition(uint16_t *position)
     {
       std::cout << "Checksum error!" << std::endl;
     }
-    return status;
   }
+  return status;
 }
 
 uint8_t Dynamixel::getTestMessage(CLMessage32 *test_msg)
@@ -126,16 +140,24 @@ uint8_t Dynamixel::getTestMessage(CLMessage32 *test_msg)
   return CL_OK;
 }
 
-uint16_t  Dynamixel::adjustServo(int16_t adjustment)
+uint16_t  Dynamixel::adjustPosition(int16_t adjustment)
 {
   mutex.lock();
+  //std::cout << "Adjustment: " << adjustment << std::endl;
   uint16_t current_position;
-  getPosition(&current_position);
-  //std::cout << "Current_position: " << current_position;
-  int16_t next_position = current_position + adjustment;
-  if (next_position > 1024)
+  uint8_t status = getPosition(&current_position);
+  if (status != CL_OK) // TODO do something more robust
   {
-    setPosition(1024);
+    std::cout << "Get Position Failed" << std::endl;
+    mutex.unlock();
+    return status;
+  }
+  //std::cout << "Current_position: " << current_position;
+  int16_t next_position = 512 + adjustment;
+  //std::cout << "Next position: " << next_position << std::endl;
+  if (next_position > 1023)
+  {
+    setPosition(1023);
   }
   else if (next_position < 0)
   {
