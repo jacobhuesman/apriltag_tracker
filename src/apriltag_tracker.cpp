@@ -6,20 +6,19 @@
 namespace AprilTagTracker
 {
   AprilTagTracker::AprilTagTracker(apriltag_tracker::Camera *camera, HostCommLayer::Dynamixel *servo,
-                                   std::vector<TagInfo> *tag_info, tf2::Transform camera_optical_to_base_link_tf)
+                                   std::vector<TagInfo> *tag_info, TransformsCache transforms)
   {
+    // TODO use dynamic reconfigure
     tag_params.newQuadAlgorithm = true;
-    //tag_params.adaptiveThresholdValue = 12; //TODO figure out what this means and parameterize
-    //tag_params.adaptiveThresholdValue = 20; //TODO figure out what this means and parameterize
+    //tag_params.adaptiveThresholdValue = 12; //TODO figure out what this means and parametrize
+    //tag_params.adaptiveThresholdValue = 20; //TODO figure out what this means and parametrize
     tag_family = new TagFamily("Tag36h11");
     tag_detector = new TagDetector(*tag_family, tag_params);
 
     this->servo = servo;
     this->tag_info = tag_info;
-
-    // TODO what do the scalars do?
-
     this->camera = camera;
+    this->transforms = transforms;
   }
 
   AprilTagTracker::~AprilTagTracker()
@@ -100,7 +99,8 @@ void AprilTagTracker::adjustServo()
   // TODO implement using multiple tags
   if (tag_detections.size() == 1)
   {
-    double difference = (tag_detections[0].cxy.x - camera->getWidth() / 2) * 2.0;
+    // Adjust servo
+    double difference = (tag_detections[0].cxy.x - camera->getWidth() / 2);
     double rotation = camera->getDegreesPerPixel().x * difference / servo->resolution;
     uint16_t position = servo->adjustPosition(-(int16_t) rotation);
   }
@@ -152,11 +152,13 @@ void AprilTagTracker::calculateTransforms(apriltag_tracker::AprilTagDetectionArr
 void AprilTagTracker::estimateRobotPose(geometry_msgs::TransformStamped *pose_estimate_msg)
 {
 
-  tf2::Transform pose_estimate = (*tag_info)[0].map_to_tag_tf * (*tag_info)[0].tag_transform.inverse();
-                                 //* camera_optical_to_base_link_tf; TODO add back
+  tf2::Transform pose_estimate = (*tag_info)[0].map_to_tag_tf * (*tag_info)[0].tag_transform.inverse()
+                                 * transforms.camera_optical_to_servo_joint * servo->getTransform().inverse()
+                                 * transforms.servo_base_link_to_base_link;
   tf2::Stamped<tf2::Transform> pose_estimate_stamped(pose_estimate, (*tag_info)[0].tag_transform.stamp_, "map");
   *pose_estimate_msg = tf2::toMsg(pose_estimate_stamped);
   pose_estimate_msg->child_frame_id = "apriltag_tracker_pose_estimate";
+  pose_estimate_msg->transform.translation.z = 0.0; // Remove z component since we aren't using it.
 }
 
 void AprilTagTracker::outputTimingInfo()

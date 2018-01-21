@@ -8,6 +8,10 @@
 #include <mraa.hpp>
 
 #include <comm_layer_defs.h>
+#include <tf2/LinearMath/Transform.h>
+#include <tf2/transform_datatypes.h>
+#include <geometry_msgs/TransformStamped.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 namespace HostCommLayer
 {
@@ -20,7 +24,8 @@ namespace HostCommLayer
 
     // Thread-Safe
     uint16_t adjustPosition(int16_t adjustment);
-
+    tf2::Transform getTransform();
+    geometry_msgs::TransformStamped getTransformMsg();
 
     // Not Thread-Safe
     void resetI2c();
@@ -39,6 +44,12 @@ namespace HostCommLayer
     mraa::I2c *i2c;
     long errors;
     boost::mutex mutex;
+
+    tf2::Transform transform;
+    ros::Time stamp;
+    unsigned int seq;
+    std::string frame_id;
+    std::string child_frame_id;
   };
 }
 

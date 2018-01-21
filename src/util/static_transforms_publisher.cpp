@@ -24,7 +24,7 @@ int main(int argc, char** argv){
   servo_joint_to_optical_link_tf.transform.rotation.z = q.getZ();
   servo_joint_to_optical_link_tf.transform.rotation.w = q.getW();
 
-  q.setRPY(0.0, 0.0, 0.0);
+  /*q.setRPY(0.0, 0.0, 0.0);
   geometry_msgs::TransformStamped servo_base_link_to_servo_joint_tf;
   servo_base_link_to_servo_joint_tf.header.seq = 0;
   servo_base_link_to_servo_joint_tf.header.frame_id = "servo_base_link";
@@ -35,7 +35,7 @@ int main(int argc, char** argv){
   servo_base_link_to_servo_joint_tf.transform.rotation.x = q.getX();
   servo_base_link_to_servo_joint_tf.transform.rotation.y = q.getY();
   servo_base_link_to_servo_joint_tf.transform.rotation.z = q.getZ();
-  servo_base_link_to_servo_joint_tf.transform.rotation.w = q.getW();
+  servo_base_link_to_servo_joint_tf.transform.rotation.w = q.getW();*/
 
   q.setRPY(M_PI_2, 0.0, M_PI_2);
   geometry_msgs::TransformStamped map_to_tag04_tf;
@@ -93,14 +93,14 @@ int main(int argc, char** argv){
   while(ros::ok())
   {
     servo_joint_to_optical_link_tf.header.stamp = ros::Time::now();
-    servo_base_link_to_servo_joint_tf.header.stamp = ros::Time::now();
+    //servo_base_link_to_servo_joint_tf.header.stamp = ros::Time::now();
     base_link_to_servo_base_link_tf.header.stamp = ros::Time::now();
     map_to_tag04_tf.header.stamp = ros::Time::now();
     map_to_tag03_tf.header.stamp = ros::Time::now();
     map_to_tag01_tf.header.stamp = ros::Time::now();
 
     servo_joint_to_optical_link_tf.header.seq++;
-    servo_base_link_to_servo_joint_tf.header.seq++;
+    //servo_base_link_to_servo_joint_tf.header.seq++;
     base_link_to_servo_base_link_tf.header.seq++;
     map_to_tag04_tf.header.seq++;
     map_to_tag03_tf.header.seq++;
@@ -108,7 +108,7 @@ int main(int argc, char** argv){
 
 
     br.sendTransform(servo_joint_to_optical_link_tf);
-    br.sendTransform(servo_base_link_to_servo_joint_tf);
+    //br.sendTransform(servo_base_link_to_servo_joint_tf);
     br.sendTransform(map_to_tag04_tf);
     br.sendTransform(map_to_tag03_tf);
     br.sendTransform(map_to_tag01_tf);

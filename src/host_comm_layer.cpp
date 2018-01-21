@@ -9,6 +9,13 @@ Dynamixel::Dynamixel(uint8_t i2c_address)
 {
   i2c = new mraa::I2c(0);
   this->address = i2c_address;
+
+  seq = 0;
+  transform.setOrigin(tf2::Vector3(24.15e-3, 0.0, 32.5e-3));
+  tf2::Quaternion q;
+  q.setRPY(0.0, 0.0, 0.0);
+  frame_id = "servo_base_link";
+  child_frame_id = "servo_joint";
 }
 
 void Dynamixel::resetI2c()
@@ -140,10 +147,12 @@ uint8_t Dynamixel::getTestMessage(CLMessage32 *test_msg)
   return CL_OK;
 }
 
+// TODO change naming to reflect velocity
+// TODO align velocity with values found in dynamixel manual
+// TODO add check on embedded system for runaway
 uint16_t  Dynamixel::adjustPosition(int16_t adjustment)
 {
   mutex.lock();
-  //std::cout << "Adjustment: " << adjustment << std::endl;
   uint16_t current_position;
   uint8_t status = getPosition(&current_position);
   if (status != CL_OK) // TODO do something more robust
@@ -152,9 +161,7 @@ uint16_t  Dynamixel::adjustPosition(int16_t adjustment)
     mutex.unlock();
     return status;
   }
-  //std::cout << "Current_position: " << current_position;
   int16_t next_position = 512 + adjustment;
-  //std::cout << "Next position: " << next_position << std::endl;
   if (next_position > 1023)
   {
     setPosition(1023);
@@ -167,9 +174,32 @@ uint16_t  Dynamixel::adjustPosition(int16_t adjustment)
   {
     setPosition((uint16_t)next_position);
   }
-  //std::cout << ", next_position: " << next_position << std::endl;
+
+  // Update transform
+  tf2::Quaternion q;
+  q.setRPY(0.0, 0.0, ((double)current_position - 512.0) * (M_PI * 150.0) / (180.0 * 512.0));
+  transform.setRotation(q);
+  stamp = ros::Time::now();
+  seq++;
+
   mutex.unlock();
   return current_position;
+}
+
+tf2::Transform Dynamixel::getTransform()
+{
+  return transform;
+}
+
+geometry_msgs::TransformStamped Dynamixel::getTransformMsg()
+{
+  geometry_msgs::TransformStamped transform_msg;
+  transform_msg.transform = tf2::toMsg(transform);
+  transform_msg.header.frame_id = frame_id;
+  transform_msg.child_frame_id = child_frame_id;
+  transform_msg.header.seq = seq;
+  transform_msg.header.stamp = stamp;
+  return transform_msg;
 }
 
 }
