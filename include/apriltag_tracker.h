@@ -37,13 +37,19 @@ struct TagInfo
   tf2::Stamped<tf2::Transform> tag_transform;
 };
 
+struct TransformsCache
+{
+  tf2::Transform camera_optical_to_servo_joint;
+  // Supply dynamic servo_joint to servo_base_link tf
+  tf2::Transform servo_base_link_to_base_link;
+};
 
 
 class AprilTagTracker
 {
 public:
   AprilTagTracker(apriltag_tracker::Camera *camera, HostCommLayer::Dynamixel *servo, std::vector<TagInfo> *tag_info,
-                  tf2::Transform camera_optical_to_base_link_tf);
+                  TransformsCache transforms);
   ~AprilTagTracker();
 
   Eigen::Matrix4d getRelativeTransform(const cv::Point2d tagPts[], double tag_size);
@@ -64,6 +70,9 @@ private:
   TagDetector *tag_detector;
   TagDetectionArray tag_detections;
   std::vector<TagInfo> *tag_info;
+
+  // Transforms
+  TransformsCache transforms;
 };
 
 }
