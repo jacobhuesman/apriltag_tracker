@@ -38,6 +38,7 @@ long misses = 0;
 std::chrono::system_clock::time_point global_time_stamp[2];
 
 const bool publish_plain_image = false;
+const bool track_servo = true;
 const bool publish_pose_estimate = true;
 
 std::vector<AprilTagTracker::TagInfo> *tag_info;
@@ -47,21 +48,21 @@ void initializeTagInfoVector(std::vector<AprilTagTracker::TagInfo> *tag_info)
 {
   tf2_ros::Buffer tfBuffer;
   tf2_ros::TransformListener tfListener(tfBuffer);
-
-  // Tag 4
   AprilTagTracker::TagInfo tag;
-  tag.id = 4;
-  tag.seq = 0;
-  tag.priority = 0;
-  tag.size = 0.203;
-  tag.mutex = new boost::mutex;
-  tag_info->push_back(tag);
 
   // Tag 1
   tag.id = 1;
   tag.seq = 0;
   tag.priority = 0;
   tag.size = 0.42545;
+  tag.mutex = new boost::mutex;
+  tag_info->push_back(tag);
+
+  // Tag 4
+  tag.id = 4;
+  tag.seq = 0;
+  tag.priority = 0;
+  tag.size = 0.203;
   tag.mutex = new boost::mutex;
   tag_info->push_back(tag);
 
@@ -96,7 +97,6 @@ void initializeTagInfoVector(std::vector<AprilTagTracker::TagInfo> *tag_info)
 }
 
 
-// TODO hold tfs in tracker object
 void trackerThread(ros::NodeHandle nh, HostCommLayer::Dynamixel *servo, AprilTagTracker::TransformsCache transforms,
                    apriltag_tracker::Camera *camera, uint8_t thread_id)
 {
@@ -124,7 +124,10 @@ void trackerThread(ros::NodeHandle nh, HostCommLayer::Dynamixel *servo, AprilTag
     time_stamp[1] = std::chrono::system_clock::now();
     tracker.processImage();
     time_stamp[2] = std::chrono::system_clock::now();
-    tracker.adjustServo();
+    if (track_servo)
+    {
+      tracker.adjustServo();
+    }
 
     // Send Transforms
     time_stamp[3] = std::chrono::system_clock::now();
@@ -138,8 +141,11 @@ void trackerThread(ros::NodeHandle nh, HostCommLayer::Dynamixel *servo, AprilTag
     geometry_msgs::TransformStamped pose_estimate_msg;
     tracker.estimateRobotPose(&pose_estimate_msg);
 
-    pubs->tf.sendTransform(tracker.servo->getTransformMsg());
-    pubs->tf.sendTransform(pose_estimate_msg); // TODO should be pose msg
+    if (publish_pose_estimate)
+    {
+      pubs->tf.sendTransform(tracker.servo->getTransformMsg());
+      pubs->tf.sendTransform(pose_estimate_msg); // TODO should be pose msg
+    }
     time_stamp[5] = std::chrono::system_clock::now();
     pubs->detections.publish(tag_detection_array);
 

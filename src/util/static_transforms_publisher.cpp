@@ -76,12 +76,12 @@ int main(int argc, char** argv){
   map_to_tag01_tf.transform.rotation.z = q.getZ();
   map_to_tag01_tf.transform.rotation.w = q.getW();
 
-  q.setRPY(0.0, 0.0, 0.0);
+  q.setRPY(0.0, 0.0, M_PI);
   geometry_msgs::TransformStamped base_link_to_servo_base_link_tf;
   base_link_to_servo_base_link_tf.header.seq = 0;
   base_link_to_servo_base_link_tf.header.frame_id = "base_link";
   base_link_to_servo_base_link_tf.child_frame_id = "servo_base_link";
-  base_link_to_servo_base_link_tf.transform.translation.x = 0.0;
+  base_link_to_servo_base_link_tf.transform.translation.x = -0.4191;
   base_link_to_servo_base_link_tf.transform.translation.y = 0.0;
   base_link_to_servo_base_link_tf.transform.translation.z = 0.0;
   base_link_to_servo_base_link_tf.transform.rotation.x = q.getX();
