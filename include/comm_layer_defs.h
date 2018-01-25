@@ -53,7 +53,8 @@ typedef enum
   DYN_SET_DELAY                = 0x21U,
   DYN_SET_COMPLIANCE_MARGIN    = 0x22U,
   DYN_SET_COMPLIANCE_SLOPE     = 0x23U,
-  DYN_SET_BAUD_RATE            = 0x24U
+  DYN_SET_BAUD_RATE            = 0x24U,
+  DYN_SET_POLLING_DT           = 0x25U
 } CommLayer_InstructionTypeDef;
 
 #pragma pack(1)
