@@ -26,6 +26,7 @@ namespace HostCommLayer
     void resetI2c();
     uint8_t computeChecksum(CLMessage32 message);
     uint8_t setPosition(uint16_t position);
+    uint8_t setVelocity(uint16_t velocity);
     uint8_t getPositionTx();
     uint8_t getPositionRx(uint16_t *position);
     uint8_t getPosition(uint16_t *position);

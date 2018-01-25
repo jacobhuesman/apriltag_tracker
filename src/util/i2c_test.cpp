@@ -2,23 +2,95 @@
 #include <iostream>
 #include <iomanip>
 #include <chrono>
+#include <boost/program_options.hpp>
 
 #include <host_comm_layer.h>
 #include <comm_layer_defs.h>
 
 using namespace HostCommLayer;
 
+void printStatus(uint8_t status)
+{
+  if (status == CL_OK)
+  {
+    std::cout << "Success" << std::endl;
+  }
+  else if (status == CL_TX_ERROR)
+  {
+    std::cout << "TX Error" << std::endl;
+  }
+  else if (status == CL_RX_ERROR) {
+    std::cout << "RX Error" << std::endl;
+  }
+  else
+  {
+    std::cout << "System returned: " << status << std::endl;
+  }
+
+}
+
+using namespace boost::program_options;
+
 int main(int argc, char *argv[])
 {
-  /* I2C */
   Dynamixel servo(0x11);
 
-  /* Other */
-  uint16_t position;
+  try
+  {
+    options_description desc{"Options"};
+    desc.add_options()
+        ("help,h", "Help screen")
+        ("setPosition,s",  value<uint16_t >()->default_value(512), "Set Position")
+        ("getPosition,g", "Get Position")
+        ("setVelocity,v",  value<uint16_t >()->default_value(512), "Set Velocity");
+    variables_map vm;
+    store(parse_command_line(argc, argv, desc), vm);
+    notify(vm);
 
-  /* Start */
-  int c;
-  while ((c = getopt(argc, argv, "s:ght")) != -1)
+    if (vm.count("help"))
+    {
+      std::cout << desc << '\n';
+    }
+    else if (vm.count("setPosition"))
+    {
+      uint16_t position = vm["setPosition"].as<uint16_t>();
+      std::cout << "Setting position: " << position << std::endl;
+      uint8_t status = servo.setPosition(position);
+      printStatus(status);
+    }
+    else if (vm.count("getPosition"))
+    {
+      uint16_t position;
+      uint8_t status = servo.getPosition(&position);
+      if (status == CL_OK)
+      {
+        std::cout << "Read position: " << position << std::endl;
+      }
+      else
+      {
+        printStatus(status);
+      }
+    }
+    else if (vm.count("setVelocity"))
+    {
+      uint16_t velocity = vm["setVelocity"].as<uint16_t>();
+      uint8_t status = servo.setVelocity(velocity);
+      if (status == CL_OK)
+      {
+        std::cout << "Setting velocity: " << velocity << std::endl;
+      }
+      else
+      {
+        printStatus(status);
+      }
+    }
+  }
+  catch (const error &ex)
+  {
+    std::cerr << ex.what() << '\n';
+  }
+  /*int c;
+  while ((c = getopt(argc, argv, "v:s:ght")) != -1)
   {
     switch (c)
     {
@@ -26,13 +98,28 @@ int main(int argc, char *argv[])
       {
         position = (uint16_t)std::stoi(optarg);
         std::cout << "Setting position: " << position << std::endl;
-        servo.setPosition(position);
+        uint8_t status = servo.setPosition(position);
+        printStatus(status);
         break;
       }
       case 'g':
       {
-        servo.getPosition(&position);
-        std::cout << "Read position: " << position << std::endl;
+        uint8_t status = servo.getPosition(&position);
+        if (status == CL_OK)
+        {
+          std::cout << "Read position: " << position << std::endl;
+        }
+        else
+        {
+          printStatus(status);
+        }
+        break;
+      }
+      case 'v':
+      {
+        uint16_t velocity = (uint16_t)std::stoi(optarg);
+        uint8_t status = servo.setVelocity(velocity);
+        printStatus(status);
         break;
       }
       case 'h':
@@ -76,5 +163,5 @@ int main(int argc, char *argv[])
         abort();
       }
     }
-  }
+  }*/
 }
