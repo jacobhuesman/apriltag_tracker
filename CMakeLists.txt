@@ -85,8 +85,8 @@ target_link_libraries(apriltag_tracker ${catkin_LIBRARIES})
 target_link_libraries(apriltag_tracker ${OpenCV_LIBS})
 target_link_libraries(apriltag_tracker AprilTagTracker)
 
-add_executable(i2c_test src/util/i2c_test.cpp)
-target_link_libraries(i2c_test HostCommLayer)
+add_executable(comm_test src/util/comm_test.cpp)
+target_link_libraries(comm_test HostCommLayer)
 
 add_executable(speed_test src/util/speed_test.cpp)
 
