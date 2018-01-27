@@ -43,7 +43,7 @@ uint8_t Dynamixel::computeChecksum(CLMessage32 message)
   {
     checksum += message.data8[i];
   }
-  return checksum;
+  return ~checksum;
 }
 
 //TODO add error checking for both setPosition and getPosition
@@ -58,10 +58,51 @@ uint8_t Dynamixel::setPosition(uint16_t position)
   {
     return CL_TX_ERROR;
   }
+  if (i2c->read(message.data8, 4) != 4)
+  {
+    return CL_RX_ERROR;
+  }
   return CL_OK;
 }
 
-uint8_t Dynamixel::getPositionTx()
+uint8_t Dynamixel::setVelocity(uint16_t velocity)
+{
+  CLMessage32 message;
+  i2c->address(address);
+  message.cl.instruction = DYN_SET_VELOCITY;
+  message.cl.data = velocity;
+  message.cl.checksum = computeChecksum(message);
+  if (i2c->write(message.data8, 4) != MRAA_SUCCESS)
+  {
+    return CL_TX_ERROR;
+  }
+  if (i2c->read(message.data8, 4) != 4)
+  {
+    return CL_RX_ERROR;
+  }
+  return message.cl.instruction;
+}
+
+uint8_t Dynamixel::setPollingDt(uint16_t polling_dt)
+{
+  CLMessage32 message;
+  i2c->address(address);
+  message.cl.instruction = DYN_SET_POLLING_DT;
+  message.cl.data = polling_dt;
+  message.cl.checksum = computeChecksum(message);
+  if (i2c->write(message.data8, 4) != MRAA_SUCCESS)
+  {
+    return CL_TX_ERROR;
+  }
+  if (i2c->read(message.data8, 4) != 4)
+  {
+    return CL_RX_ERROR;
+  }
+  return message.cl.instruction;
+}
+
+
+  uint8_t Dynamixel::getPositionTx()
 {
   CLMessage32 message;
   i2c->address(address);
