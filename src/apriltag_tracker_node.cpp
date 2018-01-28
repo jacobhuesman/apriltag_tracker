@@ -216,15 +216,15 @@ void trackerThread(ros::NodeHandle nh, HostCommLayer::Dynamixel *servo, AprilTag
 int main(int argc, char **argv)
 {
   // Initialize ROS
-  ros::init(argc, argv, "apriltag_detector");
-  ros::NodeHandle nh;
+  ros::init(argc, argv, "position_sensor");
+  ros::NodeHandle nh("~");
 
   image_transport::ImageTransport it(nh);
   pubs = new Publishers;
-  pubs->detections = nh.advertise<apriltag_tracker::AprilTagDetectionArray>("tag_detections", 1);
-  pubs->diagnostics = nh.advertise<apriltag_tracker::ATTDiagnostics>("diagnostics", 1);
-  pubs->image = it.advertise("camera_image", 1);
-  pubs->detections_image = it.advertise("tag_detections_image", 1);
+  pubs->detections = nh.advertise<apriltag_tracker::AprilTagDetectionArray>("info/tag_detections", 1);
+  pubs->diagnostics = nh.advertise<apriltag_tracker::ATTDiagnostics>("info/diagnostics", 1);
+  pubs->image = it.advertise("image/raw", 1);
+  pubs->detections_image = it.advertise("image/detections", 1);
 
   // Initialize tags
   tag_info = new std::vector<AprilTagTracker::TagInfo>;
