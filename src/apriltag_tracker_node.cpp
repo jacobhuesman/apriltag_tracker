@@ -39,7 +39,7 @@ std::chrono::system_clock::time_point global_time_stamp[2];
 
 const bool publish_plain_image = false;
 const bool track_servo = true;
-const bool publish_pose_estimate = false;
+const bool publish_pose_estimate = true;
 
 std::vector<AprilTagTracker::TagInfo> *tag_info;
 
