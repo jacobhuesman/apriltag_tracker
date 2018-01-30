@@ -143,7 +143,6 @@ void trackerThread(ros::NodeHandle nh, HostCommLayer::Dynamixel *servo, AprilTag
 
     if (publish_pose_estimate)
     {
-      pubs->tf.sendTransform(tracker.servo->getTransformMsg());
       pubs->tf.sendTransform(pose_estimate_msg); // TODO should be pose msg
     }
     time_stamp[5] = std::chrono::system_clock::now();
@@ -210,6 +209,30 @@ void trackerThread(ros::NodeHandle nh, HostCommLayer::Dynamixel *servo, AprilTag
     //std::string image_path = "/home/nrmc/ws/test_images/image" + std::to_string(iterations) + ".jpg";
     //cv::imwrite(image_path, captured_image_mat);
 
+  }
+}
+
+void servoThread(HostCommLayer::Dynamixel *servo)
+{
+  ros::Rate rate(30);
+  while(ros::ok())
+  {
+    // Start scanning if enough time has elapsed since last capture
+    uint8_t status;
+    ros::Duration difference = ros::Time::now() - servo->getLastVelocityUpdate();
+    if ((difference.sec > 0) || (difference.nsec > 5e8)) // More than half a second has elapsed since an apriltag was captured
+    {
+      status = servo->scan();
+    }
+    else
+    {
+      status = servo->adjustCamera(servo->getDesiredVelocity());
+    }
+    if (status == CL_OK)
+    {
+      pubs->tf.sendTransform(servo->getTransformMsg());
+    }
+    rate.sleep();
   }
 }
 
@@ -285,6 +308,7 @@ int main(int argc, char **argv)
   boost::thread thread1(trackerThread, nh, servo, transforms, camera1, 1);
   boost::thread thread2(trackerThread, nh, servo, transforms, camera2, 2);
   boost::thread thread3(trackerThread, nh, servo, transforms, camera3, 3);
+  boost::thread thread4(servoThread, servo);
 
   ros::spin();
 
@@ -292,5 +316,6 @@ int main(int argc, char **argv)
   thread1.join();
   thread2.join();
   thread3.join();
+  thread4.join();
 }
 

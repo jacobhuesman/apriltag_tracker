@@ -101,8 +101,7 @@ void AprilTagTracker::adjustServo()
   {
     // Adjust servo
     double difference = (tag_detections[0].cxy.x - camera->getWidth() / 2);
-    double rotation = camera->getDegreesPerPixel().x * difference / servo->resolution;
-    uint16_t position = servo->adjustPosition(-(int16_t) rotation);
+    servo->updateDesiredVelocity(-(int16_t) (camera->getDegreesPerPixel().x * difference / servo->resolution));
   }
 }
 

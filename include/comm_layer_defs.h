@@ -54,7 +54,8 @@ typedef enum
   DYN_SET_COMPLIANCE_MARGIN    = 0x22U,
   DYN_SET_COMPLIANCE_SLOPE     = 0x23U,
   DYN_SET_BAUD_RATE            = 0x24U,
-  DYN_SET_POLLING_DT           = 0x25U
+  DYN_SET_POLLING_DT           = 0x25U,
+  DYN_ADJUST_SERVO             = 0x26U
 } CommLayer_InstructionTypeDef;
 
 #pragma pack(1)
@@ -63,11 +64,22 @@ typedef struct
   uint8_t instruction;
   uint16_t data;
   uint8_t checksum;
+} UCLMessage32Field;
+#pragma  pack()
+
+#pragma pack(1)
+typedef struct
+{
+  uint8_t instruction;
+  int16_t data;
+  uint8_t checksum;
 } CLMessage32Field;
 #pragma  pack()
 
+
 typedef union
 {
+  UCLMessage32Field      ucl;
   CLMessage32Field       cl;
   DynamixelMessageFields dyn;
   uint8_t                data8[4];

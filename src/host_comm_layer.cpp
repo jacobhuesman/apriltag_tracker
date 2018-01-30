@@ -14,8 +14,13 @@ Dynamixel::Dynamixel(uint8_t i2c_address)
   transform.setOrigin(tf2::Vector3(24.15e-3, 0.0, 32.5e-3));
   tf2::Quaternion q;
   q.setRPY(0.0, 0.0, 0.0);
-  frame_id = "servo_base_link";
-  child_frame_id = "servo_joint";
+  frame_id = "servo_base_link"; // TODO parametrize
+  child_frame_id = "servo_joint"; // TODO parametrize
+
+  max_velocity = 80; // TODO parametrize
+  desired_velocity = 0;
+  current_velocity = 0;
+  last_velocity_update = (ros::Time::now() - ros::Duration(1.0));
 }
 
 void Dynamixel::resetI2c()
@@ -51,9 +56,9 @@ uint8_t Dynamixel::setPosition(uint16_t position)
 {
   CLMessage32 message;
   i2c->address(address);
-  message.cl.instruction = DYN_SET_POSITION;
-  message.cl.data = position;
-  message.cl.checksum = computeChecksum(message);
+  message.ucl.instruction = DYN_SET_POSITION;
+  message.ucl.data = position;
+  message.ucl.checksum = computeChecksum(message);
   if (i2c->write(message.data8, 4) != MRAA_SUCCESS)
   {
     return CL_TX_ERROR;
@@ -69,9 +74,9 @@ uint8_t Dynamixel::setVelocity(uint16_t velocity)
 {
   CLMessage32 message;
   i2c->address(address);
-  message.cl.instruction = DYN_SET_VELOCITY;
-  message.cl.data = velocity;
-  message.cl.checksum = computeChecksum(message);
+  message.ucl.instruction = DYN_SET_VELOCITY;
+  message.ucl.data = velocity;
+  message.ucl.checksum = computeChecksum(message);
   if (i2c->write(message.data8, 4) != MRAA_SUCCESS)
   {
     return CL_TX_ERROR;
@@ -80,16 +85,24 @@ uint8_t Dynamixel::setVelocity(uint16_t velocity)
   {
     return CL_RX_ERROR;
   }
-  return message.cl.instruction;
+  return message.ucl.instruction;
+}
+
+uint8_t Dynamixel::updateDesiredVelocity(int16_t velocity)
+{
+  mutex.lock();
+  desired_velocity = velocity;
+  last_velocity_update = ros::Time::now();
+  mutex.unlock();
 }
 
 uint8_t Dynamixel::setPollingDt(uint16_t polling_dt)
 {
   CLMessage32 message;
   i2c->address(address);
-  message.cl.instruction = DYN_SET_POLLING_DT;
-  message.cl.data = polling_dt;
-  message.cl.checksum = computeChecksum(message);
+  message.ucl.instruction = DYN_SET_POLLING_DT;
+  message.ucl.data = polling_dt;
+  message.ucl.checksum = computeChecksum(message);
   if (i2c->write(message.data8, 4) != MRAA_SUCCESS)
   {
     return CL_TX_ERROR;
@@ -98,7 +111,7 @@ uint8_t Dynamixel::setPollingDt(uint16_t polling_dt)
   {
     return CL_RX_ERROR;
   }
-  return message.cl.instruction;
+  return message.ucl.instruction;
 }
 
 
@@ -106,9 +119,9 @@ uint8_t Dynamixel::setPollingDt(uint16_t polling_dt)
 {
   CLMessage32 message;
   i2c->address(address);
-  message.cl.instruction = DYN_GET_POSITION_INSTRUCTION;
-  message.cl.data = 0;
-  message.cl.checksum = computeChecksum(message);
+  message.ucl.instruction = DYN_GET_POSITION_INSTRUCTION;
+  message.ucl.data = 0;
+  message.ucl.checksum = computeChecksum(message);
   if (i2c->write(message.data8, 4) != MRAA_SUCCESS)
   {
     return CL_TX_ERROR;
@@ -124,15 +137,15 @@ uint8_t Dynamixel::getPositionRx(uint16_t *position)
   {
     return CL_RX_ERROR;
   }
-  if (message.cl.instruction == CL_ERROR) // TODO change to something more descriptive
+  if (message.ucl.instruction == CL_ERROR) // TODO change to something more descriptive
   {
     return CL_ERROR;
   }
-  if (computeChecksum(message) != message.cl.checksum)
+  if (computeChecksum(message) != message.ucl.checksum)
   {
     return CL_CHECKSUM_ERROR;
   }
-  *position = message.cl.data;
+  *position = message.ucl.data;
   return CL_OK;
 }
 
@@ -166,12 +179,12 @@ uint8_t Dynamixel::getTestMessage(CLMessage32 *test_msg)
 {
   CLMessage32 message;
 
-  message.cl.instruction = 0x01;
-  message.cl.data = 0;
-  message.cl.checksum = 0;
+  message.ucl.instruction = 0x01;
+  message.ucl.data = 0;
+  message.ucl.checksum = 0;
   for (int i = 0; i < 3; i++)
   {
-    message.cl.checksum += message.data8[i];
+    message.ucl.checksum += message.data8[i];
   }
   i2c->address(address);
   if (i2c->write(message.data8, 4) != MRAA_SUCCESS)
@@ -188,12 +201,11 @@ uint8_t Dynamixel::getTestMessage(CLMessage32 *test_msg)
   return CL_OK;
 }
 
-// TODO change naming to reflect velocity
-// TODO align velocity with values found in dynamixel manual
-// TODO add check on embedded system for runaway
-uint16_t  Dynamixel::adjustPosition(int16_t adjustment)
+uint8_t Dynamixel::adjustCamera(int16_t velocity)
 {
   mutex.lock();
+
+  // Read position
   uint16_t current_position;
   uint8_t status = getPosition(&current_position);
   if (status != CL_OK) // TODO do something more robust
@@ -202,29 +214,126 @@ uint16_t  Dynamixel::adjustPosition(int16_t adjustment)
     mutex.unlock();
     return status;
   }
-  int16_t next_position = 512 + adjustment;
-  if (next_position > 1023)
+
+  // Throttle velocity
+  if (abs(velocity) > max_velocity)
   {
-    setPosition(1023);
+    if (velocity < 0)
+    {
+      velocity = -max_velocity;
+    }
+    else
+    {
+      velocity = max_velocity;
+    }
   }
-  else if (next_position < 0)
+
+  // Send control message
+  CLMessage32 message;
+  i2c->address(address);
+  message.cl.instruction = DYN_ADJUST_SERVO;
+  message.cl.data = velocity;
+  message.cl.checksum = computeChecksum(message);
+  if (i2c->write(message.data8, 4) != MRAA_SUCCESS)
   {
-    setPosition(0);
+    mutex.unlock();
+    return CL_TX_ERROR;
   }
-  else
+  if (i2c->read(message.data8, 4) != 4)
   {
-    setPosition((uint16_t)next_position);
+    mutex.unlock();
+    return CL_RX_ERROR;
   }
+  current_velocity = velocity;
 
   // Update transform
   tf2::Quaternion q;
-  q.setRPY(0.0, 0.0, ((double)current_position - 512.0) * (M_PI * 150.0) / (180.0 * 512.0));
+  q.setRPY(0.0, 0.0, ((double)current_position - 512.0) * (M_PI * 150.0) / (180.0 * 512.0)); // TODO make sure this is correct
   transform.setRotation(q);
   stamp = ros::Time::now();
   seq++;
 
   mutex.unlock();
-  return current_position;
+  return CL_OK;
+}
+
+uint8_t Dynamixel::scan()
+{
+  mutex.lock();
+
+  // Read position
+  uint16_t current_position;
+  uint8_t status = getPosition(&current_position);
+  if (status != CL_OK) // TODO do something more robust
+  {
+    std::cout << "Get Position Failed" << std::endl;
+    mutex.unlock();
+    return status;
+  }
+
+  // Send control message
+  CLMessage32 message;
+  i2c->address(address);
+  message.cl.instruction = DYN_ADJUST_SERVO;
+
+  // If we aren't moving pick the direction that covers the most area
+  if (current_velocity == 0)
+  {
+    if (current_position <= 512)
+    {
+      message.cl.data = max_velocity;
+    }
+    else
+    {
+      message.cl.data = -max_velocity;
+    }
+  }
+
+  // If we are moving continue moving in the same direction but faster
+  else if (current_velocity > 0)
+  {
+    message.cl.data = max_velocity;
+  }
+  else if (current_velocity < 0)
+  {
+    message.cl.data = -max_velocity;
+  }
+
+  // If we've hit the end, change direction
+  if (current_position >= 1011)
+  {
+    message.cl.data = -max_velocity;
+  }
+  if (current_position <= 12)
+  {
+    message.cl.data = max_velocity;
+  }
+  current_velocity = message.cl.data;
+
+  // Send decision
+  message.cl.checksum = computeChecksum(message);
+  if (i2c->write(message.data8, 4) != MRAA_SUCCESS)
+  {
+    mutex.unlock();
+    std::cout << "TX Error" << std::endl;
+    return CL_TX_ERROR;
+  }
+  if (i2c->read(message.data8, 4) != 4)
+  {
+    mutex.unlock();
+    std::cout << "RX Error" << std::endl;
+    return CL_RX_ERROR;
+  }
+
+  // Update transform
+  tf2::Quaternion q;
+  q.setRPY(0.0, 0.0, ((double)current_position - 512.0) * (M_PI * 150.0) / (180.0 * 512.0)); // TODO make sure this is correct
+  transform.setRotation(q);
+  stamp = ros::Time::now();
+  seq++;
+
+  mutex.unlock();
+  return CL_OK;
 }
 
 tf2::Transform Dynamixel::getTransform()
@@ -241,6 +350,16 @@ geometry_msgs::TransformStamped Dynamixel::getTransformMsg()
   transform_msg.header.seq = seq;
   transform_msg.header.stamp = stamp;
   return transform_msg;
+}
+
+ros::Time Dynamixel::getLastVelocityUpdate()
+{
+  return last_velocity_update;
+}
+
+int16_t Dynamixel::getDesiredVelocity()
+{
+  return desired_velocity;
 }
 
 }

@@ -33,6 +33,7 @@ using namespace boost::program_options;
 
 int main(int argc, char *argv[])
 {
+  ros::Time::init();
   Dynamixel servo(0x11);
 
   try
@@ -43,6 +44,7 @@ int main(int argc, char *argv[])
         ("setPosition,s",  value<uint16_t>(), "Set Position")
         ("getPosition,g", "Get Position")
         ("setVelocity,v",  value<uint16_t>(), "Set Velocity")
+        ("adjustCamera,a", value<int16_t>(), "Adjust Camera Velocity")
         ("setPollingDt,t", value<uint16_t>(), "Set Polling Dt")
         ("testPolling",    value<std::vector<uint16_t>>()->multitoken(),  "Test given polling time");
 
@@ -88,6 +90,19 @@ int main(int argc, char *argv[])
       if (status == CL_TASK_QUEUED)
       {
         std::cout << "Setting velocity: " << velocity << std::endl;
+      }
+      else
+      {
+        printStatus(status);
+      }
+    }
+    if (vm.count("adjustCamera"))
+    {
+      int16_t velocity = vm["adjustCamera"].as<int16_t>();
+      uint8_t status = servo.adjustCamera(velocity);
+      if (status == CL_TASK_QUEUED)
+      {
+        std::cout << "Adjust camera velocity to: " << velocity << std::endl;
       }
       else
       {
@@ -141,7 +156,7 @@ int main(int argc, char *argv[])
       int direction = 0;
       while (position < 1013)
       {
-        usleep(16666);
+        usleep(30000);
         servo.getPosition(&position);
         if (count++ > 2)
         {
@@ -154,11 +169,42 @@ int main(int argc, char *argv[])
           {
             polling_velocity--;
           }
-          if (polling_velocity > 50)
+          if (polling_velocity > 80)
           {
             direction = 0;
           }
-          if (polling_velocity < 20)
+          if (polling_velocity < 50)
+          {
+            direction = 1;
+          }
+          servo.setVelocity(polling_velocity);
+        }
+        std::cout << "Current position: " << position << ", Current Velocity: " << polling_velocity << std::endl;
+      }
+      usleep(100000);
+      servo.setPosition(0);
+      usleep(100000);
+      servo.getPosition(&position);
+      while (position > 12)
+      {
+        usleep(30000);
+        servo.getPosition(&position);
+        if (count++ > 2)
+        {
+          count = 0;
+          if (direction == 1)
+          {
+            polling_velocity++;
+          }
+          else
+          {
+            polling_velocity--;
+          }
+          if (polling_velocity > 80)
+          {
+            direction = 0;
+          }
+          if (polling_velocity < 50)
           {
             direction = 1;
           }
