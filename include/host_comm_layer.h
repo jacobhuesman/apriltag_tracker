@@ -23,9 +23,9 @@ namespace HostCommLayer
     ~Dynamixel();
 
     // Thread-Safe
-    uint16_t adjustPosition(int16_t adjustment);
     tf2::Transform getTransform();
     geometry_msgs::TransformStamped getTransformMsg();
+    uint8_t adjustCamera(int16_t velocity);
 
     // Not Thread-Safe
     void resetI2c();
@@ -46,6 +46,7 @@ namespace HostCommLayer
     mraa::I2c *i2c;
     long errors;
     boost::mutex mutex;
+    int16_t max_velocity;
 
     tf2::Transform transform;
     ros::Time stamp;
