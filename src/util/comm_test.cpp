@@ -169,11 +169,42 @@ int main(int argc, char *argv[])
           {
             polling_velocity--;
           }
-          if (polling_velocity > 50)
+          if (polling_velocity > 80)
           {
             direction = 0;
           }
-          if (polling_velocity < 20)
+          if (polling_velocity < 50)
+          {
+            direction = 1;
+          }
+          servo.setVelocity(polling_velocity);
+        }
+        std::cout << "Current position: " << position << ", Current Velocity: " << polling_velocity << std::endl;
+      }
+      usleep(100000);
+      servo.setPosition(0);
+      usleep(100000);
+      servo.getPosition(&position);
+      while (position > 12)
+      {
+        usleep(30000);
+        servo.getPosition(&position);
+        if (count++ > 2)
+        {
+          count = 0;
+          if (direction == 1)
+          {
+            polling_velocity++;
+          }
+          else
+          {
+            polling_velocity--;
+          }
+          if (polling_velocity > 80)
+          {
+            direction = 0;
+          }
+          if (polling_velocity < 50)
           {
             direction = 1;
           }

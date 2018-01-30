@@ -17,7 +17,10 @@ Dynamixel::Dynamixel(uint8_t i2c_address)
   frame_id = "servo_base_link"; // TODO parametrize
   child_frame_id = "servo_joint"; // TODO parametrize
 
-  max_velocity = 200; // TODO parametrize
+  max_velocity = 80; // TODO parametrize
+  desired_velocity = 0;
+  current_velocity = 0;
+  last_velocity_update = (ros::Time::now() - ros::Duration(1.0));
 }
 
 void Dynamixel::resetI2c()
@@ -83,6 +86,14 @@ uint8_t Dynamixel::setVelocity(uint16_t velocity)
     return CL_RX_ERROR;
   }
   return message.ucl.instruction;
+}
+
+uint8_t Dynamixel::updateDesiredVelocity(int16_t velocity)
+{
+  mutex.lock();
+  desired_velocity = velocity;
+  last_velocity_update = ros::Time::now();
+  mutex.unlock();
 }
 
 uint8_t Dynamixel::setPollingDt(uint16_t polling_dt)
@@ -233,6 +244,86 @@ uint8_t Dynamixel::adjustCamera(int16_t velocity)
     mutex.unlock();
     return CL_RX_ERROR;
   }
+  current_velocity = velocity;
+
+  // Update transform
+  tf2::Quaternion q;
+  q.setRPY(0.0, 0.0, ((double)current_position - 512.0) * (M_PI * 150.0) / (180.0 * 512.0)); // TODO make sure this is correct
+  transform.setRotation(q);
+  stamp = ros::Time::now();
+  seq++;
+
+  mutex.unlock();
+  return CL_OK;
+}
+
+uint8_t Dynamixel::scan()
+{
+  mutex.lock();
+
+  // Read position
+  uint16_t current_position;
+  uint8_t status = getPosition(&current_position);
+  if (status != CL_OK) // TODO do something more robust
+  {
+    std::cout << "Get Position Failed" << std::endl;
+    mutex.unlock();
+    return status;
+  }
+
+  // Send control message
+  CLMessage32 message;
+  i2c->address(address);
+  message.cl.instruction = DYN_ADJUST_SERVO;
+
+  // If we aren't moving pick the direction that covers the most area
+  if (current_velocity == 0)
+  {
+    if (current_position <= 512)
+    {
+      message.cl.data = max_velocity;
+    }
+    else
+    {
+      message.cl.data = -max_velocity;
+    }
+  }
+
+  // If we are moving continue moving in the same direction but faster
+  else if (current_velocity > 0)
+  {
+    message.cl.data = max_velocity;
+  }
+  else if (current_velocity < 0)
+  {
+    message.cl.data = -max_velocity;
+  }
+
+  // If we've hit the end, change direction
+  if (current_position >= 1011)
+  {
+    message.cl.data = -max_velocity;
+  }
+  if (current_position <= 12)
+  {
+    message.cl.data = max_velocity;
+  }
+  current_velocity = message.cl.data;
+
+  // Send decision
+  message.cl.checksum = computeChecksum(message);
+  if (i2c->write(message.data8, 4) != MRAA_SUCCESS)
+  {
+    mutex.unlock();
+    std::cout << "TX Error" << std::endl;
+    return CL_TX_ERROR;
+  }
+  if (i2c->read(message.data8, 4) != 4)
+  {
+    mutex.unlock();
+    std::cout << "RX Error" << std::endl;
+    return CL_RX_ERROR;
+  }
 
   // Update transform
   tf2::Quaternion q;
@@ -259,6 +350,16 @@ geometry_msgs::TransformStamped Dynamixel::getTransformMsg()
   transform_msg.header.seq = seq;
   transform_msg.header.stamp = stamp;
   return transform_msg;
+}
+
+ros::Time Dynamixel::getLastVelocityUpdate()
+{
+  return last_velocity_update;
+}
+
+int16_t Dynamixel::getDesiredVelocity()
+{
+  return desired_velocity;
 }
 
 }

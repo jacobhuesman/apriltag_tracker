@@ -26,6 +26,10 @@ namespace HostCommLayer
     tf2::Transform getTransform();
     geometry_msgs::TransformStamped getTransformMsg();
     uint8_t adjustCamera(int16_t velocity);
+    uint8_t scan();
+    uint8_t updateDesiredVelocity(int16_t velocity);
+    ros::Time getLastVelocityUpdate();
+    int16_t getDesiredVelocity();
 
     // Not Thread-Safe
     void resetI2c();
@@ -47,6 +51,9 @@ namespace HostCommLayer
     long errors;
     boost::mutex mutex;
     int16_t max_velocity;
+    int16_t current_velocity;
+    int16_t desired_velocity;
+    ros::Time last_velocity_update;
 
     tf2::Transform transform;
     ros::Time stamp;
