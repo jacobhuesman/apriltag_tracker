@@ -50,7 +50,7 @@ catkin_package(
 set(raspicam_DIR /usr/local/lib/cmake)
 find_package(raspicam REQUIRED)
 find_package(Eigen3 REQUIRED)
-find_package(OpenCV 3 REQUIRED)
+find_package(OpenCV 3.4.0 REQUIRED) # TODO check to make sure that compiler optimizations were used
 
 include_directories(${Eigen3_INCLUDE_DIRS})
 include_directories(${OpenCV_INCLUDE_DIRS})
