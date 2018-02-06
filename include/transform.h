@@ -15,6 +15,7 @@ public:
 
   tf2::Stamped<tf2::Transform> getTransform();
   double getTheta();
+  bool operator<(Transform tf);
 
 private:
   tf2::Stamped<tf2::Transform> tf;

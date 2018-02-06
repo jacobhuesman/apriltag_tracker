@@ -22,6 +22,8 @@
 #include <host_comm_layer.h>
 #include <sensor_msgs/CameraInfo.h>
 #include <camera.h>
+#include <transform.h>
+#include <tag.h>
 
 namespace AprilTagTracker
 {

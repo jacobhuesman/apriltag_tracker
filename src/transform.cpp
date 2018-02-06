@@ -22,3 +22,8 @@ double Transform::getTheta()
 {
   return this->theta;
 }
+
+bool Transform::operator<(Transform tf)
+{
+  return this->getTheta() < tf.getTheta();
+}

@@ -54,3 +54,15 @@ double Tag::getSize()
 {
   return size;
 }
+
+// TODO handle empty list case
+Transform Tag::getMedianFilteredTransform()
+{
+  transforms.sort();
+  auto it = transforms.begin();
+  for (int i = 0; i < (transforms.size() / 2); i++)
+  {
+    it++;
+  }
+  return it->getTransform();
+}

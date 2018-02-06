@@ -26,6 +26,7 @@ public:
   double getPriority();
   double getSize();
   std::vector<Transform> getTransforms();
+  Transform getMedianFilteredTransform();
 
 
 private:

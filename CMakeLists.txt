@@ -86,7 +86,7 @@ target_link_libraries(HostCommLayer mraa)
 target_link_libraries(HostCommLayer ${catkin_LIBRARIES})
 
 
-add_executable(apriltag_tracker src/apriltag_tracker_node.cpp src/transform.cpp src/tag.cpp include/tag.h include/transform.h)
+add_executable(apriltag_tracker src/apriltag_tracker_node.cpp src/transform.cpp src/tag.cpp include/tag.h include/transform.h src/tests/transform_tests.cpp)
 add_dependencies(apriltag_tracker ${${PROJECT_NAME}_EXPORTED_TARGETS})
 target_link_libraries(apriltag_tracker ${catkin_LIBRARIES})
 target_link_libraries(apriltag_tracker ${OpenCV_LIBS})
@@ -111,5 +111,11 @@ catkin_add_gtest(tag_tests src/tests/tag_tests.cpp)
 if(TARGET tag_tests)
   target_link_libraries(tag_tests ${catkin_LIBRARIES})
   target_link_libraries(tag_tests Tag)
+endif()
+
+catkin_add_gtest(transform_tests src/tests/transform_tests.cpp)
+if(TARGET transform_tests)
+  target_link_libraries(transform_tests ${catkin_LIBRARIES})
+  target_link_libraries(transform_tests Tag)
 endif()
 
