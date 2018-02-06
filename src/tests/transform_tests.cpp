@@ -12,9 +12,9 @@ TEST(AprilTagTrackerTransformTests, ConstructorAndGetters)
   tf.setRotation(q);
   Transform test(tf);
 
-  ASSERT_NEAR(1.0, test.getTransform().getOrigin().getX(), 1e-10);
-  ASSERT_NEAR(2.0, test.getTransform().getOrigin().getY(), 1e-10);
-  ASSERT_NEAR(3.0, test.getTransform().getOrigin().getZ(), 1e-10);
+  ASSERT_NEAR(1.0, test.getTf().getOrigin().getX(), 1e-10);
+  ASSERT_NEAR(2.0, test.getTf().getOrigin().getY(), 1e-10);
+  ASSERT_NEAR(3.0, test.getTf().getOrigin().getZ(), 1e-10);
   ASSERT_NEAR(M_PI_2, test.getTheta(), 1e-10);
 }
 

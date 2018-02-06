@@ -13,7 +13,7 @@ Transform::Transform(tf2::Stamped<tf2::Transform> tf)
   matrix.getRPY(tmp1, tmp2, this->theta);
 }
 
-tf2::Stamped<tf2::Transform> Transform::getTransform()
+tf2::Stamped<tf2::Transform> Transform::getTf()
 {
   return this->tf;
 }

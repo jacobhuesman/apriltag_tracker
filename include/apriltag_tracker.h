@@ -48,9 +48,9 @@ public:
   void processImage();
   void adjustServo();
   void outputTimingInfo();
-  void updateTags(apriltag_tracker::AprilTagDetectionArray *tag_detection_array);
-  void calculateTransforms(apriltag_tracker::AprilTagDetectionArray *tag_detection_array);
-  void estimateRobotPose(geometry_msgs::TransformStamped *pose_estimate_msg);
+  void updateTags();
+  void fillTagDetectionArray(apriltag_tracker::AprilTagDetectionArray *tag_detection_array);
+  bool estimateRobotPose(geometry_msgs::PoseStamped *pose_estimate_msg);
 
   HostCommLayer::Dynamixel *servo;  // TODO remove servo dependency
   apriltag_tracker::Camera *camera; // TODO remove camera dependency

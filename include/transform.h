@@ -13,7 +13,7 @@ class Transform
 public:
   Transform(tf2::Stamped<tf2::Transform> tf);
 
-  tf2::Stamped<tf2::Transform> getTransform();
+  tf2::Stamped<tf2::Transform> getTf();
   double getTheta();
   bool operator<(Transform tf);
 

@@ -16,17 +16,21 @@ class Tag
 {
 public:
   // TODO some of this should be made private
-  Tag(int id, int priority, double size, boost::mutex *mutex);
+  Tag(int id, int priority, double size);
 
+  // Thread safe
   void addTransform(tf2::Stamped<tf2::Transform> tf);
-
+  void setMapToTagTf(tf2::Transform tf);
   int getID();
+  //std::string getFrameID(); Not thread safe
   unsigned int getSeq();
   double getGoodness();
   double getPriority();
   double getSize();
+  bool isReady();
   std::vector<Transform> getTransforms();
   Transform getMedianFilteredTransform();
+  tf2::Transform getMapToTagTf();
 
 
 private:
@@ -36,6 +40,7 @@ private:
   double goodness;
   double priority;
   double size;
+  //std::string frame_id;
 
   int list_size;
   tf2::Transform map_to_tag_tf;

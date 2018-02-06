@@ -21,6 +21,7 @@
 struct Publishers
 {
   tf2_ros::TransformBroadcaster tf;
+  ros::Publisher pose;
   ros::Publisher detections;
   ros::Publisher diagnostics;
   image_transport::Publisher image;
@@ -48,35 +49,18 @@ void initializeTagInfoVector(std::vector<AprilTagTracker::Tag> *tag_info)
 {
   tf2_ros::Buffer tfBuffer;
   tf2_ros::TransformListener tfListener(tfBuffer);
-  AprilTagTracker::Tag tag;
 
-  // Tag 1
-  tag.id = 1;
-  tag.seq = 0;
-  tag.priority = 0;
-  tag.size = 0.42545;
-  tag.mutex = new boost::mutex;
-  tag_info->push_back(tag);
+  AprilTagTracker::Tag tag1(1, 0, 0.42545);
+  AprilTagTracker::Tag tag3(3, 0, 0.203);
+  AprilTagTracker::Tag tag4(4, 0, 0.203);
 
-  // Tag 4
-  tag.id = 4;
-  tag.seq = 0;
-  tag.priority = 0;
-  tag.size = 0.203;
-  tag.mutex = new boost::mutex;
-  tag_info->push_back(tag);
-
-  // Tag 3
-  tag.id = 3;
-  tag.seq = 0;
-  tag.priority = 0;
-  tag.size = 0.203;
-  tag.mutex = new boost::mutex;
-  tag_info->push_back(tag);
+  tag_info->push_back(tag1);
+  tag_info->push_back(tag3);
+  tag_info->push_back(tag4);
 
   for (int i = 0; i < tag_info->size(); i++)
   {
-    std::string tag_name = "tag" + std::to_string((*tag_info)[i].id);
+    std::string tag_name = "tag" + std::to_string((*tag_info)[i].getID());
     bool transformed;
     do
     {
@@ -88,11 +72,13 @@ void initializeTagInfoVector(std::vector<AprilTagTracker::Tag> *tag_info)
         ROS_WARN("%s", ss.str().c_str());
       }
     } while(ros::ok() && !transformed);
-    ROS_INFO("Found transform for tag%i", (*tag_info)[i].id);
+    ROS_INFO("Found transform for tag%i", (*tag_info)[i].getID());
 
     geometry_msgs::TransformStamped transform_msg;
     transform_msg = tfBuffer.lookupTransform("map", tag_name, ros::Time(0));
-    tf2::fromMsg(transform_msg.transform, (*tag_info)[i].map_to_tag_tf);
+    tf2::Transform map_to_tag_tf;
+    tf2::fromMsg(transform_msg.transform, map_to_tag_tf);
+    (*tag_info)[i].setMapToTagTf(map_to_tag_tf);
   }
 }
 
@@ -132,18 +118,16 @@ void trackerThread(ros::NodeHandle nh, HostCommLayer::Dynamixel *servo, AprilTag
     // Send Transforms
     time_stamp[3] = std::chrono::system_clock::now();
     apriltag_tracker::AprilTagDetectionArray tag_detection_array;
-    tracker.calculateTransforms(&tag_detection_array);
+    tracker.fillTagDetectionArray(&tag_detection_array);
     time_stamp[4] = std::chrono::system_clock::now();
     for (int i = 0; i < tag_detection_array.detections.size(); i++)
     {
       pubs->tf.sendTransform(tag_detection_array.detections[i].transform);
     }
-    geometry_msgs::TransformStamped pose_estimate_msg;
-    tracker.estimateRobotPose(&pose_estimate_msg);
-
-    if (publish_pose_estimate)
+    geometry_msgs::PoseStamped pose_estimate_msg;
+    if (tracker.estimateRobotPose(&pose_estimate_msg) && publish_pose_estimate)
     {
-      pubs->tf.sendTransform(pose_estimate_msg); // TODO should be pose msg
+      pubs->pose.publish(pose_estimate_msg);
     }
     time_stamp[5] = std::chrono::system_clock::now();
     pubs->detections.publish(tag_detection_array);
@@ -246,6 +230,7 @@ int main(int argc, char **argv)
   pubs = new Publishers;
   pubs->detections = nh.advertise<apriltag_tracker::AprilTagDetectionArray>("info/tag_detections", 1);
   pubs->diagnostics = nh.advertise<apriltag_tracker::ATTDiagnostics>("info/diagnostics", 1);
+  pubs->pose = nh.advertise<geometry_msgs::PoseStamped>("pose_estimate", 1);
   pubs->image = it.advertise("image/raw", 1);
   pubs->detections_image = it.advertise("image/detections", 1);
 
