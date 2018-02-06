@@ -2,11 +2,10 @@
 #include <geometry_msgs/TransformStamped.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
-
 namespace AprilTagTracker
 {
   AprilTagTracker::AprilTagTracker(apriltag_tracker::Camera *camera, HostCommLayer::Dynamixel *servo,
-                                   std::vector<TagInfo> *tag_info, TransformsCache transforms)
+                                   std::vector<Tag> *tag_info, TransformsCache transforms)
   {
     // TODO use dynamic reconfigure
     tag_params.newQuadAlgorithm = true;
@@ -92,6 +91,7 @@ void AprilTagTracker::processImage()
 {
   // TODO there is a full image copy here, see if we can pass by reference
   tag_detector->process(camera->getImage(), camera->getOpticalCenter(), tag_detections);
+  updateTags();
 }
 
 void AprilTagTracker::adjustServo()
@@ -105,28 +105,61 @@ void AprilTagTracker::adjustServo()
   }
 }
 
-void AprilTagTracker::calculateTransforms(apriltag_tracker::AprilTagDetectionArray *tag_detection_array)
+void AprilTagTracker::updateTags()
 {
   for (int i = 0; i < tag_detections.size(); i++)
   {
     for (int j = 0; j < tag_info->size(); j++)
     {
-      if (tag_detections[i].id == (*tag_info)[j].id)
+      if (tag_detections[i].id == (*tag_info)[j].getID())
       {
         // Get transform
         /* Transform */
-        Eigen::Matrix4d transform = getRelativeTransform(tag_detections[i].p, (*tag_info)[j].size);
+        Eigen::Matrix4d transform = getRelativeTransform(tag_detections[i].p, (*tag_info)[j].getSize());
+        Eigen::Matrix3d rotation = transform.block(0, 0, 3, 3);
+        Eigen::Quaternion<double> rotation_q = Eigen::Quaternion<double>(rotation);
+
+        // Build transform
+        tf2::Transform tag_transform;
+        tag_transform.setOrigin(tf2::Vector3(transform(0, 3), transform(1, 3), transform(2, 3))); // TODO double check this
+        tf2::Quaternion q;
+        q.setX(rotation_q.x());
+        q.setY(rotation_q.y());
+        q.setZ(rotation_q.z());
+        q.setW(rotation_q.w());
+        tag_transform.setRotation(q);
+        tf2::Stamped<tf2::Transform> stamped_tag_transform;
+        stamped_tag_transform.setData(tag_transform);
+        stamped_tag_transform.stamp_ = camera->getCaptureTime();
+        (*tag_info)[j].addTransform(stamped_tag_transform);
+      }
+    }
+  }
+}
+
+void AprilTagTracker::fillTagDetectionArray(apriltag_tracker::AprilTagDetectionArray *tag_detection_array)
+{
+  for (int i = 0; i < tag_detections.size(); i++)
+  {
+    for (int j = 0; j < tag_info->size(); j++)
+    {
+      if (tag_detections[i].id == (*tag_info)[j].getID())
+      {
+        // Transform
+        // TODO use previously calculated values from updateTags
+        Eigen::Matrix4d transform = getRelativeTransform(tag_detections[i].p, (*tag_info)[j].getSize());
         Eigen::Matrix3d rotation = transform.block(0, 0, 3, 3);
         Eigen::Quaternion<double> rotation_q = Eigen::Quaternion<double>(rotation);
 
         // Build detection
         apriltag_tracker::AprilTagDetection tag_detection;
         tag_detection.id = (int)tag_detections[i].id;
-        tag_detection.size = (*tag_info)[j].size;
+        tag_detection.size = (*tag_info)[j].getSize();
         tag_detection.transform.header.stamp = camera->getCaptureTime();
-        tag_detection.transform.header.seq = (*tag_info)[j].seq++;
+        tag_detection.transform.header.seq = (*tag_info)[j].getSeq();
         tag_detection.transform.header.frame_id = "camera_optical";
-        tag_detection.transform.child_frame_id = std::string("tag") + std::to_string(tag_detections[i].id) + "_estimate";
+        tag_detection.transform.child_frame_id = std::string("tag") + std::to_string((*tag_info)[j].getID())
+                                                 + "_estimate";
         tag_detection.transform.transform.translation.x = transform(0, 3);
         tag_detection.transform.transform.translation.y = transform(1, 3);
         tag_detection.transform.transform.translation.z = transform(2, 3);
@@ -136,36 +169,49 @@ void AprilTagTracker::calculateTransforms(apriltag_tracker::AprilTagDetectionArr
         tag_detection.transform.transform.rotation.w = rotation_q.w();
 
         tag_detection_array->detections.push_back(tag_detection);
-
-        // Build transform
-        tf2::Stamped<tf2::Transform> tag_transform;
-        tf2::fromMsg(tag_detection.transform, tag_transform);
-        (*tag_info)[j].mutex->lock();
-        (*tag_info)[j].tag_transform = tag_transform;
-        (*tag_info)[j].mutex->unlock();
       }
     }
   }
 }
 
-void AprilTagTracker::estimateRobotPose(geometry_msgs::TransformStamped *pose_estimate_msg)
+bool AprilTagTracker::estimateRobotPose(geometry_msgs::PoseStamped *pose_estimate_msg)
 {
+  // TODO do a more intelligent pick
+  for (int i = 0; i < tag_info->size(); i++)
+  {
+    if ((*tag_info)[0].isReady())
+    {
+      tf2::Stamped<tf2::Transform> tag_transform = (*tag_info)[0].getMedianFilteredTransform().getTf();
+      if ((ros::Time::now() - tag_transform.stamp_) < ros::Duration(0.5))
+      {
 
-  tf2::Transform pose_estimate = (*tag_info)[0].map_to_tag_tf * (*tag_info)[0].tag_transform.inverse()
-                                 * transforms.camera_optical_to_servo_joint * servo->getTransform().inverse()
-                                 * transforms.servo_base_link_to_base_link;
-  tf2::Stamped<tf2::Transform> pose_estimate_stamped(pose_estimate, (*tag_info)[0].tag_transform.stamp_, "map");
-  *pose_estimate_msg = tf2::toMsg(pose_estimate_stamped);
-  pose_estimate_msg->child_frame_id = "apriltag_tracker_pose_estimate";
-  pose_estimate_msg->transform.translation.z = 0.0; // Remove z component since we aren't using it.
+        tf2::Transform pose_estimate = (*tag_info)[0].getMapToTagTf()
+                                       * tag_transform.inverse()
+                                       * transforms.camera_optical_to_servo_joint
+                                       * servo->getTransform().inverse()
+                                       * transforms.servo_base_link_to_base_link;
+        pose_estimate_msg->header.frame_id = "map";
+        pose_estimate_msg->header.seq = (*tag_info)[0].getSeq(); // TODO this is not a global sequence, but it should be
+        pose_estimate_msg->header.stamp = tag_transform.stamp_;
+        pose_estimate_msg->pose.position.x = pose_estimate.getOrigin().getX();
+        pose_estimate_msg->pose.position.y = pose_estimate.getOrigin().getY();
+        pose_estimate_msg->pose.position.z = pose_estimate.getOrigin().getY();
+        pose_estimate_msg->pose.orientation.x = pose_estimate.getRotation().getX();
+        pose_estimate_msg->pose.orientation.y = pose_estimate.getRotation().getY();
+        pose_estimate_msg->pose.orientation.z = pose_estimate.getRotation().getZ();
+        pose_estimate_msg->pose.orientation.w = pose_estimate.getRotation().getW();
+
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 void AprilTagTracker::outputTimingInfo()
 {
 
 }
-
-
 }
 
 
