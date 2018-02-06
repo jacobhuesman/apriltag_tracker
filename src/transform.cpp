@@ -10,7 +10,7 @@ Transform::Transform(tf2::Stamped<tf2::Transform> tf)
   tf2::Matrix3x3 matrix;
   matrix.setRotation(tf.getRotation());
   double tmp1, tmp2;
-  matrix.getRPY(tmp1, tmp2, this->theta);
+  matrix.getRPY(tmp1, this->theta, tmp2);
 }
 
 tf2::Stamped<tf2::Transform> Transform::getTf()
