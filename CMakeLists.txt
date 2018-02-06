@@ -64,6 +64,13 @@ target_link_libraries(Camera raspicam ${raspicam_LIBS})
 target_link_libraries(Camera ${catkin_LIBRARIES})
 target_link_libraries(Camera ${OpenCV_LIBS})
 
+add_library(Transform src/transform.cpp)
+target_link_libraries(Transform ${catkin_LIBRARIES})
+
+add_library(Tag src/tag.cpp)
+target_link_libraries(Tag ${catkin_LIBRARIES})
+target_link_libraries(Tag Transform)
+
 add_library(AprilTagTracker src/apriltag_tracker.cpp)
 add_dependencies(AprilTagTracker ${${PROJECT_NAME}_EXPORTED_TARGETS})
 target_link_libraries(AprilTagTracker raspicam ${raspicam_LIBS})
@@ -79,7 +86,7 @@ target_link_libraries(HostCommLayer mraa)
 target_link_libraries(HostCommLayer ${catkin_LIBRARIES})
 
 
-add_executable(apriltag_tracker src/apriltag_tracker_node.cpp)
+add_executable(apriltag_tracker src/apriltag_tracker_node.cpp src/transform.cpp src/tag.cpp include/tag.h include/transform.h)
 add_dependencies(apriltag_tracker ${${PROJECT_NAME}_EXPORTED_TARGETS})
 target_link_libraries(apriltag_tracker ${catkin_LIBRARIES})
 target_link_libraries(apriltag_tracker ${OpenCV_LIBS})
@@ -99,4 +106,10 @@ target_link_libraries(transform_cache_test ${catkin_LIBRARIES})
 
 add_executable(static_transforms_publisher src/util/static_transforms_publisher.cpp)
 target_link_libraries(static_transforms_publisher ${catkin_LIBRARIES})
+
+catkin_add_gtest(tag_tests src/tests/tag_tests.cpp)
+if(TARGET tag_tests)
+  target_link_libraries(tag_tests ${catkin_LIBRARIES})
+  target_link_libraries(tag_tests Tag)
+endif()
 

@@ -41,14 +41,14 @@ const bool publish_plain_image = false;
 const bool track_servo = true;
 const bool publish_pose_estimate = true;
 
-std::vector<AprilTagTracker::TagInfo> *tag_info;
+std::vector<AprilTagTracker::Tag> *tag_info;
 
 // TODO use some kind of xml and load from there
-void initializeTagInfoVector(std::vector<AprilTagTracker::TagInfo> *tag_info)
+void initializeTagInfoVector(std::vector<AprilTagTracker::Tag> *tag_info)
 {
   tf2_ros::Buffer tfBuffer;
   tf2_ros::TransformListener tfListener(tfBuffer);
-  AprilTagTracker::TagInfo tag;
+  AprilTagTracker::Tag tag;
 
   // Tag 1
   tag.id = 1;
@@ -250,7 +250,7 @@ int main(int argc, char **argv)
   pubs->detections_image = it.advertise("image/detections", 1);
 
   // Initialize tags
-  tag_info = new std::vector<AprilTagTracker::TagInfo>;
+  tag_info = new std::vector<AprilTagTracker::Tag>;
   initializeTagInfoVector(tag_info);
 
   // Get camera_transform

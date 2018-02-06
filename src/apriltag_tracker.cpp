@@ -6,7 +6,7 @@
 namespace AprilTagTracker
 {
   AprilTagTracker::AprilTagTracker(apriltag_tracker::Camera *camera, HostCommLayer::Dynamixel *servo,
-                                   std::vector<TagInfo> *tag_info, TransformsCache transforms)
+                                   std::vector<Tag> *tag_info, TransformsCache transforms)
   {
     // TODO use dynamic reconfigure
     tag_params.newQuadAlgorithm = true;
@@ -105,6 +105,11 @@ void AprilTagTracker::adjustServo()
   }
 }
 
+void AprilTagTracker::updateTags(apriltag_tracker::AprilTagDetectionArray *tag_detection_array)
+{
+
+}
+
 void AprilTagTracker::calculateTransforms(apriltag_tracker::AprilTagDetectionArray *tag_detection_array)
 {
   for (int i = 0; i < tag_detections.size(); i++)
@@ -164,8 +169,6 @@ void AprilTagTracker::outputTimingInfo()
 {
 
 }
-
-
 }
 
 
