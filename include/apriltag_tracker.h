@@ -2,6 +2,7 @@
 #define PROJECT_APRILTAG_TRACKER_H
 
 #include <chrono>
+#include <list>
 #include <boost/thread/thread.hpp>
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Geometry>
@@ -21,21 +22,11 @@
 #include <host_comm_layer.h>
 #include <sensor_msgs/CameraInfo.h>
 #include <camera.h>
+#include <transform.h>
+#include <tag.h>
 
 namespace AprilTagTracker
 {
-
-struct TagInfo
-{
-  boost::mutex *mutex;
-  int id;
-  unsigned int seq;
-  double goodness;
-  double priority;
-  double size;
-  tf2::Transform map_to_tag_tf;
-  tf2::Stamped<tf2::Transform> tag_transform;
-};
 
 struct TransformsCache
 {
@@ -48,7 +39,7 @@ struct TransformsCache
 class AprilTagTracker
 {
 public:
-  AprilTagTracker(apriltag_tracker::Camera *camera, HostCommLayer::Dynamixel *servo, std::vector<TagInfo> *tag_info,
+  AprilTagTracker(apriltag_tracker::Camera *camera, HostCommLayer::Dynamixel *servo, std::vector<Tag> *tag_info,
                   TransformsCache transforms);
   ~AprilTagTracker();
 
@@ -57,8 +48,9 @@ public:
   void processImage();
   void adjustServo();
   void outputTimingInfo();
-  void calculateTransforms(apriltag_tracker::AprilTagDetectionArray *tag_detection_array);
-  void estimateRobotPose(geometry_msgs::TransformStamped *pose_estimate_msg);
+  void updateTags();
+  void fillTagDetectionArray(apriltag_tracker::AprilTagDetectionArray *tag_detection_array);
+  bool estimateRobotPose(geometry_msgs::PoseStamped *pose_estimate_msg);
 
   HostCommLayer::Dynamixel *servo;  // TODO remove servo dependency
   apriltag_tracker::Camera *camera; // TODO remove camera dependency
@@ -69,7 +61,7 @@ private:
   TagFamily *tag_family;
   TagDetector *tag_detector;
   TagDetectionArray tag_detections;
-  std::vector<TagInfo> *tag_info;
+  std::vector<Tag> *tag_info;
 
   // Transforms
   TransformsCache transforms;
