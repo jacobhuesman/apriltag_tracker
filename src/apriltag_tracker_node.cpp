@@ -20,10 +20,11 @@
 
 struct Publishers
 {
-  tf2_ros::TransformBroadcaster tf;
+  //tf2_ros::TransformBroadcaster tf;
   ros::Publisher pose;
   ros::Publisher detections;
   ros::Publisher diagnostics;
+  ros::Publisher transforms;
   image_transport::Publisher image;
   image_transport::Publisher detections_image;
 };
@@ -122,7 +123,7 @@ void trackerThread(ros::NodeHandle nh, HostCommLayer::Dynamixel *servo, AprilTag
     time_stamp[4] = std::chrono::system_clock::now();
     for (int i = 0; i < tag_detection_array.detections.size(); i++)
     {
-      pubs->tf.sendTransform(tag_detection_array.detections[i].transform);
+      pubs->transforms.publish(tag_detection_array.detections[i].transform);
     }
     geometry_msgs::PoseStamped pose_estimate_msg;
     if (tracker.estimateRobotPose(&pose_estimate_msg) && publish_pose_estimate)
@@ -214,7 +215,8 @@ void servoThread(HostCommLayer::Dynamixel *servo)
     }
     if (status == CL_OK)
     {
-      pubs->tf.sendTransform(servo->getTransformMsg());
+      pubs->transforms.publish(servo->getTransformMsg());
+      //pubs->tf.sendTransform(servo->getTransformMsg());
     }
     rate.sleep();
   }
@@ -231,6 +233,7 @@ int main(int argc, char **argv)
   pubs->detections = nh.advertise<apriltag_tracker::AprilTagDetectionArray>("info/tag_detections", 1);
   pubs->diagnostics = nh.advertise<apriltag_tracker::ATTDiagnostics>("info/diagnostics", 1);
   pubs->pose = nh.advertise<geometry_msgs::PoseStamped>("pose_estimate", 1);
+  pubs->transforms = nh.advertise<geometry_msgs::TransformStamped>("transforms", 1);
   pubs->image = it.advertise("image/raw", 1);
   pubs->detections_image = it.advertise("image/detections", 1);
 
