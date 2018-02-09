@@ -105,7 +105,7 @@ add_executable(speed_test src/util/speed_test.cpp)
 add_executable(transform_cache_test src/util/transform_cache_test.cpp)
 target_link_libraries(transform_cache_test ${catkin_LIBRARIES})
 
-add_executable(static_transforms_publisher src/util/static_transforms_publisher.cpp)
+add_executable(static_transforms_publisher src/util/transforms_publisher.cpp)
 target_link_libraries(static_transforms_publisher ${catkin_LIBRARIES})
 
 catkin_add_gtest(tag_tests src/tests/tag_tests.cpp)

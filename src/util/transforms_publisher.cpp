@@ -2,12 +2,21 @@
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2/LinearMath/Quaternion.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
+static tf2_ros::TransformBroadcaster br;
+
+void transformsCallback(const geometry_msgs::TransformStamped::ConstPtr& transform)
+{
+  geometry_msgs::TransformStamped synced_transform = *transform;
+  synced_transform.header.stamp = ros::Time::now(); // Don't use this technique for anything other than visuals
+  br.sendTransform(synced_transform);
+}
 
 int main(int argc, char** argv){
   ros::init(argc, argv, "static_transforms_publisher");
   ros::NodeHandle nh;
-  static tf2_ros::TransformBroadcaster br;
+  ros::Subscriber sub = nh.subscribe("/position_sensor/transforms", 1000, transformsCallback);
 
   tf2::Quaternion q;
 
