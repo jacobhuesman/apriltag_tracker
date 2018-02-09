@@ -181,7 +181,7 @@ bool AprilTagTracker::estimateRobotPose(geometry_msgs::PoseStamped *pose_estimat
   {
     if ((*tag_info)[0].isReady())
     {
-      tf2::Stamped<tf2::Transform> tag_transform = (*tag_info)[0].getMedianFilteredTransform().getTf();
+      tf2::Stamped<tf2::Transform> tag_transform = (*tag_info)[0].getMedianFilteredTransform().getTagTf();
       if ((ros::Time::now() - tag_transform.stamp_) < ros::Duration(0.5))
       {
 

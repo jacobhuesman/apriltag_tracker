@@ -2,28 +2,28 @@
 
 using namespace AprilTagTracker;
 
-Transform::Transform(tf2::Stamped<tf2::Transform> tf)
+Transform::Transform(tf2::Stamped<tf2::Transform> tag_tf)
 {
-  this->tf = tf;
+  this->tag_tf = tag_tf;
 
   // TODO this is a little convoluted, is there a more direct way?
   tf2::Matrix3x3 matrix;
-  matrix.setRotation(tf.getRotation());
+  matrix.setRotation(tag_tf.getRotation());
   double tmp1, tmp2;
-  matrix.getRPY(tmp1, this->theta, tmp2);
+  matrix.getRPY(tmp1, this->tag_theta, tmp2);
 }
 
-tf2::Stamped<tf2::Transform> Transform::getTf()
+tf2::Stamped<tf2::Transform> Transform::getTagTf()
 {
-  return this->tf;
+  return this->tag_tf;
 }
 
-double Transform::getTheta()
+double Transform::getTagTheta()
 {
-  return this->theta;
+  return this->tag_theta;
 }
 
-bool Transform::operator<(Transform tf)
+bool Transform::operator<(Transform tag_tf)
 {
-  return this->getTheta() < tf.getTheta();
+  return this->getTagTheta() < tag_tf.getTagTheta();
 }

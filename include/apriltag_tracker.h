@@ -24,17 +24,10 @@
 #include <camera.h>
 #include <transform.h>
 #include <tag.h>
+#include <transforms_cache.h>
 
 namespace AprilTagTracker
 {
-
-struct TransformsCache
-{
-  tf2::Transform camera_optical_to_servo_joint;
-  // Supply dynamic servo_joint to servo_base_link tf
-  tf2::Transform servo_base_link_to_base_link;
-};
-
 
 class AprilTagTracker
 {
