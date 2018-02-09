@@ -15,11 +15,11 @@ Tag::Tag(int id, int priority, double size)
 }
 
 // TODO add mutex check
-void Tag::addTransform(tf2::Stamped<tf2::Transform> tf)
+void Tag::addTransform(tf2::Stamped<tf2::Transform> tag_tf, tf2::Stamped<tf2::Transform> servo_tf)
 {
   mutex->lock();
   seq++;
-  Transform new_transform(tf);
+  Transform new_transform(tag_tf, servo_tf);
   this->transforms.emplace_front(new_transform);
   if (this->transforms.size() > this->list_size)
   {
@@ -89,7 +89,7 @@ Transform Tag::getMedianFilteredTransform()
     {
       it++;
     }
-    return it->getTagTf();
+    return *it;
   //}
 }
 

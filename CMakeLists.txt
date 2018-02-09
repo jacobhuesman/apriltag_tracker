@@ -82,7 +82,7 @@ target_link_libraries(AprilTagTracker HostCommLayer)
 target_link_libraries(AprilTagTracker Camera)
 target_link_libraries(AprilTagTracker Tag)
 
-add_library(HostCommLayer src/host_comm_layer.cpp)
+add_library(HostCommLayer src/dynamixel_host_layer.cpp)
 target_link_libraries(HostCommLayer mraa)
 target_link_libraries(HostCommLayer ${catkin_LIBRARIES})
 

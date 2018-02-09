@@ -19,7 +19,7 @@ public:
   Tag(int id, int priority, double size);
 
   // Thread safe
-  void addTransform(tf2::Stamped<tf2::Transform> tf);
+  void addTransform(tf2::Stamped<tf2::Transform> tag_tf, tf2::Stamped<tf2::Transform> servo_tf);
   void setMapToTagTf(tf2::Transform tf);
   int getID();
   //std::string getFrameID(); Not thread safe

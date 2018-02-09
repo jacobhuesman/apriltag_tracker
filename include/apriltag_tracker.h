@@ -19,7 +19,7 @@
 #include <TagDetector.h>
 #include <raspicam/raspicam.h>
 
-#include <host_comm_layer.h>
+#include <dynamixel_host_layer.h>
 #include <sensor_msgs/CameraInfo.h>
 #include <camera.h>
 #include <transform.h>
