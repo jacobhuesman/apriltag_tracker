@@ -1,0 +1,2 @@
+# 5V test
+Raspberry PI pulls about 1A when compiling on all 4 cores at 100% CPU utilization, it pulls about 0.25A at idle.

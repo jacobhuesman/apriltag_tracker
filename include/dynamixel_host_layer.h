@@ -24,6 +24,7 @@ namespace HostCommLayer
 
     // Thread-Safe
     tf2::Transform getTransform();
+    tf2::Stamped<tf2::Transform> getStampedTransform();
     geometry_msgs::TransformStamped getTransformMsg();
     uint8_t adjustCamera(int16_t velocity);
     uint8_t scan();

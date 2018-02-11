@@ -131,7 +131,7 @@ void AprilTagTracker::updateTags()
         tf2::Stamped<tf2::Transform> stamped_tag_transform;
         stamped_tag_transform.setData(tag_transform);
         stamped_tag_transform.stamp_ = camera->getCaptureTime();
-        (*tag_info)[j].addTransform(stamped_tag_transform);
+        (*tag_info)[j].addTransform(stamped_tag_transform, servo->getStampedTransform());
       }
     }
   }
@@ -181,14 +181,16 @@ bool AprilTagTracker::estimateRobotPose(geometry_msgs::PoseStamped *pose_estimat
   {
     if ((*tag_info)[0].isReady())
     {
-      tf2::Stamped<tf2::Transform> tag_transform = (*tag_info)[0].getMedianFilteredTransform().getTf();
+      Transform transform = (*tag_info)[0].getMedianFilteredTransform();
+      tf2::Stamped<tf2::Transform> tag_transform = transform.getTagTf();
+      tf2::Stamped<tf2::Transform> servo_transform = transform.getServoTf();
+
       if ((ros::Time::now() - tag_transform.stamp_) < ros::Duration(0.5))
       {
-
         tf2::Transform pose_estimate = (*tag_info)[0].getMapToTagTf()
                                        * tag_transform.inverse()
                                        * transforms.camera_optical_to_servo_joint
-                                       * servo->getTransform().inverse()
+                                       * servo_transform.inverse()
                                        * transforms.servo_base_link_to_base_link;
         pose_estimate_msg->header.frame_id = "map";
         pose_estimate_msg->header.seq = (*tag_info)[0].getSeq(); // TODO this is not a global sequence, but it should be

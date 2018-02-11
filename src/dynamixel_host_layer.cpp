@@ -1,4 +1,4 @@
-#include <host_comm_layer.h>
+#include <dynamixel_host_layer.h>
 #include <comm_layer_defs.h>
 #include <iostream>
 
@@ -338,6 +338,12 @@ uint8_t Dynamixel::scan()
 
 tf2::Transform Dynamixel::getTransform()
 {
+  return this->transform;
+}
+
+tf2::Stamped<tf2::Transform> Dynamixel::getStampedTransform()
+{
+  tf2::Stamped<tf2::Transform> transform(this->transform, stamp, frame_id); // TODO probably should just do this right away
   return transform;
 }
 

@@ -11,15 +11,18 @@ namespace AprilTagTracker
 class Transform
 {
 public:
-  Transform(tf2::Stamped<tf2::Transform> tf);
+  Transform(tf2::Stamped<tf2::Transform> tag_tf, tf2::Stamped<tf2::Transform> servo_tf);
 
-  tf2::Stamped<tf2::Transform> getTf();
-  double getTheta();
-  bool operator<(Transform tf);
+  tf2::Stamped<tf2::Transform> getTagTf();
+  tf2::Stamped<tf2::Transform> getServoTf();
+  double getTagTheta();
+  bool operator<(Transform tag_tf);
 
 private:
-  tf2::Stamped<tf2::Transform> tf;
-  double theta;
+  tf2::Stamped<tf2::Transform> tag_tf;
+  tf2::Stamped<tf2::Transform> servo_tf;
+
+  double tag_theta;
 };
 
 }

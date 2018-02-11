@@ -15,11 +15,11 @@ Tag::Tag(int id, int priority, double size)
 }
 
 // TODO add mutex check
-void Tag::addTransform(tf2::Stamped<tf2::Transform> tf)
+void Tag::addTransform(tf2::Stamped<tf2::Transform> tag_tf, tf2::Stamped<tf2::Transform> servo_tf)
 {
   mutex->lock();
   seq++;
-  Transform new_transform(tf);
+  Transform new_transform(tag_tf, servo_tf);
   this->transforms.emplace_front(new_transform);
   if (this->transforms.size() > this->list_size)
   {
@@ -69,13 +69,13 @@ Transform Tag::getMedianFilteredTransform()
 {
   /*if (transforms.size() < 3) // TODO this is a bad way of doing this
   {
-    tf2::Stamped<tf2::Transform> tf;
-    tf.setOrigin(tf2::Vector3(0.0, 0.0, 0.0));
+    tf2::Stamped<tf2::Transform> tag_tf;
+    tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 0.0));
     tf2::Quaternion q;
     q.setRPY(0.0,0.0,0.0);
-    tf.setRotation(q);
-    tf.stamp_ = ros::Time::now();
-    Transform zero_transform(tf);
+    tag_tf.setRotation(q);
+    tag_tf.stamp_ = ros::Time::now();
+    Transform zero_transform(tag_tf);
     return zero_transform;
   }
   else
@@ -89,7 +89,7 @@ Transform Tag::getMedianFilteredTransform()
     {
       it++;
     }
-    return it->getTf();
+    return *it;
   //}
 }
 
@@ -108,7 +108,7 @@ bool Tag::isReady() // TODO create better metric
   if (transforms.size() >= list_size)
   {
     return true;
-    /*if ((ros::Time::now() - transforms.end()->getTf().stamp_) < ros::Duration(1.0))
+    /*if ((ros::Time::now() - transforms.end()->getTagTf().stamp_) < ros::Duration(1.0))
     {
       return true;
     }*/

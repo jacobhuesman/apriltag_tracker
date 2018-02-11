@@ -19,22 +19,15 @@
 #include <TagDetector.h>
 #include <raspicam/raspicam.h>
 
-#include <host_comm_layer.h>
+#include <dynamixel_host_layer.h>
 #include <sensor_msgs/CameraInfo.h>
 #include <camera.h>
 #include <transform.h>
 #include <tag.h>
+#include <transforms_cache.h>
 
 namespace AprilTagTracker
 {
-
-struct TransformsCache
-{
-  tf2::Transform camera_optical_to_servo_joint;
-  // Supply dynamic servo_joint to servo_base_link tf
-  tf2::Transform servo_base_link_to_base_link;
-};
-
 
 class AprilTagTracker
 {

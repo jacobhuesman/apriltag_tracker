@@ -26,8 +26,8 @@ TEST(AprilTagTrackerTagTests, AddTransform)
 
   std::vector<Transform> data = test.getTransforms();
 
-  ASSERT_NEAR(1.4, data[0].getTf().getOrigin().getX(), 1e-10);
-  ASSERT_NEAR(1.2, data[0].getTheta(), 1e-10);
+  ASSERT_NEAR(1.4, data[0].getTagTf().getOrigin().getX(), 1e-10);
+  ASSERT_NEAR(1.2, data[0].getTagTheta(), 1e-10);
 }
 
 TEST(AprilTagTrackerTagTests, Add10Transforms)
@@ -45,16 +45,16 @@ TEST(AprilTagTrackerTagTests, Add10Transforms)
 
   ASSERT_EQ(10, data.size());
   ASSERT_EQ(10, test.getSeq());
-  ASSERT_EQ(9, data[0].getTf().getOrigin().getX());
-  ASSERT_EQ(8, data[1].getTf().getOrigin().getX());
-  ASSERT_EQ(7, data[2].getTf().getOrigin().getX());
-  ASSERT_EQ(6, data[3].getTf().getOrigin().getX());
-  ASSERT_EQ(5, data[4].getTf().getOrigin().getX());
-  ASSERT_EQ(4, data[5].getTf().getOrigin().getX());
-  ASSERT_EQ(3, data[6].getTf().getOrigin().getX());
-  ASSERT_EQ(2, data[7].getTf().getOrigin().getX());
-  ASSERT_EQ(1, data[8].getTf().getOrigin().getX());
-  ASSERT_EQ(0, data[9].getTf().getOrigin().getX());
+  ASSERT_EQ(9, data[0].getTagTf().getOrigin().getX());
+  ASSERT_EQ(8, data[1].getTagTf().getOrigin().getX());
+  ASSERT_EQ(7, data[2].getTagTf().getOrigin().getX());
+  ASSERT_EQ(6, data[3].getTagTf().getOrigin().getX());
+  ASSERT_EQ(5, data[4].getTagTf().getOrigin().getX());
+  ASSERT_EQ(4, data[5].getTagTf().getOrigin().getX());
+  ASSERT_EQ(3, data[6].getTagTf().getOrigin().getX());
+  ASSERT_EQ(2, data[7].getTagTf().getOrigin().getX());
+  ASSERT_EQ(1, data[8].getTagTf().getOrigin().getX());
+  ASSERT_EQ(0, data[9].getTagTf().getOrigin().getX());
 }
 
 TEST(AprilTagTrackerTagTests, Add20Transforms)
@@ -72,16 +72,16 @@ TEST(AprilTagTrackerTagTests, Add20Transforms)
 
   ASSERT_EQ(10, data.size());
   ASSERT_EQ(20, test.getSeq());
-  ASSERT_EQ(19, data[0].getTf().getOrigin().getX());
-  ASSERT_EQ(18, data[1].getTf().getOrigin().getX());
-  ASSERT_EQ(17, data[2].getTf().getOrigin().getX());
-  ASSERT_EQ(16, data[3].getTf().getOrigin().getX());
-  ASSERT_EQ(15, data[4].getTf().getOrigin().getX());
-  ASSERT_EQ(14, data[5].getTf().getOrigin().getX());
-  ASSERT_EQ(13, data[6].getTf().getOrigin().getX());
-  ASSERT_EQ(12, data[7].getTf().getOrigin().getX());
-  ASSERT_EQ(11, data[8].getTf().getOrigin().getX());
-  ASSERT_EQ(10, data[9].getTf().getOrigin().getX());
+  ASSERT_EQ(19, data[0].getTagTf().getOrigin().getX());
+  ASSERT_EQ(18, data[1].getTagTf().getOrigin().getX());
+  ASSERT_EQ(17, data[2].getTagTf().getOrigin().getX());
+  ASSERT_EQ(16, data[3].getTagTf().getOrigin().getX());
+  ASSERT_EQ(15, data[4].getTagTf().getOrigin().getX());
+  ASSERT_EQ(14, data[5].getTagTf().getOrigin().getX());
+  ASSERT_EQ(13, data[6].getTagTf().getOrigin().getX());
+  ASSERT_EQ(12, data[7].getTagTf().getOrigin().getX());
+  ASSERT_EQ(11, data[8].getTagTf().getOrigin().getX());
+  ASSERT_EQ(10, data[9].getTagTf().getOrigin().getX());
 }
 
 TEST(AprilTagTrackerTagTests, GetMedianFilteredTransformPartialFill)
@@ -102,14 +102,14 @@ TEST(AprilTagTrackerTagTests, GetMedianFilteredTransformPartialFill)
 
   // Check that it's the middle value
   ASSERT_EQ(3, test.getSeq());
-  ASSERT_NEAR(0.5, test.getMedianFilteredTransform().getTheta(), 1e-10);
+  ASSERT_NEAR(0.5, test.getMedianFilteredTransform().getTagTheta(), 1e-10);
 
   // Check that the transform order hasn't been altered
   std::vector<Transform> data = test.getTransforms();
   ASSERT_EQ(3, data.size());
-  ASSERT_NEAR(0.5, data[2].getTheta(), 1e-10);
-  ASSERT_NEAR(1.2, data[1].getTheta(), 1e-10);
-  ASSERT_NEAR(0.2, data[0].getTheta(), 1e-10);
+  ASSERT_NEAR(0.5, data[2].getTagTheta(), 1e-10);
+  ASSERT_NEAR(1.2, data[1].getTagTheta(), 1e-10);
+  ASSERT_NEAR(0.2, data[0].getTagTheta(), 1e-10);
 
 }
 
@@ -119,7 +119,7 @@ TEST(AprilTagTrackerTagTests, GetMedianFilteredTransformEmpty)
 
   // Check that it's the middle value
   ASSERT_EQ(0, test.getTransforms().size());
-  ASSERT_NEAR(0.0, test.getMedianFilteredTransform().getTf().getOrigin().getX(), 1e-10);
+  ASSERT_NEAR(0.0, test.getMedianFilteredTransform().getTagTf().getOrigin().getX(), 1e-10);
 }
 
 TEST(AprilTagTrackerTagTests, GetMedianFilteredTransform)
@@ -178,7 +178,7 @@ TEST(AprilTagTrackerTagTests, GetMedianFilteredTransform)
 
   ASSERT_EQ(10, data.size());
   ASSERT_EQ(15, test.getSeq());
-  ASSERT_NEAR(0.5, test.getMedianFilteredTransform().getTheta(), 1e-10);
+  ASSERT_NEAR(0.5, test.getMedianFilteredTransform().getTagTheta(), 1e-10);
 }
 
 // Run all the tests that were declared with TEST()

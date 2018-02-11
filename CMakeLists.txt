@@ -82,12 +82,12 @@ target_link_libraries(AprilTagTracker HostCommLayer)
 target_link_libraries(AprilTagTracker Camera)
 target_link_libraries(AprilTagTracker Tag)
 
-add_library(HostCommLayer src/host_comm_layer.cpp)
+add_library(HostCommLayer src/dynamixel_host_layer.cpp)
 target_link_libraries(HostCommLayer mraa)
 target_link_libraries(HostCommLayer ${catkin_LIBRARIES})
 
 
-add_executable(apriltag_tracker src/apriltag_tracker_node.cpp src/transform.cpp src/tag.cpp include/tag.h include/transform.h)
+add_executable(apriltag_tracker src/apriltag_tracker_node.cpp src/transform.cpp src/tag.cpp include/tag.h include/transform.h include/transforms_cache.h)
 add_dependencies(apriltag_tracker ${${PROJECT_NAME}_EXPORTED_TARGETS})
 target_link_libraries(apriltag_tracker ${catkin_LIBRARIES})
 target_link_libraries(apriltag_tracker ${OpenCV_LIBS})

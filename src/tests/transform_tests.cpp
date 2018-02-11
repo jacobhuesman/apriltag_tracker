@@ -12,10 +12,10 @@ TEST(AprilTagTrackerTransformTests, ConstructorAndGetters)
   tf.setRotation(q);
   Transform test(tf);
 
-  ASSERT_NEAR(1.0, test.getTf().getOrigin().getX(), 1e-10);
-  ASSERT_NEAR(2.0, test.getTf().getOrigin().getY(), 1e-10);
-  ASSERT_NEAR(3.0, test.getTf().getOrigin().getZ(), 1e-10);
-  ASSERT_NEAR(M_PI_2, test.getTheta(), 1e-10);
+  ASSERT_NEAR(1.0, test.getTagTf().getOrigin().getX(), 1e-10);
+  ASSERT_NEAR(2.0, test.getTagTf().getOrigin().getY(), 1e-10);
+  ASSERT_NEAR(3.0, test.getTagTf().getOrigin().getZ(), 1e-10);
+  ASSERT_NEAR(M_PI_2, test.getTagTheta(), 1e-10);
 }
 
 TEST(AprilTagTrackerTransformTests, LessThanOperator)
@@ -31,8 +31,8 @@ TEST(AprilTagTrackerTransformTests, LessThanOperator)
   tf2.setRotation(q1);
   Transform test2(tf2);
 
-  ASSERT_NEAR(M_PI_2,       test1.getTheta(), 1e-10);
-  ASSERT_NEAR(M_PI_2 * 1.1, test2.getTheta(), 1e-10);
+  ASSERT_NEAR(M_PI_2, test1.getTagTheta(), 1e-10);
+  ASSERT_NEAR(M_PI_2 * 1.1, test2.getTagTheta(), 1e-10);
 
   ASSERT_TRUE(test1 < test2);
   ASSERT_FALSE(test2 < test1);
