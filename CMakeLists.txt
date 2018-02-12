@@ -132,9 +132,8 @@ if(TARGET transform_tests)
   target_link_libraries(transform_tests Tag)
 endif()
 
-#catkin_add_gtest(transform_tests src/tests/transform_tests.cpp)
-#if(TARGET transform_tests)
-#  target_link_libraries(transform_tests ${catkin_LIBRARIES})
-#  target_link_libraries(transform_tests Tag)
-#endif()
+catkin_add_gtest(timer_tests src/tests/timer_tests.cpp)
+if(TARGET timer_tests)
+  target_link_libraries(timer_tests Timers)
+endif()
 

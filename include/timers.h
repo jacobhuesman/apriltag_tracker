@@ -3,7 +3,6 @@
 
 #include <chrono>
 #include <vector>
-#include <boost/thread.hpp>
 #include <apriltag_tracker/ATTLocalTiming.h>
 
 namespace AprilTagTracker
@@ -17,6 +16,8 @@ public:
   long getTime();
 
 private:
+  bool started = false;
+  bool ready = false;
   std::chrono::system_clock::time_point start_time;
   std::chrono::system_clock::time_point end_time;
 };

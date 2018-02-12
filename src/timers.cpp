@@ -2,22 +2,29 @@
 
 void AprilTagTracker::Timer::start()
 {
+  started = true;
+  ready = false;
   start_time = std::chrono::system_clock::now();
 }
 
 void AprilTagTracker::Timer::stop()
 {
+  ready = true;
   end_time = std::chrono::system_clock::now();
 }
 
 long AprilTagTracker::Timer::getTime()
 {
-  return std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+  if (ready && started)
+  {
+    return std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+  }
+  return 0;
 }
 
 long AprilTagTracker::Timers::getTotalTime()
 {
-  long total_time;
+  long total_time = 0;
   total_time += this->get_image.getTime();
   total_time += this->process_image.getTime();
   total_time += this->adjust_servo.getTime();
@@ -33,7 +40,7 @@ long AprilTagTracker::Timers::getTotalTime()
 
 long AprilTagTracker::Timers::getProcessingTime()
 {
-  long processing_time;
+  long processing_time = 0;
   processing_time += this->process_image.getTime();
   processing_time += this->adjust_servo.getTime();
   processing_time += this->calculate_transforms.getTime();
