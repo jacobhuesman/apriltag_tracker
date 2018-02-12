@@ -18,7 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
     image_transport
     camera_info_manager
     dynamic_reconfigure
-    )
+)
 
 add_message_files(
     FILES
@@ -57,6 +57,12 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(${catkin_INCLUDE_DIRS})
 include_directories(include)
 
+#############
+# Libraries #
+#############
+add_library(Timers src/timers.cpp)
+add_dependencies(Timers ${${PROJECT_NAME}_EXPORTED_TARGETS})
+
 add_library(Camera src/camera.cpp)
 add_dependencies(Camera ${${PROJECT_NAME}_EXPORTED_TARGETS})
 add_dependencies(Camera ${PROJECT_NAME}_gencfg)
@@ -86,12 +92,15 @@ add_library(HostCommLayer src/dynamixel_host_layer.cpp)
 target_link_libraries(HostCommLayer mraa)
 target_link_libraries(HostCommLayer ${catkin_LIBRARIES})
 
-
-add_executable(apriltag_tracker src/apriltag_tracker_node.cpp src/transform.cpp src/tag.cpp include/tag.h include/transform.h include/transforms_cache.h)
+############
+# Programs #
+############
+add_executable(apriltag_tracker src/apriltag_tracker_node.cpp)
 add_dependencies(apriltag_tracker ${${PROJECT_NAME}_EXPORTED_TARGETS})
 target_link_libraries(apriltag_tracker ${catkin_LIBRARIES})
 target_link_libraries(apriltag_tracker ${OpenCV_LIBS})
 target_link_libraries(apriltag_tracker AprilTagTracker)
+target_link_libraries(apriltag_tracker Timers)
 
 add_executable(comm_test src/util/comm_test.cpp)
 target_link_libraries(comm_test HostCommLayer)
@@ -108,6 +117,9 @@ target_link_libraries(transform_cache_test ${catkin_LIBRARIES})
 add_executable(transforms_publisher src/util/transforms_publisher.cpp)
 target_link_libraries(transforms_publisher ${catkin_LIBRARIES})
 
+#########
+# Tests #
+#########
 catkin_add_gtest(tag_tests src/tests/tag_tests.cpp)
 if(TARGET tag_tests)
   target_link_libraries(tag_tests ${catkin_LIBRARIES})
@@ -119,4 +131,10 @@ if(TARGET transform_tests)
   target_link_libraries(transform_tests ${catkin_LIBRARIES})
   target_link_libraries(transform_tests Tag)
 endif()
+
+#catkin_add_gtest(transform_tests src/tests/transform_tests.cpp)
+#if(TARGET transform_tests)
+#  target_link_libraries(transform_tests ${catkin_LIBRARIES})
+#  target_link_libraries(transform_tests Tag)
+#endif()
 
