@@ -11,6 +11,12 @@
 
 namespace AprilTagTracker
 {
+class unable_to_find_transform_error : public std::runtime_error
+{
+public:
+  explicit unable_to_find_transform_error(std::string error_msg) : std::runtime_error(error_msg) {};
+};
+
 
 class Tag
 {
@@ -30,6 +36,7 @@ public:
   bool isReady();
   std::vector<Transform> getTransforms();
   Transform getMedianFilteredTransform();
+  Transform getMostRecentTransform();
   tf2::Transform getMapToTagTf();
 
 

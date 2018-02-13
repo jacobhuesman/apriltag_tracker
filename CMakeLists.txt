@@ -120,10 +120,14 @@ target_link_libraries(transforms_publisher ${catkin_LIBRARIES})
 #########
 # Tests #
 #########
-catkin_add_gtest(tag_tests src/tests/tag_tests.cpp)
-if(TARGET tag_tests)
-  target_link_libraries(tag_tests ${catkin_LIBRARIES})
-  target_link_libraries(tag_tests Tag)
+add_executable(tag_tests src/tests/tag_tests.cpp)
+target_link_libraries(tag_tests ${catkin_LIBRARIES})
+target_link_libraries(tag_tests Tag)
+target_link_libraries(tag_tests gtest)
+catkin_add_gtest(catkin_tag_tests src/tests/tag_tests.cpp)
+if(TARGET catkin_tag_tests)
+  target_link_libraries(catkin_tag_tests ${catkin_LIBRARIES})
+  target_link_libraries(catkin_tag_tests Tag)
 endif()
 
 catkin_add_gtest(transform_tests src/tests/transform_tests.cpp)

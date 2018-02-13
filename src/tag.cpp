@@ -67,30 +67,20 @@ double Tag::getSize()
 // TODO handle empty list case
 Transform Tag::getMedianFilteredTransform()
 {
-  /*if (transforms.size() < 3) // TODO this is a bad way of doing this
+  if (transforms.size() < 5)
   {
-    tf2::Stamped<tf2::Transform> tag_tf;
-    tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 0.0));
-    tf2::Quaternion q;
-    q.setRPY(0.0,0.0,0.0);
-    tag_tf.setRotation(q);
-    tag_tf.stamp_ = ros::Time::now();
-    Transform zero_transform(tag_tf);
-    return zero_transform;
+    throw unable_to_find_transform_error("Median filter not populated");
   }
-  else
-  {*/
-    mutex->lock();
-    std::list<Transform> transforms_copy(transforms.begin(), transforms.end());
-    mutex->unlock();
-    transforms_copy.sort();
-    auto it = transforms_copy.begin();
-    for (int i = 0; i < (transforms_copy.size() / 2); i++)
-    {
-      it++;
-    }
-    return *it;
-  //}
+  mutex->lock();
+  std::list<Transform> transforms_copy(transforms.begin(), transforms.end());
+  mutex->unlock();
+  transforms_copy.sort();
+  auto it = transforms_copy.begin();
+  for (int i = 0; i < (transforms_copy.size() / 2); i++)
+  {
+    it++;
+  }
+  return *it;
 }
 
 void Tag::setMapToTagTf(tf2::Transform tf) // TODO add unit test
@@ -114,5 +104,11 @@ bool Tag::isReady() // TODO create better metric
     }*/
   }
   return false;
+}
+
+Transform Tag::getMostRecentTransform()
+{
+  tf2::Stamped<tf2::Transform> tf;
+  return Transform(tf, tf);
 }
 
