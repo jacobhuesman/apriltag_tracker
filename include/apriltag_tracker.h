@@ -40,10 +40,10 @@ public:
   void drawDetections();
   void processImage();
   void adjustServo();
-  void outputTimingInfo();
   void updateTags();
   void fillTagDetectionArray(apriltag_tracker::AprilTagDetectionArray *tag_detection_array);
   bool estimateRobotPose(geometry_msgs::PoseStamped *pose_estimate_msg);
+  Transform getTransform();
 
   HostCommLayer::Dynamixel *servo;  // TODO remove servo dependency
   apriltag_tracker::Camera *camera; // TODO remove camera dependency
@@ -55,6 +55,7 @@ private:
   TagDetector *tag_detector;
   TagDetectionArray tag_detections;
   std::vector<Tag> *tag_info;
+  unsigned int current_seq;
 
   // Transforms
   TransformsCache transforms;

@@ -38,6 +38,7 @@ struct CameraProperties
   cv::Point2d fov;
   cv::Point2d optical_center;
   cv::Point2d degrees_per_pixel;
+  unsigned int seq;
 };
 
 class Camera
@@ -62,6 +63,7 @@ public:
   ros::Time getCaptureTime();
   cv::Mat getImage();
   cv::Mat* getImagePtr();
+  unsigned int getSeq();
 
   void setupCapture();
 

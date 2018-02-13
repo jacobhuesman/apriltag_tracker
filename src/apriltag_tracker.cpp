@@ -18,6 +18,7 @@ namespace AprilTagTracker
     this->tag_info = tag_info;
     this->camera = camera;
     this->transforms = transforms;
+    this->current_seq = 0;
   }
 
   AprilTagTracker::~AprilTagTracker()
@@ -91,6 +92,7 @@ void AprilTagTracker::processImage()
 {
   // TODO there is a full image copy here, see if we can pass by reference
   tag_detector->process(camera->getImage(), camera->getOpticalCenter(), tag_detections);
+  current_seq = camera->getSeq();
   updateTags();
 }
 
@@ -174,6 +176,14 @@ void AprilTagTracker::fillTagDetectionArray(apriltag_tracker::AprilTagDetectionA
   }
 }
 
+Transform AprilTagTracker::getTransform()
+{
+  for (int j = 0; j < tag_info->size(); j++)
+  {
+    //if (tag_inf)
+  }
+}
+
 bool AprilTagTracker::estimateRobotPose(geometry_msgs::PoseStamped *pose_estimate_msg)
 {
   // TODO do a more intelligent pick
@@ -210,10 +220,6 @@ bool AprilTagTracker::estimateRobotPose(geometry_msgs::PoseStamped *pose_estimat
   return false;
 }
 
-void AprilTagTracker::outputTimingInfo()
-{
-
-}
 }
 
 

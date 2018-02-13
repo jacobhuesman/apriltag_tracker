@@ -19,6 +19,7 @@ CameraMaster::CameraMaster(ros::NodeHandle nh)
   f = boost::bind(&CameraMaster::reconfigureCallback, this, _1, _2 );
   server->setCallback(f);
 
+  properties->seq = 0;
   setupProperties();
 }
 
@@ -165,7 +166,9 @@ void Camera::grabImage()
 {
   camera_mutex->lock();
   camera->grab();
+  properties->seq++;
   capture->header.stamp = ros::Time::now();
+  capture->header.seq = properties->seq;
   camera->retrieve(capture->image.data);
   camera_mutex->unlock();
 }
@@ -233,6 +236,11 @@ sensor_msgs::ImagePtr Camera::getImageMsg()
 ros::Time Camera::getCaptureTime()
 {
   return capture->header.stamp;
+}
+
+unsigned int Camera::getSeq()
+{
+  return capture->header.seq;
 }
 
 }
