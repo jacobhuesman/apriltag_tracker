@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
-#include <apriltag_tracker.h>
+#include <camera.h>
 
-using namespace AprilTagTracker;
+using namespace apriltag_tracker;
 
-TEST(AprilTagTrackerTests, TrivialTest)
+TEST(AprilTagTrackerCameraTests, TrivialTest)
 {
   ASSERT_EQ(true, true);
 }

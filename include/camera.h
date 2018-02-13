@@ -14,7 +14,8 @@
 
 
 
-namespace apriltag_tracker {
+namespace apriltag_tracker
+{
 
 static unsigned int CameraWidth[4] = {320, 640, 960, 1280}; // TODO probably come up with cleaner way of doing this
 static unsigned int CameraHeight[4] = {240, 480, 720, 960};
@@ -44,8 +45,7 @@ struct CameraProperties
 class Camera
 {
 public:
-  Camera(raspicam::RaspiCam *camera, boost::mutex *camera_mutex,
-         CameraProperties *properties);
+  Camera(boost::mutex *camera_mutex, CameraProperties *properties);
   ~Camera();
   void grabImage();
 
@@ -67,16 +67,42 @@ public:
 
   void setupCapture();
 
-
 private:
-  // Shared objects
-  raspicam::RaspiCam *camera;
+  virtual void _grabImage() = 0;
+  virtual void _retrieveImage(unsigned char *data) = 0;
+
   boost::mutex *camera_mutex;
   CameraProperties *properties; // Do not edit in this class
   camera_info_manager::CameraInfoManager *manager_camera_info;
 
   // Private objects
   cv_bridge::CvImage *capture;
+};
+
+class RaspiCamera : public Camera
+{
+public:
+  RaspiCamera(raspicam::RaspiCam *camera, boost::mutex *camera_mutex, CameraProperties *properties);
+
+private:
+  void _grabImage();
+  void _retrieveImage(unsigned char *data);
+
+  // Shared objects
+  raspicam::RaspiCam *camera;
+};
+
+class DummyCamera : public Camera
+{
+public:
+  DummyCamera(boost::mutex *camera_mutex, CameraProperties *properties) : Camera(camera_mutex, properties) {};
+
+private:
+  void _grabImage() {};
+  void _retrieveImage(unsigned char *data) {};
+
+  // Shared objects
+  raspicam::RaspiCam *camera;
 };
 
 

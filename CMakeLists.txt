@@ -120,24 +120,30 @@ target_link_libraries(transforms_publisher ${catkin_LIBRARIES})
 #########
 # Tests #
 #########
-add_executable(tag_tests src/tests/tag_tests.cpp)
-target_link_libraries(tag_tests ${catkin_LIBRARIES})
-target_link_libraries(tag_tests Tag)
-target_link_libraries(tag_tests gtest)
-catkin_add_gtest(catkin_tag_tests src/tests/tag_tests.cpp)
-if(TARGET catkin_tag_tests)
-  target_link_libraries(catkin_tag_tests ${catkin_LIBRARIES})
-  target_link_libraries(catkin_tag_tests Tag)
+catkin_add_gtest(tag_tests src/tests/tag_tests.cpp)
+if(TARGET tag_tests)
+  target_link_libraries(tag_tests ${catkin_LIBRARIES})
+  target_link_libraries(tag_tests Tag)
 endif()
 
 catkin_add_gtest(transform_tests src/tests/transform_tests.cpp)
 if(TARGET transform_tests)
   target_link_libraries(transform_tests ${catkin_LIBRARIES})
-  target_link_libraries(transform_tests Tag)
+  target_link_libraries(transform_tests Transform)
 endif()
 
 catkin_add_gtest(timer_tests src/tests/timer_tests.cpp)
 if(TARGET timer_tests)
   target_link_libraries(timer_tests Timers)
+endif()
+
+catkin_add_gtest(camera_tests src/tests/camera_tests.cpp)
+if(TARGET camera_tests)
+  target_link_libraries(camera_tests Camera)
+endif()
+
+catkin_add_gtest(apriltag_tracker_tests src/tests/apriltag_tracker_tests.cpp)
+if(TARGET apriltag_tracker_tests)
+  target_link_libraries(apriltag_tracker_tests AprilTagTracker)
 endif()
 
