@@ -116,8 +116,8 @@ TEST(AprilTagTrackerTimerTests, TimersMsg)
   ASSERT_LT(timing_msg.publish_detections_image,  9200);
   ASSERT_GT(timing_msg.spin,                      9800);
   ASSERT_LT(timing_msg.spin,                     10200);
-  ASSERT_GT(timing_msg.total_time,               54000);
-  ASSERT_LT(timing_msg.total_time,               56000);
+  ASSERT_GT(timing_msg.total_time,               52000);
+  ASSERT_LT(timing_msg.total_time,               58000);
 }
 
 // Run all the tests that were declared with TEST()
