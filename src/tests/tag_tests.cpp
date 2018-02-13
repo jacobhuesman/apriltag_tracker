@@ -83,34 +83,32 @@ TEST(AprilTagTrackerTagTests, Add20Transforms)
 
 TEST(AprilTagTrackerTagTests, GetMedianFilteredTransformEmpty)
 {
-  /*Tag test(1, 1, 1.0);
+  Tag test(1, 1, 1.0);
 
   // Check that it's the middle value
   ASSERT_EQ(0, test.getTransforms().size());
-  ASSERT_NEAR(0.0, test.getMedianFilteredTransform().getTagTf().getOrigin().getX(), 1e-10);*/
+  ASSERT_THROW(test.getMedianFilteredTransform(), unable_to_find_transform_error);
 }
 
 TEST(AprilTagTrackerTagTests, GetMedianFilteredTransformPartialFill)
 {
-  /*Tag test(1, 1, 1.0);
+  Tag test(1, 1, 1.0);
 
   tf2::Stamped<tf2::Transform> servo_tf;
   tf2::Stamped<tf2::Transform> tag_tf;
   tf2::Quaternion q;
-  q.setRPY(0.0, 0.0, 0.5); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
-  q.setRPY(0.0, 0.0, 1.2); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
-  q.setRPY(0.0, 0.0, 0.2); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
+  q.setRPY(0.0, 0.5, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
+  q.setRPY(0.0, 1.2, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
+  q.setRPY(0.0, 0.2, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
 
-  // Check that it's the middle value
-  ASSERT_EQ(3, test.getSeq());
-  ASSERT_NEAR(0.5, test.getMedianFilteredTransform().getTagTheta(), 1e-10);
+  ASSERT_THROW(test.getMedianFilteredTransform(), unable_to_find_transform_error);
 
   // Check that the transform order hasn't been altered
   std::vector<Transform> data = test.getTransforms();
   ASSERT_EQ(3, data.size());
   ASSERT_NEAR(0.5, data[2].getTagTheta(), 1e-10);
   ASSERT_NEAR(1.2, data[1].getTagTheta(), 1e-10);
-  ASSERT_NEAR(0.2, data[0].getTagTheta(), 1e-10);*/
+  ASSERT_NEAR(0.2, data[0].getTagTheta(), 1e-10);
 
 }
 
