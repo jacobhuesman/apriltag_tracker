@@ -39,7 +39,6 @@ public:
   Transform getMostRecentTransform();
   tf2::Transform getMapToTagTf();
 
-
 private:
   boost::mutex *mutex;
   int id;
@@ -51,7 +50,6 @@ private:
 
   int list_size;
   tf2::Transform map_to_tag_tf;
-
   std::list<AprilTagTracker::Transform> transforms;
 };
 

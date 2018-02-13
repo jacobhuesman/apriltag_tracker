@@ -108,7 +108,10 @@ bool Tag::isReady() // TODO create better metric
 
 Transform Tag::getMostRecentTransform()
 {
-  tf2::Stamped<tf2::Transform> tf;
-  return Transform(tf, tf);
+  if (transforms.size() < 1)
+  {
+    throw unable_to_find_transform_error("No transforms available for this tag");
+  }
+  return transforms.front();
 }
 
