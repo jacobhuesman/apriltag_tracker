@@ -9,7 +9,7 @@ TEST(AprilTagTrackerCameraTests, SetAndGetSequence)
   ros::Time::init();
 
   boost::mutex *mutex = new boost::mutex;
-  CameraProperties *properties = new CameraProperties;
+  CameraInfo *properties = new CameraInfo;
   DummyCamera camera(mutex, properties);
 
   // Check that it's initialized to zero
@@ -20,7 +20,7 @@ TEST(AprilTagTrackerCameraTests, SetAndGetSequence)
   ASSERT_EQ(1, camera.getSeq());
 
   // Check to see that we can set the increment
-  properties->seq = 2;
+  properties->image_seq = 2;
   camera.grabImage();
   ASSERT_EQ(3, camera.getSeq());
 }
@@ -38,8 +38,8 @@ TEST(AprilTagTrackerCameraTests, CheckSeqThreaded)
   ros::Time::init();
 
   boost::mutex *mutex = new boost::mutex;
-  CameraProperties *properties = new CameraProperties;
-  properties->seq = 0;
+  CameraInfo *properties = new CameraInfo;
+  properties->image_seq = 0;
   DummyCamera *camera = new DummyCamera(mutex, properties);
 
   boost::thread thread0(grabImageThread, camera);

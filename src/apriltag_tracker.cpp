@@ -5,110 +5,111 @@
 
 namespace AprilTagTracker
 {
-  AprilTagTracker::AprilTagTracker(apriltag_tracker::Camera *camera, HostCommLayer::Dynamixel *servo,
-                                   std::vector<Tag> *tag_info, TransformsCache transforms)
-  {
-    // TODO use dynamic reconfigure
-    tag_params.newQuadAlgorithm = true;
-    //tag_params.adaptiveThresholdValue = 12; //TODO figure out what this means and parametrize
-    //tag_params.adaptiveThresholdValue = 20; //TODO figure out what this means and parametrize
-    tag_family = new TagFamily("Tag36h11");
-    tag_detector = new TagDetector(*tag_family, tag_params);
 
-    this->servo = servo;
-    this->tag_info = tag_info;
-    this->camera = camera;
-    this->transforms = transforms;
-    this->current_seq = 0;
-  }
-
-  AprilTagTracker::~AprilTagTracker()
-  {
-    delete tag_family;
-    delete tag_detector;
-  }
-
-  Eigen::Matrix4d AprilTagTracker::getRelativeTransform(const cv::Point2d tagPts[], double tag_size)
-  {
-    std::vector<cv::Point3d> objPts;
-    std::vector<cv::Point2d> imgPts;
-    double s = tag_size / 2.0;
-    objPts.emplace_back(cv::Point3d(-s,-s, 0));
-    objPts.emplace_back(cv::Point3d( s,-s, 0));
-    objPts.emplace_back(cv::Point3d( s, s, 0));
-    objPts.emplace_back(cv::Point3d(-s, s, 0));
-
-    imgPts.push_back(tagPts[0]);
-    imgPts.push_back(tagPts[1]);
-    imgPts.push_back(tagPts[2]);
-    imgPts.push_back(tagPts[3]);
-
-    cv::Mat rvec, tvec;
-    // TODO make sure the properties are accurate
-    cv::solvePnP(objPts, imgPts, camera->getK(), camera->getD(), rvec, tvec);
-    cv::Matx33d r;
-    cv::Rodrigues(rvec, r);
-    Eigen::Matrix3d wRo;
-    wRo << r(0,0), r(0,1), r(0,2), r(1,0), r(1,1), r(1,2), r(2,0), r(2,1), r(2,2);
-
-    Eigen::Matrix4d T;
-    T.topLeftCorner(3,3) = wRo;
-    T.col(3).head(3) << tvec.at<double>(0), tvec.at<double>(1), tvec.at<double>(2);
-    T.row(3) << 0,0,0,1;
-
-    return T;
-  }
-
-  void AprilTagTracker::drawDetections()
-  {
-    cv::Point2d *p;
-    cv::Point2d cxy;
-    size_t id;
-    for (int i = 0; i < tag_detections.size(); i++)
-    {
-      p = tag_detections[i].p;
-      cxy = tag_detections[i].cxy;
-      id = tag_detections[i].id;
-
-      // plot outline
-      cv::Mat *image = camera->getImagePtr();
-      cv::line(*image, p[0], p[1], cv::Scalar(255,0,0,0) );
-      cv::line(*image, p[1], p[2], cv::Scalar(0,255,0,0) );
-      cv::line(*image, p[2], p[3], cv::Scalar(0,0,255,0) );
-      cv::line(*image, p[3], p[0], cv::Scalar(255,0,255,0) );
-
-      // mark center
-      cv::circle(*image, cv::Point2d(cxy.x, cxy.y), 8, cv::Scalar(0,0,255,0), 2);
-
-      // print ID
-      std::ostringstream strSt;
-      strSt << "#" << id;
-      cv::putText(*image, strSt.str(),
-                  cv::Point2d(cxy.x + 10, cxy.y + 10),
-                  cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0,0,255));
-    }
-  }
-
-void AprilTagTracker::processImage()
+AprilTagTracker::AprilTagTracker(apriltag_tracker::CameraInfo *camera_info, std::vector<Tag> *tag_info,
+                                 TransformsCache transforms)
 {
-  // TODO there is a full image copy here, see if we can pass by reference
-  tag_detector->process(camera->getImage(), camera->getOpticalCenter(), tag_detections);
-  current_seq = camera->getSeq();
-  updateTags();
+  // TODO use dynamic reconfigure
+  tag_params.newQuadAlgorithm = true;
+  //tag_params.adaptiveThresholdValue = 12; //TODO figure out what this means and parametrize
+  //tag_params.adaptiveThresholdValue = 20; //TODO figure out what this means and parametrize
+  tag_family = new TagFamily("Tag36h11");
+  tag_detector = new TagDetector(*tag_family, tag_params);
+
+  this->tag_info = tag_info;
+  this->camera_info = camera_info;
+  this->transforms = transforms;
+  this->current_seq = 0;
 }
 
-void AprilTagTracker::adjustServo()
+AprilTagTracker::~AprilTagTracker()
 {
+  delete tag_family;
+  delete tag_detector;
+}
+
+Eigen::Matrix4d AprilTagTracker::getRelativeTransform(const cv::Point2d tagPts[], double tag_size)
+{
+  std::vector<cv::Point3d> objPts;
+  std::vector<cv::Point2d> imgPts;
+  double s = tag_size / 2.0;
+  objPts.emplace_back(cv::Point3d(-s,-s, 0));
+  objPts.emplace_back(cv::Point3d( s,-s, 0));
+  objPts.emplace_back(cv::Point3d( s, s, 0));
+  objPts.emplace_back(cv::Point3d(-s, s, 0));
+
+  imgPts.push_back(tagPts[0]);
+  imgPts.push_back(tagPts[1]);
+  imgPts.push_back(tagPts[2]);
+  imgPts.push_back(tagPts[3]);
+
+  cv::Mat rvec, tvec;
+  // TODO make sure the properties are accurate
+  cv::solvePnP(objPts, imgPts, camera_info->getK(), camera_info->getD(), rvec, tvec);
+  cv::Matx33d r;
+  cv::Rodrigues(rvec, r);
+  Eigen::Matrix3d wRo;
+  wRo << r(0,0), r(0,1), r(0,2), r(1,0), r(1,1), r(1,2), r(2,0), r(2,1), r(2,2);
+
+  Eigen::Matrix4d T;
+  T.topLeftCorner(3,3) = wRo;
+  T.col(3).head(3) << tvec.at<double>(0), tvec.at<double>(1), tvec.at<double>(2);
+  T.row(3) << 0,0,0,1;
+
+  return T;
+}
+
+void AprilTagTracker::drawDetections(cv::Mat *image)
+{
+  cv::Point2d *p;
+  cv::Point2d cxy;
+  size_t id;
+  for (int i = 0; i < tag_detections.size(); i++)
+  {
+    p = tag_detections[i].p;
+    cxy = tag_detections[i].cxy;
+    id = tag_detections[i].id;
+
+    // plot outline
+    cv::line(*image, p[0], p[1], cv::Scalar(255,0,0,0) );
+    cv::line(*image, p[1], p[2], cv::Scalar(0,255,0,0) );
+    cv::line(*image, p[2], p[3], cv::Scalar(0,0,255,0) );
+    cv::line(*image, p[3], p[0], cv::Scalar(255,0,255,0) );
+
+    // mark center
+    cv::circle(*image, cv::Point2d(cxy.x, cxy.y), 8, cv::Scalar(0,0,255,0), 2);
+
+    // print ID
+    std::ostringstream strSt;
+    strSt << "#" << id;
+    cv::putText(*image, strSt.str(), cv::Point2d(cxy.x + 10, cxy.y + 10),
+                cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0,0,255));
+  }
+}
+
+int16_t AprilTagTracker::getDesiredServoVelocity()
+{
+  const double servo_resolution = 0.29;
   // TODO implement using multiple tags
   if (tag_detections.size() == 1)
   {
     // Adjust servo
-    double difference = (tag_detections[0].cxy.x - camera->getWidth() / 2);
-    servo->updateDesiredVelocity(-(int16_t) (camera->getDegreesPerPixel().x * difference / servo->resolution));
+    double difference = (tag_detections[0].cxy.x - camera_info->getWidth() / 2);
+    return -(int16_t) (camera_info->getDegreesPerPixel().x * difference / servo_resolution);
   }
 }
 
-void AprilTagTracker::updateTags()
+void AprilTagTracker::processImage(cv::Mat *image, unsigned current_seq, ros::Time capture_time,
+                                   tf2::Stamped<tf2::Transform> servo_tf)
+{
+  // TODO there is a full image copy here, see if we can pass by reference
+  tag_detector->process(*image, camera_info->getOpticalCenter(), tag_detections);
+  this->current_seq = current_seq;
+  this->last_capture_time = capture_time;
+  updateTags(servo_tf); // TODO might want to call this separately?
+}
+
+void AprilTagTracker::updateTags(tf2::Stamped<tf2::Transform> servo_tf)
 {
   for (int i = 0; i < tag_detections.size(); i++)
   {
@@ -133,8 +134,8 @@ void AprilTagTracker::updateTags()
         tag_transform.setRotation(q);
         tf2::Stamped<tf2::Transform> stamped_tag_transform;
         stamped_tag_transform.setData(tag_transform);
-        stamped_tag_transform.stamp_ = camera->getCaptureTime();
-        (*tag_info)[j].addTransform(stamped_tag_transform, servo->getStampedTransform());
+        stamped_tag_transform.stamp_ = this->last_capture_time;
+        (*tag_info)[j].addTransform(stamped_tag_transform, servo_tf);
       }
     }
   }
@@ -158,8 +159,8 @@ void AprilTagTracker::fillTagDetectionArray(apriltag_tracker::AprilTagDetectionA
         apriltag_tracker::AprilTagDetection tag_detection;
         tag_detection.id = (int)tag_detections[i].id;
         tag_detection.size = (*tag_info)[j].getSize();
-        tag_detection.transform.header.stamp = camera->getCaptureTime();
-        tag_detection.transform.header.seq = (*tag_info)[j].getSeq();
+        tag_detection.transform.header.stamp = this->last_capture_time;
+        tag_detection.transform.header.seq = this->current_seq;
         tag_detection.transform.header.frame_id = "camera_optical";
         tag_detection.transform.child_frame_id = std::string("tag") + std::to_string((*tag_info)[j].getID())
                                                  + "_estimate";
@@ -180,52 +181,52 @@ void AprilTagTracker::fillTagDetectionArray(apriltag_tracker::AprilTagDetectionA
 Transform AprilTagTracker::getTransform()
 {
   // Make sure we have enough tags to find the transform
-  /*int count = 0;
+  unsigned int current_seq = camera_info->getSeq();
+  int count = 0;
   for (int i = 0; i < tag_info->size(); i++)
   {
-    if ((*tag_info)[i].getSeq() == camera->getSeq())
+    if ((*tag_info)[i].getSeq() == current_seq)
     {
       count++;
     }
   }
   if (count < 1)
   {
-    throw no_tags_detected();
-  }*/
+    throw unable_to_find_transform_error("No recent tag transforms available");
+  }
 
   // See if we can use two tags to correct the AprilTag angle, otherwise use the highest priority tag
-  //int tag1 = -1, tag2 = -1, best_tag = 0;
-  /*for (int i = 0; i < this->size(); i++)
+  int tag1 = -1, tag2 = -1, best_tag = 0;
+  for (int i = 0; i < tag_info->size(); i++)
   {
     // Ignore stale detections
-    if ((*this)[i].getSeq() == seq)
+    if ((*tag_info)[i].getSeq() == current_seq)
     {
-      if ((*this)[i].getID() == 1)
+      if ((*tag_info)[i].getID() == 1)
       {
         tag1 = i;
       }
-      else if ((*this)[i].getID() == 2)
+      else if ((*tag_info)[i].getID() == 2)
       {
         tag2 = i;
       }
-      if ((*this)[i].getPriority() > (*this)[best_tag].getPriority())
+      if ((*tag_info)[i].getPriority() > (*tag_info)[best_tag].getPriority())
       {
         best_tag = i;
       }
     }
-  }*/
-  /*if (tag1 != -1 && tag2 != -1)
+  }
+  if (tag1 != -1 && tag2 != -1)
   {
-    // Perform tag correction calculation
+    printf("Perform theta correction here");
   }
   else
   {
-    if ((*this)[best_tag].isReady())
+    if ((*tag_info)[best_tag].isReady())
     {
-      return (*this)[best_tag].getMedianFilteredTransform();
+      return (*tag_info)[best_tag].getMedianFilteredTransform();
     }
-  }*/
-  //(*this)[0].getMostRecentTransform();
+  }
 }
 
 bool AprilTagTracker::estimateRobotPose(geometry_msgs::PoseStamped *pose_estimate_msg)

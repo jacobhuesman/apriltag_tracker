@@ -17,11 +17,9 @@
 #include <tf2/LinearMath/Transform.h>
 
 #include <TagDetector.h>
-#include <raspicam/raspicam.h>
 
-#include <dynamixel_host_layer.h>
 #include <sensor_msgs/CameraInfo.h>
-#include <camera.h>
+#include <camera_info.h>
 #include <transform.h>
 #include <tag.h>
 #include <transforms_cache.h>
@@ -32,21 +30,20 @@ namespace AprilTagTracker
 class AprilTagTracker
 {
 public:
-  AprilTagTracker(apriltag_tracker::Camera *camera, HostCommLayer::Dynamixel *servo, std::vector<Tag> *tag_info,
-                  TransformsCache transforms);
+  AprilTagTracker(apriltag_tracker::CameraInfo *camera_info, std::vector<Tag> *tag_info, TransformsCache transforms);
   ~AprilTagTracker();
 
   Eigen::Matrix4d getRelativeTransform(const cv::Point2d tagPts[], double tag_size);
-  void drawDetections();
-  void processImage();
-  void adjustServo();
-  void updateTags();
+  void drawDetections(cv::Mat *image);
+  void processImage(cv::Mat *image, unsigned int current_seq, ros::Time capture_time,
+                    tf2::Stamped<tf2::Transform> servo_tf);
+  int16_t getDesiredServoVelocity();
+  void updateTags(tf2::Stamped<tf2::Transform> servo_tf);
   void fillTagDetectionArray(apriltag_tracker::AprilTagDetectionArray *tag_detection_array);
   bool estimateRobotPose(geometry_msgs::PoseStamped *pose_estimate_msg);
   Transform getTransform();
 
-  HostCommLayer::Dynamixel *servo;  // TODO remove servo dependency
-  apriltag_tracker::Camera *camera; // TODO remove camera dependency
+  apriltag_tracker::CameraInfo *camera_info;
 
 private:
   // Tag
@@ -56,6 +53,7 @@ private:
   TagDetectionArray tag_detections;
   std::vector<Tag> *tag_info;
   unsigned int current_seq;
+  ros::Time last_capture_time;
 
   // Transforms
   TransformsCache transforms;

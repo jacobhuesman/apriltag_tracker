@@ -16,6 +16,8 @@
 
 #include <apriltag_tracker.h>
 #include <timers.h>
+#include <dynamixel_host_layer.h>
+#include <camera.h>
 
 struct Publishers
 {
@@ -78,24 +80,26 @@ void trackerThread(ros::NodeHandle nh, HostCommLayer::Dynamixel *servo, AprilTag
                    apriltag_tracker::Camera *camera, uint8_t thread_id)
 {
   AprilTagTracker::Timers timer;
-  AprilTagTracker::AprilTagTracker tracker(camera, servo, tag_info, transforms);
+  AprilTagTracker::AprilTagTracker tracker(camera->getCameraInfo(), tag_info, transforms);
 
   // Note: Entire loop must take less than 33ms
   while(ros::ok())
   {
     // Get image, process it, and track
     timer.get_image.start();
-    tracker.camera->grabImage();
+    camera->grabImage();
     timer.get_image.stop();
 
     timer.process_image.start();
-    tracker.processImage();
+    tracker.processImage(camera->getImagePtr(), camera->getSeq(), camera->getCaptureTime(),
+                         servo->getStampedTransform());
     timer.process_image.stop();
+
 
     timer.adjust_servo.start();
     if (track_servo)
     {
-      tracker.adjustServo();
+      servo->updateDesiredVelocity(tracker.getDesiredServoVelocity());
     }
     timer.adjust_servo.stop();
 
@@ -122,16 +126,16 @@ void trackerThread(ros::NodeHandle nh, HostCommLayer::Dynamixel *servo, AprilTag
     timer.publish_plain_image.start();
     if (publish_plain_image)
     {
-      pubs->image.publish(tracker.camera->getImageMsg());
+      pubs->image.publish(camera->getImageMsg());
     }
     timer.publish_plain_image.stop();
 
     timer.draw_detections.start();
-    tracker.drawDetections();
+    tracker.drawDetections(camera->getImagePtr());
     timer.draw_detections.stop();
 
     timer.publish_detections_image.start();
-    pubs->detections_image.publish(tracker.camera->getImageMsg());
+    pubs->detections_image.publish(camera->getImageMsg());
     timer.publish_detections_image.stop();
 
     // Handle callbacks

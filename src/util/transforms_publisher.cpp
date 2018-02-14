@@ -36,7 +36,7 @@ int main(int argc, char** argv){
 
   /*q.setRPY(0.0, 0.0, 0.0);
   geometry_msgs::TransformStamped servo_base_link_to_servo_joint_tf;
-  servo_base_link_to_servo_joint_tf.header.seq = 0;
+  servo_base_link_to_servo_joint_tf.header.image_seq = 0;
   servo_base_link_to_servo_joint_tf.header.frame_id = "servo_base_link";
   servo_base_link_to_servo_joint_tf.child_frame_id = "servo_joint";
   servo_base_link_to_servo_joint_tf.transform.translation.x = 24.15e-3;
@@ -110,7 +110,7 @@ int main(int argc, char** argv){
     map_to_tag01_tf.header.stamp = ros::Time::now();
 
     servo_joint_to_optical_link_tf.header.seq++;
-    //servo_base_link_to_servo_joint_tf.header.seq++;
+    //servo_base_link_to_servo_joint_tf.header.image_seq++;
     base_link_to_servo_base_link_tf.header.seq++;
     map_to_tag04_tf.header.seq++;
     map_to_tag03_tf.header.seq++;
