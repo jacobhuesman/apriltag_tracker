@@ -15,11 +15,12 @@ Tag::Tag(int id, int priority, double size)
 }
 
 // TODO add mutex check
-void Tag::addTransform(tf2::Stamped<tf2::Transform> tag_tf, tf2::Stamped<tf2::Transform> servo_tf)
+void Tag::addTransform(TagDetection detection, tf2::Stamped<tf2::Transform> tag_tf,
+                       tf2::Stamped<tf2::Transform> servo_tf, unsigned int seq)
 {
   mutex->lock();
-  seq++;
-  Transform new_transform(tag_tf, servo_tf);
+  this->seq = seq;
+  Transform new_transform(detection, tag_tf, servo_tf);
   this->transforms.emplace_front(new_transform);
   if (this->transforms.size() > this->list_size)
   {
@@ -113,5 +114,10 @@ Transform Tag::getMostRecentTransform()
     throw unable_to_find_transform_error("No transforms available for this tag");
   }
   return transforms.front();
+}
+
+cv::Point Tag::getDetectionCenter()
+{
+  return transforms.front().getDetectionCenter();
 }
 

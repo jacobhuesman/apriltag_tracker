@@ -44,9 +44,9 @@ void initializeTagInfoVector(std::vector<AprilTagTracker::Tag> *tag_info)
   tf2_ros::Buffer tfBuffer;
   tf2_ros::TransformListener tfListener(tfBuffer);
 
-  AprilTagTracker::Tag tag1(1, 0, 0.42545);
-  AprilTagTracker::Tag tag3(3, 0, 0.203);
-  AprilTagTracker::Tag tag4(4, 0, 0.203);
+  AprilTagTracker::Tag tag1(1, 2, 0.42545);
+  AprilTagTracker::Tag tag3(3, 1, 0.203);
+  AprilTagTracker::Tag tag4(4, 1, 0.203);
 
   tag_info->push_back(tag1);
   tag_info->push_back(tag3);

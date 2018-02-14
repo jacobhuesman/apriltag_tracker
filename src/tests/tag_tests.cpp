@@ -28,7 +28,9 @@ TEST(AprilTagTrackerTagTests, AddTransform)
   q.setRPY(0.0, 0.0, 0.0);
   servo_tf.setRotation(q);
 
-  test.addTransform(tag_tf, servo_tf);
+  TagDetection detection;
+
+  test.addTransform(detection, tag_tf, servo_tf, 0);
 
   std::vector<Transform> data = test.getTransforms();
 
@@ -41,11 +43,12 @@ TEST(AprilTagTrackerTagTests, Add5Transforms)
   Tag test(1, 1, 1.0);
 
   tf2::Stamped<tf2::Transform> servo_tf;
+  TagDetection detection;
   tf2::Stamped<tf2::Transform> tag_tf;
   for (int i = 0; i < 5; i++)
   {
     tag_tf.setOrigin(tf2::Vector3((double)i, 0.0, 0.0));
-    test.addTransform(tag_tf, servo_tf);
+    test.addTransform(detection, tag_tf, servo_tf, 0);
   }
 
   std::vector<Transform> data = test.getTransforms();
@@ -63,11 +66,12 @@ TEST(AprilTagTrackerTagTests, Add20Transforms)
   Tag test(1, 1, 1.0);
 
   tf2::Stamped<tf2::Transform> servo_tf;
+  TagDetection detection;
   tf2::Stamped<tf2::Transform> tag_tf;
   for (int i = 0; i < 20; i++)
   {
     tag_tf.setOrigin(tf2::Vector3((double)i, 0.0, 0.0));
-    test.addTransform(tag_tf, servo_tf);
+    test.addTransform(detection, tag_tf, servo_tf, 0);
   }
 
   std::vector<Transform> data = test.getTransforms();
@@ -95,11 +99,12 @@ TEST(AprilTagTrackerTagTests, GetMedianFilteredTransformPartialFill)
   Tag test(1, 1, 1.0);
 
   tf2::Stamped<tf2::Transform> servo_tf;
+  TagDetection detection;
   tf2::Stamped<tf2::Transform> tag_tf;
   tf2::Quaternion q;
-  q.setRPY(0.0, 0.5, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
-  q.setRPY(0.0, 1.2, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
-  q.setRPY(0.0, 0.2, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
+  q.setRPY(0.0, 0.5, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
+  q.setRPY(0.0, 1.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
+  q.setRPY(0.0, 0.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
 
   ASSERT_THROW(test.getMedianFilteredTransform(), unable_to_find_transform_error);
 
@@ -117,23 +122,24 @@ TEST(AprilTagTrackerTagTests, GetMedianFilteredTransform)
   Tag test(1, 1, 1.0);
 
   tf2::Stamped<tf2::Transform> servo_tf;
+  TagDetection detection;
   tf2::Stamped<tf2::Transform> tag_tf;
   tf2::Quaternion q;
-  q.setRPY(0.0, 0.5, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
-  q.setRPY(0.0, 1.2, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
-  q.setRPY(0.0, 0.2, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
-  q.setRPY(0.0, 0.5, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
-  q.setRPY(0.0, 1.2, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
-  q.setRPY(0.0, 0.2, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
-  q.setRPY(0.0, 0.5, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
-  q.setRPY(0.0, 1.2, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
-  q.setRPY(0.0, 0.2, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
-  q.setRPY(0.0, 0.5, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
-  q.setRPY(0.0, 1.2, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
-  q.setRPY(0.0, 0.2, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
-  q.setRPY(0.0, 0.5, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
-  q.setRPY(0.0, 1.2, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
-  q.setRPY(0.0, 0.2, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
+  q.setRPY(0.0, 0.5, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
+  q.setRPY(0.0, 1.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
+  q.setRPY(0.0, 0.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
+  q.setRPY(0.0, 0.5, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
+  q.setRPY(0.0, 1.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
+  q.setRPY(0.0, 0.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
+  q.setRPY(0.0, 0.5, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
+  q.setRPY(0.0, 1.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
+  q.setRPY(0.0, 0.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
+  q.setRPY(0.0, 0.5, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
+  q.setRPY(0.0, 1.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
+  q.setRPY(0.0, 0.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
+  q.setRPY(0.0, 0.5, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
+  q.setRPY(0.0, 1.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
+  q.setRPY(0.0, 0.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
 
   std::vector<Transform> data = test.getTransforms();
 
@@ -156,7 +162,8 @@ TEST(AprilTagTrackerTagTests, GetMostRecentTransform1)
   tf2::Stamped<tf2::Transform> servo_tf;
   tf2::Stamped<tf2::Transform> tag_tf;
   tf2::Quaternion q;
-  q.setRPY(0.0, 0.5, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
+  TagDetection detection;
+  q.setRPY(0.0, 0.5, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
 
   ASSERT_NEAR(test.getMostRecentTransform().getTagTheta(), 0.5, 1e-10);
 }
@@ -166,23 +173,24 @@ TEST(AprilTagTrackerTagTests, GetMostRecentTransform10)
   Tag test(1, 1, 1.0);
 
   tf2::Stamped<tf2::Transform> servo_tf;
+  TagDetection detection;
   tf2::Stamped<tf2::Transform> tag_tf;
   tf2::Quaternion q;
-  q.setRPY(0.0, 0.5, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
-  q.setRPY(0.0, 1.2, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
-  q.setRPY(0.0, 0.2, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
-  q.setRPY(0.0, 0.5, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
-  q.setRPY(0.0, 1.2, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
-  q.setRPY(0.0, 0.2, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
-  q.setRPY(0.0, 0.5, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
-  q.setRPY(0.0, 1.2, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
-  q.setRPY(0.0, 0.2, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
-  q.setRPY(0.0, 0.5, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
-  q.setRPY(0.0, 1.2, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
-  q.setRPY(0.0, 0.2, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
-  q.setRPY(0.0, 0.5, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
-  q.setRPY(0.0, 1.2, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
-  q.setRPY(0.0, 0.1, 0.0); tag_tf.setRotation(q); test.addTransform(tag_tf, servo_tf);
+  q.setRPY(0.0, 0.5, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
+  q.setRPY(0.0, 1.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
+  q.setRPY(0.0, 0.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
+  q.setRPY(0.0, 0.5, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
+  q.setRPY(0.0, 1.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
+  q.setRPY(0.0, 0.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
+  q.setRPY(0.0, 0.5, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
+  q.setRPY(0.0, 1.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
+  q.setRPY(0.0, 0.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
+  q.setRPY(0.0, 0.5, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
+  q.setRPY(0.0, 1.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
+  q.setRPY(0.0, 0.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
+  q.setRPY(0.0, 0.5, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
+  q.setRPY(0.0, 1.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
+  q.setRPY(0.0, 0.1, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
 
   ASSERT_NEAR(test.getMostRecentTransform().getTagTheta(), 0.1, 1e-10);
 }

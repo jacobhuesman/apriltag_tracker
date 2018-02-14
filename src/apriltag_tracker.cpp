@@ -87,20 +87,43 @@ void AprilTagTracker::drawDetections(cv::Mat *image)
   }
 }
 
+// TODO add unit test
+// - Velocity is sane
+// - Sequences are correct
 int16_t AprilTagTracker::getDesiredServoVelocity()
 {
-  const double servo_resolution = 0.29;
-  // TODO implement using multiple tags
-  if (tag_detections.size() == 1)
+  int best_tag = -1;
+  bool updated_tag_available = false;
+  for (int i = 0; i < tag_info->size(); i++)
   {
-    // Adjust servo
-    double difference = (tag_detections[0].cxy.x - camera_info->getWidth() / 2);
-    return -(int16_t)(camera_info->getDegreesPerPixel().x * difference / servo_resolution);
+    if ((*tag_info)[i].getSeq() == current_seq)
+    {
+      updated_tag_available = true;
+      best_tag = i;
+      break;
+    }
   }
-  else
+  if (!updated_tag_available)
   {
     throw unable_to_find_transform_error("No tag detections available for setting the servo");
   }
+
+  // Find best up to date tag
+  for (int i = 0; i < tag_info->size(); i++)
+  {
+    bool updated         = (*tag_info)[i].getSeq() == current_seq;
+    bool higher_priority = (*tag_info)[i].getPriority() > (*tag_info)[best_tag].getPriority();
+    if (updated && higher_priority)
+    {
+      best_tag = i;
+    }
+  }
+
+  // Adjust servo
+  const double servo_resolution = 0.29;
+  //printf("Detection center: %i\n", (*tag_info)[best_tag].getDetectionCenter().x);
+  double difference = ((*tag_info)[best_tag].getDetectionCenter().x - camera_info->getWidth() / 2);
+  return -(int16_t)(camera_info->getDegreesPerPixel().x * difference / servo_resolution);
 }
 
 void AprilTagTracker::processImage(cv::Mat *image, unsigned current_seq, ros::Time capture_time,
@@ -139,7 +162,7 @@ void AprilTagTracker::updateTags(tf2::Stamped<tf2::Transform> servo_tf)
         tf2::Stamped<tf2::Transform> stamped_tag_transform;
         stamped_tag_transform.setData(tag_transform);
         stamped_tag_transform.stamp_ = this->last_capture_time;
-        (*tag_info)[j].addTransform(stamped_tag_transform, servo_tf);
+        (*tag_info)[j].addTransform(tag_detections[i], stamped_tag_transform, servo_tf, this->current_seq);
       }
     }
   }
