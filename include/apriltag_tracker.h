@@ -40,7 +40,9 @@ public:
   int16_t getDesiredServoVelocity();
   void updateTags(tf2::Stamped<tf2::Transform> servo_tf);
   void fillTagDetectionArray(apriltag_tracker::AprilTagDetectionArray *tag_detection_array);
-  bool estimateRobotPose(geometry_msgs::PoseStamped *pose_estimate_msg);
+
+  Transform performThetaCorrection(Transform tag_a, Transform tag_b, tf2::Transform map_to_a, tf2::Transform map_to_b);
+  void estimateRobotPose(geometry_msgs::PoseStamped *pose_estimate_msg);
   Transform getTransform();
 
   apriltag_tracker::CameraInfo *camera_info;

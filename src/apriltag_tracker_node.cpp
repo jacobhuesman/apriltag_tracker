@@ -122,10 +122,18 @@ void trackerThread(ros::NodeHandle nh, HostCommLayer::Dynamixel *servo, AprilTag
     timer.publish_detections_array.stop();
 
     timer.publish_transforms.start();
-    geometry_msgs::PoseStamped pose_estimate_msg;
-    if (tracker.estimateRobotPose(&pose_estimate_msg) && publish_pose_estimate)
+    if (publish_pose_estimate)
     {
-      pubs->pose.publish(pose_estimate_msg);
+      try
+      {
+        geometry_msgs::PoseStamped pose_estimate_msg;
+        tracker.estimateRobotPose(&pose_estimate_msg);
+        pubs->pose.publish(pose_estimate_msg);
+      }
+      catch (AprilTagTracker::unable_to_find_transform_error &e)
+      {
+        ROS_WARN("%s", e.what());
+      }
     }
     pubs->detections.publish(tag_detection_array);
     timer.publish_transforms.stop();

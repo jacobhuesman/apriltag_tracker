@@ -13,17 +13,21 @@ namespace AprilTagTracker
 class Transform
 {
 public:
-  Transform(TagDetection detection, tf2::Stamped<tf2::Transform> tag_tf, tf2::Stamped<tf2::Transform> servo_tf);
+  Transform(TagDetection detection, tf2::Stamped<tf2::Transform> tag_tf, tf2::Stamped<tf2::Transform> servo_tf,
+            tf2::Transform map_to_tag_tf);
 
   tf2::Stamped<tf2::Transform> getTagTf();
   tf2::Stamped<tf2::Transform> getServoTf();
+  tf2::Transform getMapToTagTf();
   double getTagTheta();
   cv::Point getDetectionCenter();
+  TagDetection getDetection();
   bool operator<(Transform tag_tf);
 
 private:
   tf2::Stamped<tf2::Transform> tag_tf;
   tf2::Stamped<tf2::Transform> servo_tf;
+  tf2::Transform map_to_tag_tf;
   TagDetection detection;
 
   double tag_theta;

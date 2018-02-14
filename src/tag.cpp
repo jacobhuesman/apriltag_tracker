@@ -20,7 +20,7 @@ void Tag::addTransform(TagDetection detection, tf2::Stamped<tf2::Transform> tag_
 {
   mutex->lock();
   this->seq = seq;
-  Transform new_transform(detection, tag_tf, servo_tf);
+  Transform new_transform(detection, tag_tf, servo_tf, this->map_to_tag_tf);
   this->transforms.emplace_front(new_transform);
   if (this->transforms.size() > this->list_size)
   {
