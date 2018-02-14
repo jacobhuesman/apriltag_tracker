@@ -95,7 +95,11 @@ int16_t AprilTagTracker::getDesiredServoVelocity()
   {
     // Adjust servo
     double difference = (tag_detections[0].cxy.x - camera_info->getWidth() / 2);
-    return -(int16_t) (camera_info->getDegreesPerPixel().x * difference / servo_resolution);
+    return -(int16_t)(camera_info->getDegreesPerPixel().x * difference / servo_resolution);
+  }
+  else
+  {
+    throw unable_to_find_transform_error("No tag detections available for setting the servo");
   }
 }
 

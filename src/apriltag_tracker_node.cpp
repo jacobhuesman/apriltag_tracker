@@ -18,6 +18,7 @@
 #include <timers.h>
 #include <dynamixel_host_layer.h>
 #include <camera.h>
+#include <errors.h>
 
 struct Publishers
 {
@@ -99,7 +100,14 @@ void trackerThread(ros::NodeHandle nh, HostCommLayer::Dynamixel *servo, AprilTag
     timer.adjust_servo.start();
     if (track_servo)
     {
-      servo->updateDesiredVelocity(tracker.getDesiredServoVelocity());
+      try
+      {
+        servo->updateDesiredVelocity(tracker.getDesiredServoVelocity());
+      }
+      catch(AprilTagTracker::unable_to_find_transform_error &e)
+      {
+        ROS_WARN("%s", e.what());
+      }
     }
     timer.adjust_servo.stop();
 
@@ -246,9 +254,9 @@ int main(int argc, char **argv)
 
 
   // Start threads
-  boost::thread thread0(trackerThread, nh, servo, transforms, camera0, 0);
-  boost::thread thread1(trackerThread, nh, servo, transforms, camera1, 1);
-  boost::thread thread2(trackerThread, nh, servo, transforms, camera2, 2);
+  boost::thread thread0(trackerThread, nh, servo, transforms, camera0, 0); usleep(1000);
+  boost::thread thread1(trackerThread, nh, servo, transforms, camera1, 1); usleep(1000);
+  boost::thread thread2(trackerThread, nh, servo, transforms, camera2, 2); usleep(1000);
   boost::thread thread3(trackerThread, nh, servo, transforms, camera3, 3);
   boost::thread thread4(servoThread, servo);
 
