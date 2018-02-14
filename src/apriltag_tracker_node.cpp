@@ -17,7 +17,6 @@
 #include <apriltag_tracker.h>
 #include <timers.h>
 
-
 struct Publishers
 {
   //tf2_ros::TransformBroadcaster tf;

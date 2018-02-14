@@ -1,6 +1,7 @@
 #include <apriltag_tracker.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <errors.h>
 
 namespace AprilTagTracker
 {
@@ -178,10 +179,53 @@ void AprilTagTracker::fillTagDetectionArray(apriltag_tracker::AprilTagDetectionA
 
 Transform AprilTagTracker::getTransform()
 {
-  for (int j = 0; j < tag_info->size(); j++)
+  // Make sure we have enough tags to find the transform
+  /*int count = 0;
+  for (int i = 0; i < tag_info->size(); i++)
   {
-    //if (tag_inf)
+    if ((*tag_info)[i].getSeq() == camera->getSeq())
+    {
+      count++;
+    }
   }
+  if (count < 1)
+  {
+    throw no_tags_detected();
+  }*/
+
+  // See if we can use two tags to correct the AprilTag angle, otherwise use the highest priority tag
+  //int tag1 = -1, tag2 = -1, best_tag = 0;
+  /*for (int i = 0; i < this->size(); i++)
+  {
+    // Ignore stale detections
+    if ((*this)[i].getSeq() == seq)
+    {
+      if ((*this)[i].getID() == 1)
+      {
+        tag1 = i;
+      }
+      else if ((*this)[i].getID() == 2)
+      {
+        tag2 = i;
+      }
+      if ((*this)[i].getPriority() > (*this)[best_tag].getPriority())
+      {
+        best_tag = i;
+      }
+    }
+  }*/
+  /*if (tag1 != -1 && tag2 != -1)
+  {
+    // Perform tag correction calculation
+  }
+  else
+  {
+    if ((*this)[best_tag].isReady())
+    {
+      return (*this)[best_tag].getMedianFilteredTransform();
+    }
+  }*/
+  //(*this)[0].getMostRecentTransform();
 }
 
 bool AprilTagTracker::estimateRobotPose(geometry_msgs::PoseStamped *pose_estimate_msg)

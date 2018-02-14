@@ -8,15 +8,10 @@
 #include <boost/thread/thread.hpp>
 
 #include <transform.h>
+#include <errors.h>
 
 namespace AprilTagTracker
 {
-class unable_to_find_transform_error : public std::runtime_error
-{
-public:
-  explicit unable_to_find_transform_error(std::string error_msg) : std::runtime_error(error_msg) {};
-};
-
 
 class Tag
 {

@@ -146,7 +146,6 @@ Camera::Camera(boost::mutex *camera_mutex, CameraProperties *properties)
 Camera::~Camera()
 {
   delete capture;
-  delete manager_camera_info;
 }
 
 void Camera::setupCapture()

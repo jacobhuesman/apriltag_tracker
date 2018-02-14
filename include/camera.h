@@ -73,7 +73,6 @@ private:
 
   boost::mutex *camera_mutex;
   CameraProperties *properties; // Do not edit in this class
-  camera_info_manager::CameraInfoManager *manager_camera_info;
 
   // Private objects
   cv_bridge::CvImage *capture;
