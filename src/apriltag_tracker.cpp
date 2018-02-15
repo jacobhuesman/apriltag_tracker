@@ -126,7 +126,7 @@ int16_t AprilTagTracker::getDesiredServoVelocity()
   return -(int16_t) (camera_info->getDegreesPerPixel().x * difference / servo_resolution);
 }
 
-void AprilTagTracker::processImage(cv::Mat *image, unsigned current_seq, ros::Time capture_time,
+void AprilTagTracker::processImage(cv::Mat *image, unsigned int current_seq, ros::Time capture_time,
                                    tf2::Stamped<tf2::Transform> servo_tf)
 {
   // TODO there is a full image copy here, see if we can pass by reference
@@ -213,8 +213,8 @@ Transform AprilTagTracker::performThetaCorrection(Transform tag_a, Transform tag
   tf2::Vector3 point_B = tag_b.getTagTf().getOrigin();
 
   // Find the distances between points (distances labeled as the legs of a triangle opposite each point)
-  double a_sq = pow(point_B.getX(), 2.0) + pow(point_B.getY(), 2.0);
-  double b_sq = pow(point_A.getX(), 2.0) + pow(point_A.getY(), 2.0);
+  double a_sq = pow(point_B.getX(), 2.0) + pow(point_B.getZ(), 2.0);
+  double b_sq = pow(point_A.getX(), 2.0) + pow(point_A.getZ(), 2.0);
 
   double a = sqrt(a_sq);
   double b = sqrt(b_sq);
@@ -235,12 +235,12 @@ Transform AprilTagTracker::performThetaCorrection(Transform tag_a, Transform tag
   q.setRPY(0.0, A, 0.0);
   new_tf.setRotation(q);
   Transform new_transform(tag_a.getDetection(), new_tf, tag_a.getServoTf(), tag_a.getMapToTagTf());
+  return new_transform;
 }
 
 Transform AprilTagTracker::getTransform()
 {
   // Make sure we have enough tags to find the transform
-  unsigned int current_seq = camera_info->getSeq();
   int count = 0;
   for (int i = 0; i < tag_info->size(); i++)
   {
@@ -265,7 +265,7 @@ Transform AprilTagTracker::getTransform()
       {
         tag1 = i;
       }
-      else if ((*tag_info)[i].getID() == 2)
+      else if ((*tag_info)[i].getID() == 3)
       {
         tag2 = i;
       }
@@ -278,16 +278,14 @@ Transform AprilTagTracker::getTransform()
   if (tag1 != -1 && tag2 != -1)
   {
     printf("Performed theta correction \n");
-    return performThetaCorrection((*tag_info)[tag1].getMostRecentTransform(),
+    performThetaCorrection((*tag_info)[tag1].getMostRecentTransform(),
                                   (*tag_info)[tag2].getMostRecentTransform(),
                                   (*tag_info)[tag1].getMapToTagTf(), (*tag_info)[tag2].getMapToTagTf());
+    return (*tag_info)[best_tag].getMedianFilteredTransform();
   }
   else
   {
-    if ((*tag_info)[best_tag].isReady())
-    {
-      return (*tag_info)[best_tag].getMedianFilteredTransform();
-    }
+    return (*tag_info)[best_tag].getMedianFilteredTransform();
   }
 }
 
