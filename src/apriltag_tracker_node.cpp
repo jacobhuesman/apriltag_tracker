@@ -34,7 +34,7 @@ Publishers *pubs;
 
 const bool publish_plain_image = false;
 const bool track_servo = true;
-const bool publish_pose_estimate = true;
+const bool publish_pose_estimate = false;
 
 std::vector<AprilTagTracker::Tag> *tag_info;
 
@@ -45,7 +45,7 @@ void initializeTagInfoVector(std::vector<AprilTagTracker::Tag> *tag_info)
   tf2_ros::TransformListener tfListener(tfBuffer);
 
   AprilTagTracker::Tag tag1(1, 2, 0.42545);
-  AprilTagTracker::Tag tag3(3, 1, 0.203);
+  AprilTagTracker::Tag tag3(3, 1, 0.42545);
   AprilTagTracker::Tag tag4(4, 1, 0.203);
 
   tag_info->push_back(tag1);

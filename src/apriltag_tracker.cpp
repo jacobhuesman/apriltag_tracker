@@ -199,13 +199,13 @@ void AprilTagTracker::updateTags(tf2::Stamped<tf2::Transform> servo_tf)
   // Try to get the best transform
   try
   {
-    tf2::Stamped<tf2::Transform> tag_transform = getTransform().getTagTf();
-    geometry_msgs::TransformStamped tag_transform_msg = tf2::toMsg(tag_transform);
+    Transform tag_transform = getTransform();
+    geometry_msgs::TransformStamped tag_transform_msg = tf2::toMsg(tag_transform.getTagTf());
     tag_transform_msg.header.seq = this->current_seq;
     tag_transform_msg.header.stamp = this->last_capture_time;
     tag_transform_msg.header.frame_id = "camera_optical";
-    tag_transform_msg.child_frame_id = std::string("tag") + tag_transform.frame_id_
-                                       + "_best_transform";
+    tag_transform_msg.child_frame_id = std::string("tag") + std::to_string(tag_transform.getDetection().id) // TODO more efficient way
+                                       + "_trig_estimate";
     tag_transforms.push_back(tag_transform_msg);
   }
   catch (unable_to_find_transform_error &e) {}
@@ -226,7 +226,6 @@ Transform AprilTagTracker::performThetaCorrection(Transform tag_a, Transform tag
   double a_sq = pow(point_B.getX(), 2.0) + pow(point_B.getZ(), 2.0);
   double b_sq = pow(point_A.getX(), 2.0) + pow(point_A.getZ(), 2.0);
 
-  double a = sqrt(a_sq);
   double b = sqrt(b_sq);
   double c = fabs(map_to_a.getOrigin().getY() - map_to_b.getOrigin().getY());
 
@@ -239,11 +238,16 @@ Transform AprilTagTracker::performThetaCorrection(Transform tag_a, Transform tag
 
   // By law of cosines
   double A = acos((-a_sq + b_sq + c_sq) / (2 * b * c));
+  printf("A: %f\n", A);
 
   tf2::Stamped<tf2::Transform> new_tf = tag_a.getTagTf();
-  tf2::Quaternion q;
-  q.setRPY(0.0, A, 0.0);
-  new_tf.setRotation(q);
+  tf2::Quaternion q1, q2, q3;
+  q1.setRPY(0.0, M_PI, M_PI); // TODO combine q1 and q3
+  q2.setRPY(0.0, A, 0.0);
+  q3.setRPY(0.0, -M_PI_2, 0.0);
+
+
+  new_tf.setRotation(q1*q2*q3);
   Transform new_transform(tag_a.getDetection(), new_tf, tag_a.getServoTf(), tag_a.getMapToTagTf());
   return new_transform;
 }
