@@ -33,7 +33,7 @@ struct Publishers
 Publishers *pubs;
 
 const bool publish_plain_image = false;
-const bool track_servo = true;
+const bool track_servo = false;
 const bool publish_pose_estimate = false;
 
 std::vector<AprilTagTracker::Tag> *tag_info;
@@ -98,16 +98,13 @@ void trackerThread(ros::NodeHandle nh, HostCommLayer::Dynamixel *servo, AprilTag
 
 
     timer.adjust_servo.start();
-    if (track_servo)
+    try
     {
-      try
-      {
-        servo->updateDesiredVelocity(tracker.getDesiredServoVelocity());
-      }
-      catch(AprilTagTracker::unable_to_find_transform_error &e)
-      {
-        ROS_WARN("%s", e.what());
-      }
+      servo->updateDesiredVelocity(tracker.getDesiredServoVelocity());
+    }
+    catch(AprilTagTracker::unable_to_find_transform_error &e)
+    {
+      ROS_WARN("%s", e.what());
     }
     timer.adjust_servo.stop();
 
@@ -169,21 +166,25 @@ void servoThread(HostCommLayer::Dynamixel *servo)
   ros::Rate rate(30);
   while(ros::ok())
   {
-    // Start scanning if enough time has elapsed since last capture
-    uint8_t status;
-    ros::Duration difference = ros::Time::now() - servo->getLastVelocityUpdate();
-    if ((difference.sec > 0) || (difference.nsec > 5e8)) // More than half a second has elapsed since an apriltag was captured
+    if (track_servo)
     {
-      status = servo->scan();
-    }
-    else
-    {
-      status = servo->adjustCamera(servo->getDesiredVelocity());
-    }
-    if (status == CL_OK)
-    {
-      pubs->transforms.publish(servo->getTransformMsg());
-      //pubs->tf.sendTransform(servo->getTransformMsg());
+      // Start scanning if enough time has elapsed since last capture
+      uint8_t status;
+      ros::Duration difference = ros::Time::now() - servo->getLastVelocityUpdate();
+      if ((difference.sec > 0) ||
+          (difference.nsec > 5e8)) // More than half a second has elapsed since an apriltag was captured
+      {
+        status = servo->scan();
+      }
+      else
+      {
+        status = servo->adjustCamera(servo->getDesiredVelocity());
+      }
+      if (status == CL_OK)
+      {
+        pubs->transforms.publish(servo->getTransformMsg());
+        //pubs->tf.sendTransform(servo->getTransformMsg());
+      }
     }
     rate.sleep();
   }

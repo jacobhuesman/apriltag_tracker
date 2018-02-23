@@ -6,8 +6,8 @@
 namespace apriltag_tracker
 {
 
-static unsigned int CameraWidth[4] = {320, 640, 960, 1280}; // TODO probably come up with cleaner way of doing this
-static unsigned int CameraHeight[4] = {240, 480, 720, 960};
+static unsigned int CameraWidth[5] = {320, 640, 960, 1280, 1600}; // TODO probably come up with cleaner way of doing this
+static unsigned int CameraHeight[5] = {240, 480, 720, 960, 1200};
 
 struct CameraInfo
 {
