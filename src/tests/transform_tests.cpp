@@ -16,9 +16,14 @@ TEST(AprilTagTrackerTransformTests, ConstructorAndGetters)
   q.setRPY(0.0, 0.0, 0.0);
   servo_tf.setRotation(q);
 
+  tf2::Transform map_to_tag_tf;
+  map_to_tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 0.0));
+  q.setRPY(M_PI_2, 0.0, M_PI_2);
+  map_to_tag_tf.setRotation(q);
+
   TagDetection detection;
 
-  Transform test(detection, tag_tf, servo_tf);
+  Transform test(detection, tag_tf, servo_tf, map_to_tag_tf);
 
   ASSERT_NEAR(1.0, test.getTagTf().getOrigin().getX(), 1e-10);
   ASSERT_NEAR(2.0, test.getTagTf().getOrigin().getY(), 1e-10);
@@ -34,16 +39,23 @@ TEST(AprilTagTrackerTransformTests, LessThanOperator)
   tf2::Stamped<tf2::Transform> servo_tf;
   TagDetection detection;
 
-  tf2::Stamped<tf2::Transform> tag_tf1;
+  tf2::Transform map_to_tag_tf;
   tf2::Quaternion q;
+  q.setRPY(M_PI_2, 0.0, M_PI_2);
+  map_to_tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 0.0));
+  map_to_tag_tf.setRotation(q);
+
+
+  tf2::Stamped<tf2::Transform> tag_tf1;
   q.setRPY(0.0, M_PI_4, 0.0);
   tag_tf1.setRotation(q);
-  Transform test1(detection, tag_tf1, servo_tf);
+
+  Transform test1(detection, tag_tf1, servo_tf, map_to_tag_tf);
 
   tf2::Stamped<tf2::Transform> tag_tf2;
   q.setRPY(0.0, M_PI_4 * 1.1, 0.0);
   tag_tf2.setRotation(q);
-  Transform test2(detection, tag_tf2, servo_tf);
+  Transform test2(detection, tag_tf2, servo_tf, map_to_tag_tf);
 
   ASSERT_NEAR(M_PI_4, test1.getTagTheta(), 1e-10);
   ASSERT_NEAR(M_PI_4 * 1.1, test2.getTagTheta(), 1e-10);

@@ -68,10 +68,10 @@ TEST(AprilTagTrackerTagTests, Add20Transforms)
   tf2::Stamped<tf2::Transform> servo_tf;
   TagDetection detection;
   tf2::Stamped<tf2::Transform> tag_tf;
-  for (int i = 0; i < 20; i++)
+  for (unsigned int i = 0; i < 20; i++)
   {
     tag_tf.setOrigin(tf2::Vector3((double)i, 0.0, 0.0));
-    test.addTransform(detection, tag_tf, servo_tf, 0);
+    test.addTransform(detection, tag_tf, servo_tf, i + 1);
   }
 
   std::vector<Transform> data = test.getTransforms();
@@ -125,21 +125,21 @@ TEST(AprilTagTrackerTagTests, GetMedianFilteredTransform)
   TagDetection detection;
   tf2::Stamped<tf2::Transform> tag_tf;
   tf2::Quaternion q;
-  q.setRPY(0.0, 0.5, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
-  q.setRPY(0.0, 1.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
-  q.setRPY(0.0, 0.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
-  q.setRPY(0.0, 0.5, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
-  q.setRPY(0.0, 1.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
-  q.setRPY(0.0, 0.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
-  q.setRPY(0.0, 0.5, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
-  q.setRPY(0.0, 1.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
-  q.setRPY(0.0, 0.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
-  q.setRPY(0.0, 0.5, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
-  q.setRPY(0.0, 1.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
-  q.setRPY(0.0, 0.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
-  q.setRPY(0.0, 0.5, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
-  q.setRPY(0.0, 1.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
-  q.setRPY(0.0, 0.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 0);
+  q.setRPY(0.0, 0.5, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf,  1);
+  q.setRPY(0.0, 1.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf,  2);
+  q.setRPY(0.0, 0.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf,  3);
+  q.setRPY(0.0, 0.5, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf,  4);
+  q.setRPY(0.0, 1.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf,  5);
+  q.setRPY(0.0, 0.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf,  6);
+  q.setRPY(0.0, 0.5, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf,  7);
+  q.setRPY(0.0, 1.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf,  8);
+  q.setRPY(0.0, 0.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf,  9);
+  q.setRPY(0.0, 0.5, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 10);
+  q.setRPY(0.0, 1.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 11);
+  q.setRPY(0.0, 0.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 12);
+  q.setRPY(0.0, 0.5, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 13);
+  q.setRPY(0.0, 1.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 14);
+  q.setRPY(0.0, 0.2, 0.0); tag_tf.setRotation(q); test.addTransform(detection, tag_tf, servo_tf, 15);
 
   std::vector<Transform> data = test.getTransforms();
 

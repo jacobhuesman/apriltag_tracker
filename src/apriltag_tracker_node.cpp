@@ -112,14 +112,13 @@ void trackerThread(ros::NodeHandle nh, HostCommLayer::Dynamixel *servo, AprilTag
     timer.adjust_servo.stop();
 
     // Send Transforms
-    timer.publish_detections_array.start();
-    apriltag_tracker::AprilTagDetectionArray tag_detection_array;
-    tracker.fillTagDetectionArray(&tag_detection_array);
-    for (int i = 0; i < tag_detection_array.detections.size(); i++)
+    timer.publish_tag_transforms.start();
+    std::vector<geometry_msgs::TransformStamped> tag_transforms = tracker.getTagTransforms();
+    for (int i = 0; i < tag_transforms.size(); i++)
     {
-      pubs->transforms.publish(tag_detection_array.detections[i].transform);
+      pubs->transforms.publish(tag_transforms[i]);
     }
-    timer.publish_detections_array.stop();
+    timer.publish_tag_transforms.stop();
 
     timer.publish_transforms.start();
     if (publish_pose_estimate)
@@ -135,7 +134,6 @@ void trackerThread(ros::NodeHandle nh, HostCommLayer::Dynamixel *servo, AprilTag
         ROS_WARN("%s", e.what());
       }
     }
-    pubs->detections.publish(tag_detection_array);
     timer.publish_transforms.stop();
 
     // Publish images
@@ -199,10 +197,10 @@ int main(int argc, char **argv)
 
   image_transport::ImageTransport it(nh);
   pubs = new Publishers;
-  pubs->detections = nh.advertise<apriltag_tracker::AprilTagDetectionArray>("info/tag_detections", 1);
-  pubs->diagnostics = nh.advertise<apriltag_tracker::ATTLocalTiming>("info/timing_diagnostics", 1);
-  pubs->pose = nh.advertise<geometry_msgs::PoseStamped>("pose_estimate", 1);
-  pubs->transforms = nh.advertise<geometry_msgs::TransformStamped>("transforms", 1);
+  pubs->detections = nh.advertise<apriltag_tracker::AprilTagDetectionArray>("info/tag_detections", 30);
+  pubs->diagnostics = nh.advertise<apriltag_tracker::ATTLocalTiming>("info/timing_diagnostics", 30);
+  pubs->pose = nh.advertise<geometry_msgs::PoseStamped>("pose_estimate", 30);
+  pubs->transforms = nh.advertise<geometry_msgs::TransformStamped>("transforms", 30);
   pubs->image = it.advertise("image/raw", 1);
   pubs->detections_image = it.advertise("image/detections", 1);
 

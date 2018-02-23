@@ -3,7 +3,7 @@ int64 process_image
 int64 adjust_servo
 int64 calculate_transforms
 int64 publish_transforms
-int64 publish_detections_array
+int64 publish_tag_transforms
 int64 publish_plain_image
 int64 draw_detections
 int64 publish_detections_image

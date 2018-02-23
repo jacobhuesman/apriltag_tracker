@@ -17,7 +17,7 @@ TEST(AprilTagTrackerTimerTests, Timer1000us)
   timer.stop();
 
   ASSERT_GT(timer.getTime(), 800);
-  ASSERT_LT(timer.getTime(), 1200);
+  ASSERT_LT(timer.getTime(), 5000);
 }
 
 TEST(AprilTagTrackerTimerTests, TimerNoStart)
@@ -50,7 +50,7 @@ TEST(AprilTagTrackerTimerTests, Timers)
   timer.process_image.start();            usleep( 2000); timer.process_image.stop();
   timer.adjust_servo.start();             usleep( 3000); timer.adjust_servo.stop();
   timer.calculate_transforms.start();     usleep( 4000); timer.calculate_transforms.stop();
-  timer.publish_detections_array.start(); usleep( 5000); timer.publish_detections_array.stop();
+  timer.publish_tag_transforms.start(); usleep( 5000); timer.publish_tag_transforms.stop();
   timer.publish_transforms.start();       usleep( 6000); timer.publish_transforms.stop();
   timer.publish_plain_image.start();      usleep( 7000); timer.publish_plain_image.stop();
   timer.draw_detections.start();          usleep( 8000); timer.draw_detections.stop();
@@ -65,8 +65,8 @@ TEST(AprilTagTrackerTimerTests, Timers)
   ASSERT_LT(timer.adjust_servo.getTime(),              3200);
   ASSERT_GT(timer.calculate_transforms.getTime(),      3800);
   ASSERT_LT(timer.calculate_transforms.getTime(),      4200);
-  ASSERT_GT(timer.publish_detections_array.getTime(),  4800);
-  ASSERT_LT(timer.publish_detections_array.getTime(),  5200);
+  ASSERT_GT(timer.publish_tag_transforms.getTime(),  4800);
+  ASSERT_LT(timer.publish_tag_transforms.getTime(),  5200);
   ASSERT_GT(timer.publish_transforms.getTime(),        5800);
   ASSERT_LT(timer.publish_transforms.getTime(),        6200);
   ASSERT_GT(timer.publish_plain_image.getTime(),       6800);
@@ -88,7 +88,7 @@ TEST(AprilTagTrackerTimerTests, TimersMsg)
   timer.process_image.start();            usleep( 2000); timer.process_image.stop();
   timer.adjust_servo.start();             usleep( 3000); timer.adjust_servo.stop();
   timer.calculate_transforms.start();     usleep( 4000); timer.calculate_transforms.stop();
-  timer.publish_detections_array.start(); usleep( 5000); timer.publish_detections_array.stop();
+  timer.publish_tag_transforms.start(); usleep( 5000); timer.publish_tag_transforms.stop();
   timer.publish_transforms.start();       usleep( 6000); timer.publish_transforms.stop();
   timer.publish_plain_image.start();      usleep( 7000); timer.publish_plain_image.stop();
   timer.draw_detections.start();          usleep( 8000); timer.draw_detections.stop();
@@ -104,8 +104,8 @@ TEST(AprilTagTrackerTimerTests, TimersMsg)
   ASSERT_LT(timing_msg.adjust_servo,              3200);
   ASSERT_GT(timing_msg.calculate_transforms,      3800);
   ASSERT_LT(timing_msg.calculate_transforms,      4200);
-  ASSERT_GT(timing_msg.publish_detections_array,  4800);
-  ASSERT_LT(timing_msg.publish_detections_array,  5200);
+  ASSERT_GT(timing_msg.publish_tag_transforms,    4800);
+  ASSERT_LT(timing_msg.publish_tag_transforms,    5200);
   ASSERT_GT(timing_msg.publish_transforms,        5800);
   ASSERT_LT(timing_msg.publish_transforms,        6200);
   ASSERT_GT(timing_msg.publish_plain_image,       6800);

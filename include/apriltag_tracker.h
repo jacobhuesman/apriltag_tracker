@@ -39,7 +39,7 @@ public:
                     tf2::Stamped<tf2::Transform> servo_tf);
   int16_t getDesiredServoVelocity();
   void updateTags(tf2::Stamped<tf2::Transform> servo_tf);
-  void fillTagDetectionArray(apriltag_tracker::AprilTagDetectionArray *tag_detection_array);
+  std::vector<geometry_msgs::TransformStamped> getTagTransforms();
 
   Transform performThetaCorrection(Transform tag_a, Transform tag_b, tf2::Transform map_to_a, tf2::Transform map_to_b);
   void estimateRobotPose(geometry_msgs::PoseStamped *pose_estimate_msg);
@@ -53,6 +53,7 @@ private:
   TagFamily *tag_family;
   TagDetector *tag_detector;
   TagDetectionArray tag_detections;
+  std::vector<geometry_msgs::TransformStamped> tag_transforms;
   std::vector<Tag> *tag_info;
   unsigned int current_seq;
   ros::Time last_capture_time;

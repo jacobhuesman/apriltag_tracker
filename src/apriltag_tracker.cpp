@@ -90,6 +90,7 @@ void AprilTagTracker::drawDetections(cv::Mat *image)
 // TODO add unit test
 // - Velocity is sane
 // - Sequences are correct
+// - Throw error is we can't get desired servo velocity
 int16_t AprilTagTracker::getDesiredServoVelocity()
 {
   int best_tag = -1;
@@ -138,6 +139,7 @@ void AprilTagTracker::processImage(cv::Mat *image, unsigned int current_seq, ros
 
 void AprilTagTracker::updateTags(tf2::Stamped<tf2::Transform> servo_tf)
 {
+  tag_transforms.clear();
   for (int i = 0; i < tag_detections.size(); i++)
   {
     for (int j = 0; j < tag_info->size(); j++)
@@ -145,13 +147,12 @@ void AprilTagTracker::updateTags(tf2::Stamped<tf2::Transform> servo_tf)
       if (tag_detections[i].id == (*tag_info)[j].getID())
       {
         // Get transform
-        /* Transform */
         Eigen::Matrix4d transform = getRelativeTransform(tag_detections[i].p, (*tag_info)[j].getSize());
         Eigen::Matrix3d rotation = transform.block(0, 0, 3, 3);
         Eigen::Quaternion<double> rotation_q = Eigen::Quaternion<double>(rotation);
 
         // Build transform
-        tf2::Transform tag_transform;
+        tf2::Stamped<tf2::Transform> tag_transform;
         tag_transform.setOrigin(
             tf2::Vector3(transform(0, 3), transform(1, 3), transform(2, 3))); // TODO double check this
         tf2::Quaternion q;
@@ -160,50 +161,59 @@ void AprilTagTracker::updateTags(tf2::Stamped<tf2::Transform> servo_tf)
         q.setZ(rotation_q.z());
         q.setW(rotation_q.w());
         tag_transform.setRotation(q);
-        tf2::Stamped<tf2::Transform> stamped_tag_transform;
-        stamped_tag_transform.setData(tag_transform);
-        stamped_tag_transform.stamp_ = this->last_capture_time;
-        (*tag_info)[j].addTransform(tag_detections[i], stamped_tag_transform, servo_tf, this->current_seq);
+        tag_transform.stamp_ = this->last_capture_time;
+
+        // Add transform to local tag_transforms object
+        geometry_msgs::TransformStamped tag_transform_msg = tf2::toMsg(tag_transform);
+        tag_transform_msg.header.seq = this->current_seq;
+        tag_transform_msg.header.stamp = this->last_capture_time;
+        tag_transform_msg.header.frame_id = "camera_optical";
+        tag_transform_msg.child_frame_id = std::string("tag") + std::to_string((*tag_info)[j].getID())
+                                           + "_estimate";
+        tag_transforms.push_back(tag_transform_msg);
+
+        // Add transform to global tag_info object
+        (*tag_info)[j].addTransform(tag_detections[i], tag_transform, servo_tf, this->current_seq);
       }
     }
   }
+
+  // Try to add filtered transforms
+  for (int i = 0; i < tag_info->size(); i++)
+  {
+    // Try to get median filtered transform
+    try
+    {
+      geometry_msgs::TransformStamped tag_transform_msg =
+          tf2::toMsg((*tag_info)[i].getMedianFilteredTransform().getTagTf());
+      tag_transform_msg.header.seq = this->current_seq;
+      tag_transform_msg.header.stamp = this->last_capture_time;
+      tag_transform_msg.header.frame_id = "camera_optical";
+      tag_transform_msg.child_frame_id = std::string("tag") + std::to_string((*tag_info)[i].getID())
+                                         + "_median_filtered_estimate";
+      tag_transforms.push_back(tag_transform_msg);
+    }
+    catch (unable_to_find_transform_error &e) {}
+  }
+
+  // Try to get the best transform
+  try
+  {
+    tf2::Stamped<tf2::Transform> tag_transform = getTransform().getTagTf();
+    geometry_msgs::TransformStamped tag_transform_msg = tf2::toMsg(tag_transform);
+    tag_transform_msg.header.seq = this->current_seq;
+    tag_transform_msg.header.stamp = this->last_capture_time;
+    tag_transform_msg.header.frame_id = "camera_optical";
+    tag_transform_msg.child_frame_id = std::string("tag") + tag_transform.frame_id_
+                                       + "_best_transform";
+    tag_transforms.push_back(tag_transform_msg);
+  }
+  catch (unable_to_find_transform_error &e) {}
 }
 
-void AprilTagTracker::fillTagDetectionArray(apriltag_tracker::AprilTagDetectionArray *tag_detection_array)
+std::vector<geometry_msgs::TransformStamped> AprilTagTracker::getTagTransforms()
 {
-  for (int i = 0; i < tag_detections.size(); i++)
-  {
-    for (int j = 0; j < tag_info->size(); j++)
-    {
-      if (tag_detections[i].id == (*tag_info)[j].getID())
-      {
-        // Transform
-        // TODO use previously calculated values from updateTags
-        Eigen::Matrix4d transform = getRelativeTransform(tag_detections[i].p, (*tag_info)[j].getSize());
-        Eigen::Matrix3d rotation = transform.block(0, 0, 3, 3);
-        Eigen::Quaternion<double> rotation_q = Eigen::Quaternion<double>(rotation);
-
-        // Build detection
-        apriltag_tracker::AprilTagDetection tag_detection;
-        tag_detection.id = (int) tag_detections[i].id;
-        tag_detection.size = (*tag_info)[j].getSize();
-        tag_detection.transform.header.stamp = this->last_capture_time;
-        tag_detection.transform.header.seq = this->current_seq;
-        tag_detection.transform.header.frame_id = "camera_optical";
-        tag_detection.transform.child_frame_id = std::string("tag") + std::to_string((*tag_info)[j].getID())
-                                                 + "_estimate";
-        tag_detection.transform.transform.translation.x = transform(0, 3);
-        tag_detection.transform.transform.translation.y = transform(1, 3);
-        tag_detection.transform.transform.translation.z = transform(2, 3);
-        tag_detection.transform.transform.rotation.x = rotation_q.x();
-        tag_detection.transform.transform.rotation.y = rotation_q.y();
-        tag_detection.transform.transform.rotation.z = rotation_q.z();
-        tag_detection.transform.transform.rotation.w = rotation_q.w();
-
-        tag_detection_array->detections.push_back(tag_detection);
-      }
-    }
-  }
+  return tag_transforms;
 }
 
 Transform AprilTagTracker::performThetaCorrection(Transform tag_a, Transform tag_b,
@@ -278,10 +288,9 @@ Transform AprilTagTracker::getTransform()
   if (tag1 != -1 && tag2 != -1)
   {
     printf("Performed theta correction \n");
-    performThetaCorrection((*tag_info)[tag1].getMostRecentTransform(),
+    return performThetaCorrection((*tag_info)[tag1].getMostRecentTransform(),
                                   (*tag_info)[tag2].getMostRecentTransform(),
                                   (*tag_info)[tag1].getMapToTagTf(), (*tag_info)[tag2].getMapToTagTf());
-    return (*tag_info)[best_tag].getMedianFilteredTransform();
   }
   else
   {
