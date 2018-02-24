@@ -22,7 +22,7 @@ TEST(AprilTagTrackerTransformTests, ConstructorAndGetters)
   map_to_tag_tf.setRotation(q);
 
   TagDetection detection;
-  int compare_mode = THETA_COMPARE;
+  CompareType compare_mode = CompareType::theta;
 
   Transform test(detection, tag_tf, servo_tf, map_to_tag_tf, &compare_mode);
 
@@ -50,7 +50,7 @@ TEST(AprilTagTrackerTransformTests, LessThanOperator)
   tf2::Stamped<tf2::Transform> tag_tf1;
   q.setRPY(0.0, M_PI_4, 0.0);
   tag_tf1.setRotation(q);
-  int compare_mode = THETA_COMPARE;
+  CompareType compare_mode = CompareType::theta;
 
   Transform test1(detection, tag_tf1, servo_tf, map_to_tag_tf, &compare_mode);
 
