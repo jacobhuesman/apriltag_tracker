@@ -10,17 +10,18 @@
 namespace AprilTagTracker
 {
 
-typedef enum
+enum class CompareType
 {
-  THETA_COMPARE = 1,
-  DIST_COMPARE = 2
-} COMPARE_TYPEDEF;
+  theta,
+  distance,
+  invalid
+};
 
 class Transform
 {
 public:
   Transform(TagDetection detection, tf2::Stamped<tf2::Transform> tag_tf, tf2::Stamped<tf2::Transform> servo_tf,
-            tf2::Transform map_to_tag_tf, int* compare_mode);
+            tf2::Transform map_to_tag_tf, CompareType* compare_mode);
   Transform(TagDetection detection, tf2::Stamped<tf2::Transform> tag_tf, tf2::Stamped<tf2::Transform> servo_tf,
             tf2::Transform map_to_tag_tf);
 
@@ -38,7 +39,7 @@ private:
   tf2::Transform map_to_tag_tf;
   TagDetection detection;
   double tag_theta;
-  int* compare_mode;
+  CompareType* compare_mode;
 };
 
 }

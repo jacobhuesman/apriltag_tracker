@@ -41,7 +41,7 @@ public:
 private:
   boost::mutex *mutex;
   int id;
-  int compare_mode;
+  CompareType compare_mode;
   unsigned int seq;
   double goodness;
   double priority;

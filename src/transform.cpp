@@ -3,7 +3,7 @@
 using namespace AprilTagTracker;
 
 Transform::Transform(TagDetection detection, tf2::Stamped<tf2::Transform> tag_tf, tf2::Stamped<tf2::Transform> servo_tf,
-                     tf2::Transform map_to_tag_tf, int* compare_mode)
+                     tf2::Transform map_to_tag_tf, CompareType* compare_mode)
     : Transform::Transform(detection, tag_tf, servo_tf, map_to_tag_tf)
 {
   this->compare_mode = compare_mode;
@@ -16,7 +16,8 @@ Transform::Transform(TagDetection detection, tf2::Stamped<tf2::Transform> tag_tf
   this->servo_tf = servo_tf;
   this->detection = detection;
   this->map_to_tag_tf = map_to_tag_tf;
-  this->compare_mode = new int(-1);
+  this->compare_mode = new CompareType;
+  *(this->compare_mode) = CompareType::invalid;
 
   // TODO this is a little convoluted, is there a more direct way?
   tf2::Matrix3x3 matrix;
@@ -47,7 +48,7 @@ double Transform::getTagTheta()
 
 bool Transform::operator<(Transform tag_tf)
 {
-  if (*compare_mode == DIST_COMPARE)
+  if (*compare_mode == CompareType::distance)
   {
     tf2::Vector3 this_origin = this->tag_tf.getOrigin();
     tf2::Vector3 that_origin = tag_tf.getTagTf().getOrigin();
@@ -55,7 +56,7 @@ bool Transform::operator<(Transform tag_tf)
     double that_tag = that_origin.getX() * that_origin.getX() + that_origin.getZ() * that_origin.getZ();
     return this_tag < that_tag;
   }
-  else if (*compare_mode == THETA_COMPARE)
+  else if (*compare_mode == CompareType::theta)
   {
     return this->getTagTheta() < tag_tf.getTagTheta();
   }

@@ -158,8 +158,7 @@ void servoThread(HostCommLayer::Dynamixel *servo)
       // Start scanning if enough time has elapsed since last capture
       uint8_t status;
       ros::Duration difference = ros::Time::now() - servo->getLastVelocityUpdate();
-      if ((difference.sec > 0) ||
-          (difference.nsec > 5e8)) // More than half a second has elapsed since an apriltag was captured
+      if (difference.toSec() > 0.5)
       {
         status = servo->scan();
       }

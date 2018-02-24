@@ -253,7 +253,7 @@ Transform AprilTagTracker::performThetaCorrection(Transform tag_a, Transform tag
 
   // By law of cosines
   double A = acos((-a_sq + b_sq + c_sq) / (2 * b * c));
-  printf("A: %f\n", A);
+  //printf("A: %f\n", A);
 
   tf2::Stamped<tf2::Transform> new_tf = tag_a.getTagTf();
   tf2::Quaternion q1, q2, q3;
@@ -306,8 +306,8 @@ Transform AprilTagTracker::getTransform()
   }
   if (tag1 != -1 && tag2 != -1)
   {
-    return performThetaCorrection((*tag_info)[tag1].getMedianMovingAverageTransform(),
-                                  (*tag_info)[tag2].getMedianMovingAverageTransform(),
+    return performThetaCorrection((*tag_info)[tag1].getMovingAverageTransform(),
+                                  (*tag_info)[tag2].getMovingAverageTransform(),
                                   (*tag_info)[tag1].getMapToTagTf(), (*tag_info)[tag2].getMapToTagTf());
   }
   else

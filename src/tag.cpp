@@ -10,7 +10,7 @@ Tag::Tag(int id, int priority, double size)
   this->mutex = new boost::mutex;
   this->seq = 0;
   this->list_size = 15;
-  this->compare_mode = DIST_COMPARE;
+  this->compare_mode = CompareType::distance;
 }
 
 // TODO add mutex check
@@ -44,7 +44,7 @@ Transform Tag::getMostRecentTransform()
 
 Transform Tag::getMedianFilteredTransform()
 {
-  this->compare_mode = THETA_COMPARE;
+  this->compare_mode = CompareType::theta;
   if (transforms.size() < 5)
   {
     throw unable_to_find_transform_error("Median filter not populated");
@@ -68,7 +68,7 @@ Transform Tag::getMovingAverageTransform()
     throw unable_to_find_transform_error("Moving average filter not populated");
   }
   mutex->lock();
-  this->compare_mode = DIST_COMPARE;
+  this->compare_mode = CompareType::distance;
   Transform tag_transform = transforms.front();
   tf2::Stamped<tf2::Transform> tag_tf = tag_transform.getTagTf();
   double x = 0, y = 0, z = 0;
