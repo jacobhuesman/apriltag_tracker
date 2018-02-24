@@ -41,7 +41,6 @@ struct CameraInfo
   uint32_t getWidth();
   uint32_t getHeight();
   unsigned int getSeq();
-
 };
 
 }

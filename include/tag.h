@@ -32,6 +32,8 @@ public:
   double getSize();
   bool isReady();
   std::vector<Transform> getTransforms();
+  Transform getMovingAverageTransform();
+  Transform getMedianMovingAverageTransform();
   Transform getMedianFilteredTransform();
   Transform getMostRecentTransform();
   tf2::Transform getMapToTagTf();
@@ -39,6 +41,7 @@ public:
 private:
   boost::mutex *mutex;
   int id;
+  int compare_mode;
   unsigned int seq;
   double goodness;
   double priority;

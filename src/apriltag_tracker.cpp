@@ -182,7 +182,8 @@ void AprilTagTracker::updateTags(tf2::Stamped<tf2::Transform> servo_tf)
   for (int i = 0; i < tag_info->size(); i++)
   {
     // Try to get median filtered transform
-    try
+    // TODO fix first
+    /*try
     {
       geometry_msgs::TransformStamped tag_transform_msg =
           tf2::toMsg((*tag_info)[i].getMedianFilteredTransform().getTagTf());
@@ -191,6 +192,20 @@ void AprilTagTracker::updateTags(tf2::Stamped<tf2::Transform> servo_tf)
       tag_transform_msg.header.frame_id = "camera_optical";
       tag_transform_msg.child_frame_id = std::string("tag") + std::to_string((*tag_info)[i].getID())
                                          + "_median_filtered_estimate";
+      tag_transforms.push_back(tag_transform_msg);
+    }
+    catch (unable_to_find_transform_error &e) {}*/
+
+    // Try to get average filtered transform
+    try
+    {
+      geometry_msgs::TransformStamped tag_transform_msg =
+          tf2::toMsg((*tag_info)[i].getMovingAverageTransform().getTagTf());
+      tag_transform_msg.header.seq = this->current_seq;
+      tag_transform_msg.header.stamp = this->last_capture_time;
+      tag_transform_msg.header.frame_id = "camera_optical";
+      tag_transform_msg.child_frame_id = std::string("tag") + std::to_string((*tag_info)[i].getID())
+                                         + "_moving_average_estimate";
       tag_transforms.push_back(tag_transform_msg);
     }
     catch (unable_to_find_transform_error &e) {}
@@ -291,14 +306,15 @@ Transform AprilTagTracker::getTransform()
   }
   if (tag1 != -1 && tag2 != -1)
   {
-    printf("Performed theta correction \n");
-    return performThetaCorrection((*tag_info)[tag1].getMostRecentTransform(),
-                                  (*tag_info)[tag2].getMostRecentTransform(),
+    return performThetaCorrection((*tag_info)[tag1].getMedianMovingAverageTransform(),
+                                  (*tag_info)[tag2].getMedianMovingAverageTransform(),
                                   (*tag_info)[tag1].getMapToTagTf(), (*tag_info)[tag2].getMapToTagTf());
   }
   else
   {
-    return (*tag_info)[best_tag].getMedianFilteredTransform();
+    throw unable_to_find_transform_error("Only using moving average transforms currently and can't find two tags");
+    // TODO fix first
+    //return (*tag_info)[best_tag].getMedianFilteredTransform();
   }
 }
 

@@ -76,7 +76,7 @@ TEST(AprilTagTrackerTagTests, Add20Transforms)
 
   std::vector<Transform> data = test.getTransforms();
 
-  ASSERT_EQ(5, data.size());
+  ASSERT_EQ(15, data.size());
   ASSERT_EQ(20, test.getSeq());
   ASSERT_EQ(19, data[0].getTagTf().getOrigin().getX());
   ASSERT_EQ(18, data[1].getTagTf().getOrigin().getX());
@@ -143,9 +143,40 @@ TEST(AprilTagTrackerTagTests, GetMedianFilteredTransform)
 
   std::vector<Transform> data = test.getTransforms();
 
-  ASSERT_EQ(5, data.size());
+  ASSERT_EQ(15, data.size());
   ASSERT_EQ(15, test.getSeq());
   ASSERT_NEAR(0.5, test.getMedianFilteredTransform().getTagTheta(), 1e-10);
+}
+
+TEST(AprilTagTrackerTagTests, GetMovingAverageTransform)
+{
+  Tag test(1, 1, 1.0);
+
+  tf2::Stamped<tf2::Transform> servo_tf;
+  TagDetection detection;
+  tf2::Stamped<tf2::Transform> tag_tf;
+  tf2::Quaternion q;
+  tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf,  1);
+  tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf,  2);
+  tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf,  3);
+  tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf,  4);
+  tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf,  5);
+  tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf,  6);
+  tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf,  7);
+  tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf,  8);
+  tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf,  9);
+  tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf, 10);
+  tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf, 11);
+  tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf, 12);
+  tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf, 13);
+  tag_tf.setOrigin(tf2::Vector3(1.0, 0.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf, 14);
+  tag_tf.setOrigin(tf2::Vector3(1.0, 0.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf, 15);
+
+  std::vector<Transform> data = test.getTransforms();
+
+  ASSERT_EQ(15, data.size());
+  ASSERT_EQ(15, test.getSeq());
+  ASSERT_NEAR(2.0/15.0, test.getMovingAverageTransform().getTagTf().getOrigin().getX(), 1e-10);
 }
 
 TEST(AprilTagTrackerTagTests, GetMostRecentTransformEmpty)
@@ -195,8 +226,6 @@ TEST(AprilTagTrackerTagTests, GetMostRecentTransform10)
   ASSERT_NEAR(test.getMostRecentTransform().getTagTheta(), 0.1, 1e-10);
 }
 
-
-// Run all the tests that were declared with TEST()
 int main(int argc, char **argv)
 {
   testing::InitGoogleTest(&argc, argv);

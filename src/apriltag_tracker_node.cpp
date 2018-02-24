@@ -22,19 +22,15 @@
 
 struct Publishers
 {
-  //tf2_ros::TransformBroadcaster tf;
   ros::Publisher pose;
-  ros::Publisher detections;
   ros::Publisher diagnostics;
   ros::Publisher transforms;
   image_transport::Publisher image;
-  image_transport::Publisher detections_image;
 };
 Publishers *pubs;
 
-const bool publish_plain_image = false;
-const bool track_servo = false;
-const bool publish_pose_estimate = false;
+const bool track_servo = true;
+const bool publish_pose_estimate = true;
 
 std::vector<AprilTagTracker::Tag> *tag_info;
 
@@ -75,7 +71,6 @@ void initializeTagInfoVector(std::vector<AprilTagTracker::Tag> *tag_info)
     (*tag_info)[i].setMapToTagTf(map_to_tag_tf);
   }
 }
-
 
 void trackerThread(ros::NodeHandle nh, HostCommLayer::Dynamixel *servo, AprilTagTracker::TransformsCache transforms,
                    apriltag_tracker::Camera *camera, uint8_t thread_id)
@@ -133,20 +128,12 @@ void trackerThread(ros::NodeHandle nh, HostCommLayer::Dynamixel *servo, AprilTag
     }
     timer.publish_transforms.stop();
 
-    // Publish images
-    timer.publish_plain_image.start();
-    if (publish_plain_image)
-    {
-      pubs->image.publish(camera->getImageMsg());
-    }
-    timer.publish_plain_image.stop();
-
     timer.draw_detections.start();
     tracker.drawDetections(camera->getImagePtr());
     timer.draw_detections.stop();
 
     timer.publish_detections_image.start();
-    pubs->detections_image.publish(camera->getImageMsg());
+    pubs->image.publish(camera->getImageMsg());
     timer.publish_detections_image.stop();
 
     // Handle callbacks
@@ -183,7 +170,6 @@ void servoThread(HostCommLayer::Dynamixel *servo)
       if (status == CL_OK)
       {
         pubs->transforms.publish(servo->getTransformMsg());
-        //pubs->tf.sendTransform(servo->getTransformMsg());
       }
     }
     rate.sleep();
@@ -198,12 +184,10 @@ int main(int argc, char **argv)
 
   image_transport::ImageTransport it(nh);
   pubs = new Publishers;
-  pubs->detections = nh.advertise<apriltag_tracker::AprilTagDetectionArray>("info/tag_detections", 30);
   pubs->diagnostics = nh.advertise<apriltag_tracker::ATTLocalTiming>("info/timing_diagnostics", 30);
   pubs->pose = nh.advertise<geometry_msgs::PoseStamped>("pose_estimate", 30);
   pubs->transforms = nh.advertise<geometry_msgs::TransformStamped>("transforms", 30);
-  pubs->image = it.advertise("image/raw", 1);
-  pubs->detections_image = it.advertise("image/detections", 1);
+  pubs->image = it.advertise("image", 1);
 
   // Initialize tags
   tag_info = new std::vector<AprilTagTracker::Tag>;

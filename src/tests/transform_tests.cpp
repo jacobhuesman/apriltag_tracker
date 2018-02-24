@@ -22,8 +22,9 @@ TEST(AprilTagTrackerTransformTests, ConstructorAndGetters)
   map_to_tag_tf.setRotation(q);
 
   TagDetection detection;
+  int compare_mode = THETA_COMPARE;
 
-  Transform test(detection, tag_tf, servo_tf, map_to_tag_tf);
+  Transform test(detection, tag_tf, servo_tf, map_to_tag_tf, &compare_mode);
 
   ASSERT_NEAR(1.0, test.getTagTf().getOrigin().getX(), 1e-10);
   ASSERT_NEAR(2.0, test.getTagTf().getOrigin().getY(), 1e-10);
@@ -49,13 +50,14 @@ TEST(AprilTagTrackerTransformTests, LessThanOperator)
   tf2::Stamped<tf2::Transform> tag_tf1;
   q.setRPY(0.0, M_PI_4, 0.0);
   tag_tf1.setRotation(q);
+  int compare_mode = THETA_COMPARE;
 
-  Transform test1(detection, tag_tf1, servo_tf, map_to_tag_tf);
+  Transform test1(detection, tag_tf1, servo_tf, map_to_tag_tf, &compare_mode);
 
   tf2::Stamped<tf2::Transform> tag_tf2;
   q.setRPY(0.0, M_PI_4 * 1.1, 0.0);
   tag_tf2.setRotation(q);
-  Transform test2(detection, tag_tf2, servo_tf, map_to_tag_tf);
+  Transform test2(detection, tag_tf2, servo_tf, map_to_tag_tf, &compare_mode);
 
   ASSERT_NEAR(M_PI_4, test1.getTagTheta(), 1e-10);
   ASSERT_NEAR(M_PI_4 * 1.1, test2.getTagTheta(), 1e-10);
@@ -65,7 +67,6 @@ TEST(AprilTagTrackerTransformTests, LessThanOperator)
   ASSERT_FALSE(test1 < test1);
 }
 
-// Run all the tests that were declared with TEST()
 int main(int argc, char **argv)
 {
   testing::InitGoogleTest(&argc, argv);

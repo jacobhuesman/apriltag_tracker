@@ -48,7 +48,6 @@ public:
   apriltag_tracker::CameraInfo *camera_info;
 
 private:
-  // Tag
   TagDetectorParams tag_params;
   TagFamily *tag_family;
   TagDetector *tag_detector;
@@ -57,8 +56,6 @@ private:
   std::vector<Tag> *tag_info;
   unsigned int current_seq;
   ros::Time last_capture_time;
-
-  // Transforms
   TransformsCache transforms;
 };
 

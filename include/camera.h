@@ -21,16 +21,14 @@ class Camera
 public:
   Camera(boost::mutex *camera_mutex, CameraInfo *properties);
   ~Camera();
-  void grabImage();
 
-  // Getters
+  void grabImage();
   sensor_msgs::ImagePtr getImageMsg();
   ros::Time getCaptureTime();
   cv::Mat getImage();
   cv::Mat* getImagePtr();
   unsigned int getSeq();
   CameraInfo* getCameraInfo();
-
   void setupCapture();
 
 private:
@@ -39,8 +37,6 @@ private:
 
   boost::mutex *camera_mutex;
   CameraInfo *camera_info; // Do not edit in this class
-
-  // Private objects
   cv_bridge::CvImage *capture;
 };
 
@@ -53,8 +49,7 @@ private:
   void _grabImage();
   void _retrieveImage(unsigned char *data);
 
-  // Shared objects
-  raspicam::RaspiCam *camera;
+  raspicam::RaspiCam *camera; // Shared object
 };
 
 class DummyCamera : public Camera
@@ -66,10 +61,8 @@ private:
   void _grabImage() {};
   void _retrieveImage(unsigned char *data) {};
 
-  // Shared objects
-  raspicam::RaspiCam *camera;
+  raspicam::RaspiCam *camera; // Shared object
 };
-
 
 class CameraMaster
 {

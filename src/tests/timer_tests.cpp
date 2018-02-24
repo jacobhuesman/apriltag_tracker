@@ -120,7 +120,6 @@ TEST(AprilTagTrackerTimerTests, TimersMsg)
   ASSERT_LT(timing_msg.total_time,               58000);
 }
 
-// Run all the tests that were declared with TEST()
 int main(int argc, char **argv)
 {
   testing::InitGoogleTest(&argc, argv);

@@ -13,8 +13,7 @@ int main(int argc, char** argv){
   tf2_ros::Buffer tfBuffer;
   tf2_ros::TransformListener tfListener(tfBuffer);
   static tf2_ros::TransformBroadcaster br;
-
-
+  
   bool transformed = false;
   do
   {
