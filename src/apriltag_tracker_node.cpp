@@ -18,7 +18,8 @@
 #include <timers.h>
 #include <dynamixel_host_layer.h>
 #include <camera.h>
-#include <errors.h>
+
+using namespace AprilTagTracker;
 
 struct Publishers
 {
@@ -32,51 +33,11 @@ Publishers *pubs;
 const bool track_servo = true;
 const bool publish_pose_estimate = true;
 
-std::vector<AprilTagTracker::Tag> *tag_info;
-
-// TODO use some kind of xml and load from there
-void initializeTagInfoVector(std::vector<AprilTagTracker::Tag> *tag_info)
-{
-  tf2_ros::Buffer tfBuffer;
-  tf2_ros::TransformListener tfListener(tfBuffer);
-
-  AprilTagTracker::Tag tag1(1, 2, 0.42545);
-  AprilTagTracker::Tag tag3(3, 1, 0.42545);
-  AprilTagTracker::Tag tag4(4, 1, 0.203);
-
-  tag_info->push_back(tag1);
-  tag_info->push_back(tag3);
-  tag_info->push_back(tag4);
-
-  for (int i = 0; i < tag_info->size(); i++)
-  {
-    std::string tag_name = "tag" + std::to_string((*tag_info)[i].getID());
-    bool transformed;
-    do
-    {
-      transformed = tfBuffer.canTransform("map", tag_name, ros::Time(0), ros::Duration(1));
-      if (!transformed)
-      {
-        std::stringstream ss;
-        ss << "Unable to find transform from " << "map" << " to " << tag_name;
-        ROS_WARN("%s", ss.str().c_str());
-      }
-    } while(ros::ok() && !transformed);
-    ROS_INFO("Found transform for tag%i", (*tag_info)[i].getID());
-
-    geometry_msgs::TransformStamped transform_msg;
-    transform_msg = tfBuffer.lookupTransform("map", tag_name, ros::Time(0));
-    tf2::Transform map_to_tag_tf;
-    tf2::fromMsg(transform_msg.transform, map_to_tag_tf);
-    (*tag_info)[i].setMapToTagTf(map_to_tag_tf);
-  }
-}
-
-void trackerThread(ros::NodeHandle nh, HostCommLayer::Dynamixel *servo, AprilTagTracker::TransformsCache transforms,
-                   apriltag_tracker::Camera *camera, uint8_t thread_id)
+void trackerThread(HostCommLayer::Dynamixel *servo, AprilTagTracker::TransformsCache transforms_cache,
+                   std::vector<AprilTagTracker::Tag> *tag_info, apriltag_tracker::Camera *camera)
 {
   AprilTagTracker::Timers timer;
-  AprilTagTracker::AprilTagTracker tracker(camera->getCameraInfo(), tag_info, transforms);
+  AprilTagTracker::AprilTagTracker tracker(camera->getCameraInfo(), tag_info, transforms_cache);
 
   // Note: Entire loop must take less than 33ms
   while(ros::ok())
@@ -180,57 +141,21 @@ int main(int argc, char **argv)
   // Initialize ROS
   ros::init(argc, argv, "position_sensor");
   ros::NodeHandle nh("~");
-
   image_transport::ImageTransport it(nh);
   pubs = new Publishers;
   pubs->diagnostics = nh.advertise<apriltag_tracker::ATTLocalTiming>("info/timing_diagnostics", 30);
   pubs->pose = nh.advertise<geometry_msgs::PoseStamped>("pose_estimate", 30);
-  pubs->transforms = nh.advertise<geometry_msgs::TransformStamped>("transforms", 30);
+  pubs->transforms = nh.advertise<geometry_msgs::TransformStamped>("transforms_cache", 30);
   pubs->image = it.advertise("image", 1);
 
-  // Initialize tags
-  tag_info = new std::vector<AprilTagTracker::Tag>;
-  initializeTagInfoVector(tag_info);
-
-  // Get camera_transform
-  // TODO parametrize
-  // TODO separate into class?
-  AprilTagTracker::TransformsCache transforms;
-  tf2_ros::Buffer tfBuffer;
-  tf2_ros::TransformListener tfListener(tfBuffer);
-  std::stringstream ss;
-  bool transformed = false;
-  do
-  {
-    transformed = tfBuffer.canTransform("camera_optical", "servo_joint", ros::Time(0), ros::Duration(1));
-    if (!transformed)
-    {
-      ss.clear();
-      ss << "Unable to find transform from " << "camera_optical" << " to " << "base_link";
-      ROS_WARN("%s", ss.str().c_str());
-    }
-  } while(ros::ok() && !transformed);
-  ss.clear();
-  ss << "Found transform from " << "camera_optical" << " to " << "servo_joint";
-  ROS_INFO("%s", ss.str().c_str());
-  geometry_msgs::TransformStamped transform_msg;
-  transform_msg = tfBuffer.lookupTransform("camera_optical", "servo_joint", ros::Time(0));
-  tf2::fromMsg(transform_msg.transform, transforms.camera_optical_to_servo_joint);
-  do
-  {
-    transformed = tfBuffer.canTransform("servo_base_link", "base_link", ros::Time(0), ros::Duration(1));
-    if (!transformed)
-    {
-      ss.clear();
-      ss << "Unable to find transform from " << "servo_base_link" << " to " << "base_link";
-      ROS_WARN("%s", ss.str().c_str());
-    }
-  } while(ros::ok() && !transformed);
-  ss.clear();
-  ss << "Found transform from " << "servo_base_link" << " to " << "base_link";
-  ROS_INFO("%s", ss.str().c_str());
-  transform_msg = tfBuffer.lookupTransform("servo_base_link", "base_link", ros::Time(0));
-  tf2::fromMsg(transform_msg.transform, transforms.servo_base_link_to_base_link);
+  // Initialize tags and transforms_cache cache
+  std::vector<AprilTagTracker::Tag> *tag_info = new std::vector<AprilTagTracker::Tag>;
+  Tag tag1(1, 2, 0.42545);
+  Tag tag3(3, 1, 0.42545);
+  tag_info->push_back(tag1);
+  tag_info->push_back(tag3);
+  TransformsCache::initializeTagVector(tag_info);
+  AprilTagTracker::TransformsCache transforms_cache(nh);
 
   // Initialize servo
   HostCommLayer::Dynamixel *servo = new HostCommLayer::Dynamixel(0x11);
@@ -242,16 +167,15 @@ int main(int argc, char **argv)
   apriltag_tracker::Camera *camera2 = camera_master.generateCameraObject();
   apriltag_tracker::Camera *camera3 = camera_master.generateCameraObject();
 
-
   // Start threads
-  boost::thread thread0(trackerThread, nh, servo, transforms, camera0, 0); usleep(1000);
-  boost::thread thread1(trackerThread, nh, servo, transforms, camera1, 1); usleep(1000);
-  boost::thread thread2(trackerThread, nh, servo, transforms, camera2, 2); usleep(1000);
-  boost::thread thread3(trackerThread, nh, servo, transforms, camera3, 3);
+  boost::thread thread0(trackerThread, servo, transforms_cache, tag_info, camera0); usleep(1000);
+  boost::thread thread1(trackerThread, servo, transforms_cache, tag_info, camera1); usleep(1000);
+  boost::thread thread2(trackerThread, servo, transforms_cache, tag_info, camera2); usleep(1000);
+  boost::thread thread3(trackerThread, servo, transforms_cache, tag_info, camera3);
   boost::thread thread4(servoThread, servo);
-
   ros::spin();
 
+  // Process images until quit
   thread0.join();
   thread1.join();
   thread2.join();
