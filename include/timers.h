@@ -31,7 +31,7 @@ public:
   Timer adjust_servo;
   Timer calculate_transforms;
   Timer publish_transforms;
-  Timer publish_detections_array;
+  Timer publish_tag_transforms;
   Timer publish_plain_image;
   Timer draw_detections;
   Timer publish_detections_image;

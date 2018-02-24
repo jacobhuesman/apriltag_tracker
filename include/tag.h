@@ -8,6 +8,7 @@
 #include <boost/thread/thread.hpp>
 
 #include <transform.h>
+#include <errors.h>
 
 namespace AprilTagTracker
 {
@@ -19,23 +20,28 @@ public:
   Tag(int id, int priority, double size);
 
   // Thread safe
-  void addTransform(tf2::Stamped<tf2::Transform> tag_tf, tf2::Stamped<tf2::Transform> servo_tf);
+  void addTransform(TagDetection detection, tf2::Stamped<tf2::Transform> tag_tf,
+                    tf2::Stamped<tf2::Transform> servo_tf, unsigned int seq);
   void setMapToTagTf(tf2::Transform tf);
   int getID();
   //std::string getFrameID(); Not thread safe
+  cv::Point getDetectionCenter();
   unsigned int getSeq();
   double getGoodness();
   double getPriority();
   double getSize();
   bool isReady();
   std::vector<Transform> getTransforms();
+  Transform getMovingAverageTransform();
+  Transform getMedianMovingAverageTransform();
   Transform getMedianFilteredTransform();
+  Transform getMostRecentTransform();
   tf2::Transform getMapToTagTf();
-
 
 private:
   boost::mutex *mutex;
   int id;
+  CompareType compare_mode;
   unsigned int seq;
   double goodness;
   double priority;
@@ -44,7 +50,6 @@ private:
 
   int list_size;
   tf2::Transform map_to_tag_tf;
-
   std::list<AprilTagTracker::Transform> transforms;
 };
 

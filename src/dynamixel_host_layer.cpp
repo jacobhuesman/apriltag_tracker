@@ -17,7 +17,7 @@ Dynamixel::Dynamixel(uint8_t i2c_address)
   frame_id = "servo_base_link"; // TODO parametrize
   child_frame_id = "servo_joint"; // TODO parametrize
 
-  max_velocity = 80; // TODO parametrize
+  max_velocity = 50; // TODO parametrize
   desired_velocity = 0;
   current_velocity = 0;
   last_velocity_update = (ros::Time::now() - ros::Duration(1.0));

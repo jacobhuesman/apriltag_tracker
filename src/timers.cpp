@@ -30,7 +30,7 @@ long AprilTagTracker::Timers::getTotalTime()
   total_time += this->adjust_servo.getTime();
   total_time += this->calculate_transforms.getTime();
   total_time += this->publish_transforms.getTime();
-  total_time += this->publish_detections_array.getTime();
+  total_time += this->publish_tag_transforms.getTime();
   total_time += this->publish_plain_image.getTime();
   total_time += this->draw_detections.getTime();
   total_time += this->publish_detections_image.getTime();
@@ -45,7 +45,7 @@ long AprilTagTracker::Timers::getProcessingTime()
   processing_time += this->adjust_servo.getTime();
   processing_time += this->calculate_transforms.getTime();
   processing_time += this->publish_transforms.getTime();
-  processing_time += this->publish_detections_array.getTime();
+  processing_time += this->publish_tag_transforms.getTime();
   processing_time += this->publish_plain_image.getTime();
   processing_time += this->draw_detections.getTime();
   processing_time += this->publish_detections_image.getTime();
@@ -61,7 +61,7 @@ apriltag_tracker::ATTLocalTiming AprilTagTracker::Timers::getTimingMsg()
   timing_msg.adjust_servo = this->adjust_servo.getTime();
   timing_msg.calculate_transforms = this->calculate_transforms.getTime();
   timing_msg.publish_transforms = this->publish_transforms.getTime();
-  timing_msg.publish_detections_array = this->publish_detections_array.getTime();
+  timing_msg.publish_tag_transforms = this->publish_tag_transforms.getTime();
   timing_msg.publish_plain_image = this->publish_plain_image.getTime();
   timing_msg.draw_detections = this->draw_detections.getTime();
   timing_msg.publish_detections_image = this->publish_detections_image.getTime();

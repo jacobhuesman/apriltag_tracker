@@ -1,12 +1,13 @@
 #include <camera.h>
 
-namespace apriltag_tracker {
+namespace apriltag_tracker
+{
 
 CameraMaster::CameraMaster(ros::NodeHandle nh)
 {
   camera_mutex = new boost::mutex;
   camera = new raspicam::RaspiCam;
-  properties = new CameraProperties;
+  properties = new CameraInfo;
 
   setupCamera();
 
@@ -19,6 +20,7 @@ CameraMaster::CameraMaster(ros::NodeHandle nh)
   f = boost::bind(&CameraMaster::reconfigureCallback, this, _1, _2 );
   server->setCallback(f);
 
+  properties->image_seq = 0;
   setupProperties();
 }
 
@@ -130,16 +132,14 @@ void CameraMaster::setupProperties()
 
 Camera* CameraMaster::generateCameraObject()
 {
-  cameras.push_back(new Camera(this->camera, camera_mutex, properties));
+  cameras.push_back(new RaspiCamera(this->camera, camera_mutex, properties));
   return cameras.back();
 }
 
-Camera::Camera(raspicam::RaspiCam *camera, boost::mutex *camera_mutex,
-                    CameraProperties *properties)
+Camera::Camera(boost::mutex *camera_mutex, CameraInfo *properties)
 {
-  this->camera = camera;
   this->camera_mutex = camera_mutex;
-  this->properties = properties;
+  this->camera_info = properties;
 
   setupCapture();
 }
@@ -147,7 +147,6 @@ Camera::Camera(raspicam::RaspiCam *camera, boost::mutex *camera_mutex,
 Camera::~Camera()
 {
   delete capture;
-  delete manager_camera_info;
 }
 
 void Camera::setupCapture()
@@ -156,63 +155,20 @@ void Camera::setupCapture()
   header.stamp = ros::Time::now();
   header.frame_id = "camera_optical"; // TODO change to specific camera
   header.seq = 0;
-  cv::Mat *image = new cv::Mat(camera->getHeight(), camera->getWidth(), CV_8UC1, cv::Scalar(69,42,200));
+  cv::Mat *image = new cv::Mat(camera_info->height, camera_info->width, CV_8UC1, cv::Scalar(69,42,200));
   capture = new cv_bridge::CvImage(header, sensor_msgs::image_encodings::MONO8, *image);
 }
 
-// TODO add global seq
+// TODO add global image_seq
 void Camera::grabImage()
 {
   camera_mutex->lock();
-  camera->grab();
+  _grabImage();
+  camera_info->image_seq++;
   capture->header.stamp = ros::Time::now();
-  camera->retrieve(capture->image.data);
+  capture->header.seq = camera_info->image_seq;
+  _retrieveImage(capture->image.data);
   camera_mutex->unlock();
-}
-
-std::vector<double> Camera::getD()
-{
-  return properties->D;
-}
-
-cv::Matx33d Camera::getK()
-{
-  return properties->K;
-}
-
-cv::Matx33d Camera::getP()
-{
-  return properties->P;
-}
-
-cv::Matx34d Camera::getR()
-{
-  return properties->R;
-}
-
-cv::Point2d Camera::getOpticalCenter()
-{
-  return properties->optical_center;
-}
-
-cv::Point2d Camera::getFov()
-{
-  return properties->fov;
-}
-
-cv::Point2d Camera::getDegreesPerPixel()
-{
-  return properties->degrees_per_pixel;
-}
-
-uint32_t Camera::getWidth()
-{
-  return properties->width;
-}
-
-uint32_t Camera::getHeight()
-{
-  return properties->height;
 }
 
 cv::Mat Camera::getImage()
@@ -233,6 +189,32 @@ sensor_msgs::ImagePtr Camera::getImageMsg()
 ros::Time Camera::getCaptureTime()
 {
   return capture->header.stamp;
+}
+
+unsigned int Camera::getSeq()
+{
+  return capture->header.seq;
+}
+
+CameraInfo *Camera::getCameraInfo()
+{
+  return camera_info;
+}
+
+RaspiCamera::RaspiCamera(raspicam::RaspiCam *camera, boost::mutex *camera_mutex, CameraInfo *properties)
+    : Camera(camera_mutex, properties)
+{
+  this->camera = camera;
+}
+
+void RaspiCamera::_grabImage()
+{
+  camera->grab();
+}
+
+void RaspiCamera::_retrieveImage(unsigned char *data)
+{
+  camera->retrieve(data);
 }
 
 }

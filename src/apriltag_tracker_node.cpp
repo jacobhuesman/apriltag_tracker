@@ -16,21 +16,19 @@
 
 #include <apriltag_tracker.h>
 #include <timers.h>
-
+#include <dynamixel_host_layer.h>
+#include <camera.h>
+#include <errors.h>
 
 struct Publishers
 {
-  //tf2_ros::TransformBroadcaster tf;
   ros::Publisher pose;
-  ros::Publisher detections;
   ros::Publisher diagnostics;
   ros::Publisher transforms;
   image_transport::Publisher image;
-  image_transport::Publisher detections_image;
 };
 Publishers *pubs;
 
-const bool publish_plain_image = false;
 const bool track_servo = true;
 const bool publish_pose_estimate = true;
 
@@ -42,9 +40,9 @@ void initializeTagInfoVector(std::vector<AprilTagTracker::Tag> *tag_info)
   tf2_ros::Buffer tfBuffer;
   tf2_ros::TransformListener tfListener(tfBuffer);
 
-  AprilTagTracker::Tag tag1(1, 0, 0.42545);
-  AprilTagTracker::Tag tag3(3, 0, 0.203);
-  AprilTagTracker::Tag tag4(4, 0, 0.203);
+  AprilTagTracker::Tag tag1(1, 2, 0.42545);
+  AprilTagTracker::Tag tag3(3, 1, 0.42545);
+  AprilTagTracker::Tag tag4(4, 1, 0.203);
 
   tag_info->push_back(tag1);
   tag_info->push_back(tag3);
@@ -74,65 +72,68 @@ void initializeTagInfoVector(std::vector<AprilTagTracker::Tag> *tag_info)
   }
 }
 
-
 void trackerThread(ros::NodeHandle nh, HostCommLayer::Dynamixel *servo, AprilTagTracker::TransformsCache transforms,
                    apriltag_tracker::Camera *camera, uint8_t thread_id)
 {
   AprilTagTracker::Timers timer;
-  AprilTagTracker::AprilTagTracker tracker(camera, servo, tag_info, transforms);
+  AprilTagTracker::AprilTagTracker tracker(camera->getCameraInfo(), tag_info, transforms);
 
   // Note: Entire loop must take less than 33ms
   while(ros::ok())
   {
     // Get image, process it, and track
     timer.get_image.start();
-    tracker.camera->grabImage();
+    camera->grabImage();
     timer.get_image.stop();
 
     timer.process_image.start();
-    tracker.processImage();
+    tracker.processImage(camera->getImagePtr(), camera->getSeq(), camera->getCaptureTime(),
+                         servo->getStampedTransform());
     timer.process_image.stop();
 
+
     timer.adjust_servo.start();
-    if (track_servo)
+    try
     {
-      tracker.adjustServo();
+      servo->updateDesiredVelocity(tracker.getDesiredServoVelocity());
+    }
+    catch(AprilTagTracker::unable_to_find_transform_error &e)
+    {
+      ROS_WARN("%s", e.what());
     }
     timer.adjust_servo.stop();
 
     // Send Transforms
-    timer.publish_detections_array.start();
-    apriltag_tracker::AprilTagDetectionArray tag_detection_array;
-    tracker.fillTagDetectionArray(&tag_detection_array);
-    for (int i = 0; i < tag_detection_array.detections.size(); i++)
+    timer.publish_tag_transforms.start();
+    std::vector<geometry_msgs::TransformStamped> tag_transforms = tracker.getTagTransforms();
+    for (int i = 0; i < tag_transforms.size(); i++)
     {
-      pubs->transforms.publish(tag_detection_array.detections[i].transform);
+      pubs->transforms.publish(tag_transforms[i]);
     }
-    timer.publish_detections_array.stop();
+    timer.publish_tag_transforms.stop();
 
     timer.publish_transforms.start();
-    geometry_msgs::PoseStamped pose_estimate_msg;
-    if (tracker.estimateRobotPose(&pose_estimate_msg) && publish_pose_estimate)
+    if (publish_pose_estimate)
     {
-      pubs->pose.publish(pose_estimate_msg);
+      try
+      {
+        geometry_msgs::PoseStamped pose_estimate_msg;
+        tracker.estimateRobotPose(&pose_estimate_msg);
+        pubs->pose.publish(pose_estimate_msg);
+      }
+      catch (AprilTagTracker::unable_to_find_transform_error &e)
+      {
+        ROS_WARN("%s", e.what());
+      }
     }
-    pubs->detections.publish(tag_detection_array);
     timer.publish_transforms.stop();
 
-    // Publish images
-    timer.publish_plain_image.start();
-    if (publish_plain_image)
-    {
-      pubs->image.publish(tracker.camera->getImageMsg());
-    }
-    timer.publish_plain_image.stop();
-
     timer.draw_detections.start();
-    tracker.drawDetections();
+    tracker.drawDetections(camera->getImagePtr());
     timer.draw_detections.stop();
 
     timer.publish_detections_image.start();
-    pubs->detections_image.publish(tracker.camera->getImageMsg());
+    pubs->image.publish(camera->getImageMsg());
     timer.publish_detections_image.stop();
 
     // Handle callbacks
@@ -152,21 +153,23 @@ void servoThread(HostCommLayer::Dynamixel *servo)
   ros::Rate rate(30);
   while(ros::ok())
   {
-    // Start scanning if enough time has elapsed since last capture
-    uint8_t status;
-    ros::Duration difference = ros::Time::now() - servo->getLastVelocityUpdate();
-    if ((difference.sec > 0) || (difference.nsec > 5e8)) // More than half a second has elapsed since an apriltag was captured
+    if (track_servo)
     {
-      status = servo->scan();
-    }
-    else
-    {
-      status = servo->adjustCamera(servo->getDesiredVelocity());
-    }
-    if (status == CL_OK)
-    {
-      pubs->transforms.publish(servo->getTransformMsg());
-      //pubs->tf.sendTransform(servo->getTransformMsg());
+      // Start scanning if enough time has elapsed since last capture
+      uint8_t status;
+      ros::Duration difference = ros::Time::now() - servo->getLastVelocityUpdate();
+      if (difference.toSec() > 0.5)
+      {
+        status = servo->scan();
+      }
+      else
+      {
+        status = servo->adjustCamera(servo->getDesiredVelocity());
+      }
+      if (status == CL_OK)
+      {
+        pubs->transforms.publish(servo->getTransformMsg());
+      }
     }
     rate.sleep();
   }
@@ -180,12 +183,10 @@ int main(int argc, char **argv)
 
   image_transport::ImageTransport it(nh);
   pubs = new Publishers;
-  pubs->detections = nh.advertise<apriltag_tracker::AprilTagDetectionArray>("info/tag_detections", 1);
-  pubs->diagnostics = nh.advertise<apriltag_tracker::ATTLocalTiming>("info/timing_diagnostics", 1);
-  pubs->pose = nh.advertise<geometry_msgs::PoseStamped>("pose_estimate", 1);
-  pubs->transforms = nh.advertise<geometry_msgs::TransformStamped>("transforms", 1);
-  pubs->image = it.advertise("image/raw", 1);
-  pubs->detections_image = it.advertise("image/detections", 1);
+  pubs->diagnostics = nh.advertise<apriltag_tracker::ATTLocalTiming>("info/timing_diagnostics", 30);
+  pubs->pose = nh.advertise<geometry_msgs::PoseStamped>("pose_estimate", 30);
+  pubs->transforms = nh.advertise<geometry_msgs::TransformStamped>("transforms", 30);
+  pubs->image = it.advertise("image", 1);
 
   // Initialize tags
   tag_info = new std::vector<AprilTagTracker::Tag>;
@@ -243,9 +244,9 @@ int main(int argc, char **argv)
 
 
   // Start threads
-  boost::thread thread0(trackerThread, nh, servo, transforms, camera0, 0);
-  boost::thread thread1(trackerThread, nh, servo, transforms, camera1, 1);
-  boost::thread thread2(trackerThread, nh, servo, transforms, camera2, 2);
+  boost::thread thread0(trackerThread, nh, servo, transforms, camera0, 0); usleep(1000);
+  boost::thread thread1(trackerThread, nh, servo, transforms, camera1, 1); usleep(1000);
+  boost::thread thread2(trackerThread, nh, servo, transforms, camera2, 2); usleep(1000);
   boost::thread thread3(trackerThread, nh, servo, transforms, camera3, 3);
   boost::thread thread4(servoThread, servo);
 
