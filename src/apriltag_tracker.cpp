@@ -87,44 +87,33 @@ void AprilTagTracker::drawDetections(cv::Mat *image)
   }
 }
 
-// TODO add unit test
-// - Velocity is sane
-// - Sequences are correct
-// - Throw error is we can't get desired servo velocity
-int16_t AprilTagTracker::getDesiredServoVelocity()
+int16_t AprilTagTracker::getDesiredServoVelocity() // TODO move to servo class, add exceptions to servo class
 {
-  int best_tag = -1;
-  bool updated_tag_available = false;
+  double theta = 0.0;
   for (int i = 0; i < tag_info->size(); i++)
   {
-    if ((*tag_info)[i].getSeq() == current_seq)
+    if ((*tag_info)[i].getID() == 1)
     {
-      updated_tag_available = true;
-      best_tag = i;
-      break;
-    }
-  }
-  if (!updated_tag_available)
-  {
-    throw unable_to_find_transform_error("No tag detections available for setting the servo");
-  }
-
-  // Find best up to date tag
-  for (int i = 0; i < tag_info->size(); i++)
-  {
-    bool updated = (*tag_info)[i].getSeq() == current_seq;
-    bool higher_priority = (*tag_info)[i].getPriority() > (*tag_info)[best_tag].getPriority();
-    if (updated && higher_priority)
-    {
-      best_tag = i;
+      theta = (*tag_info)[i].getAngleFromCenter(5);
     }
   }
 
   // Adjust servo
-  const double servo_resolution = 0.29;
-  //printf("Detection center: %i\n", (*tag_info)[best_tag].getDetectionCenter().x);
-  double difference = ((*tag_info)[best_tag].getDetectionCenter().x - camera_info->getWidth() / 2);
-  return -(int16_t) (camera_info->getDegreesPerPixel().x * difference / servo_resolution);
+  const double mx_v = 0.5;
+  const double mn_v = 0.0;
+  const double fov = 62.2;
+  const double v_s = 86.0297; // Conversion from rad/s to servo units
+  const double deadzone = 0.01745; // one degree
+
+  if (fabs(theta) <= deadzone)
+  {
+    return 0;
+  }
+
+  double sign = (theta < 0.0 ? -1 : 1);
+  theta = fabs(theta);
+  double v_r = sign * ((theta - deadzone) * (mx_v - mn_v) + mn_v); // Desired servo velocity
+  return (int16_t)(v_s * v_r);
 }
 
 void AprilTagTracker::processImage(cv::Mat *image, unsigned int current_seq, ros::Time capture_time,
