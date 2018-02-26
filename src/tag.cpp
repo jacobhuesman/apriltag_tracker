@@ -61,9 +61,9 @@ Transform Tag::getMedianFilteredTransform()
   return *it;
 }
 
-Transform Tag::getMovingAverageTransform()
+Transform Tag::getMovingAverageTransform(int n_tf)
 {
-  if (transforms.size() < list_size)
+  if (transforms.size() < n_tf)
   {
     throw unable_to_find_transform_error("Moving average filter not populated");
   }
@@ -72,7 +72,8 @@ Transform Tag::getMovingAverageTransform()
   Transform tag_transform = transforms.front();
   tf2::Stamped<tf2::Transform> tag_tf = tag_transform.getTagTf();
   double x = 0, y = 0, z = 0;
-  for (auto it = transforms.begin(); it != transforms.end(); it++)
+  auto it = transforms.begin();
+  for (int i = 0; i < n_tf; it++, i++)
   {
     tf2::Vector3 origin = it->getTagTf().getOrigin();
     x += origin.getX();
@@ -80,11 +81,15 @@ Transform Tag::getMovingAverageTransform()
     z += origin.getZ();
   }
   mutex->unlock();
-  double size = transforms.size();
-  tag_tf.setOrigin(tf2::Vector3(x / size, y / size, z / size));
+  tag_tf.setOrigin(tf2::Vector3(x / n_tf, y / n_tf, z / n_tf));
   // TODO average the Quaternions?
   return Transform(tag_transform.getDetection(), tag_tf, tag_transform.getServoTf(), tag_transform.getMapToTagTf(),
                    &(this->compare_mode));
+}
+
+Transform Tag::getMovingAverageTransform()
+{
+  return Tag::getMovingAverageTransform(this->list_size);
 }
 
 Transform Tag::getMedianMovingAverageTransform()
@@ -119,6 +124,17 @@ Transform Tag::getMedianMovingAverageTransform()
   // TODO average the Quaternions?
   return Transform(tag_transform.getDetection(), tag_tf, tag_transform.getServoTf(), tag_transform.getMapToTagTf(),
                    &(this->compare_mode));
+}
+
+double Tag::getAngleFromCenter(int n_tf)
+{
+  tf2::Vector3 origin = getMovingAverageTransform(n_tf).getTagTf().getOrigin();
+  return atan(origin.getX() / origin.getY());
+}
+
+double Tag::getAngleFromCenter()
+{
+  return getAngleFromCenter(5);
 }
 
 int Tag::getID()
@@ -160,6 +176,8 @@ cv::Point Tag::getDetectionCenter()
 {
   return transforms.front().getDetectionCenter();
 }
+
+
 
 
 
