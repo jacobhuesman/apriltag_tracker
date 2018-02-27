@@ -52,18 +52,6 @@ void trackerThread(HostCommLayer::Dynamixel *servo, AprilTagTracker::TransformsC
                          servo->getStampedTransform());
     timer.process_image.stop();
 
-
-    timer.adjust_servo.start();
-    try
-    {
-      servo->updateDesiredVelocity(tracker.getDesiredServoVelocity());
-    }
-    catch(AprilTagTracker::unable_to_find_transform_error &e)
-    {
-      ROS_WARN("%s", e.what());
-    }
-    timer.adjust_servo.stop();
-
     // Send Transforms
     timer.publish_tag_transforms.start();
     std::vector<geometry_msgs::TransformStamped> tag_transforms = tracker.getTagTransforms();
@@ -109,30 +97,35 @@ void trackerThread(HostCommLayer::Dynamixel *servo, AprilTagTracker::TransformsC
   }
 }
 
-void servoThread(HostCommLayer::Dynamixel *servo)
+void servoThread(HostCommLayer::Dynamixel *servo, std::vector<AprilTagTracker::Tag> *tag_info)
 {
   ros::Rate rate(30);
   while(ros::ok())
   {
+    rate.sleep();/*
     if (track_servo)
     {
-      // Start scanning if enough time has elapsed since last capture
-      uint8_t status;
-      ros::Duration difference = ros::Time::now() - servo->getLastVelocityUpdate();
-      if (difference.toSec() > 0.5)
+      double theta = 0.0;
+      ros::Time last_tag_update;
+      try
       {
-        status = servo->scan();
-      }
-      else
-      {
-        status = servo->adjustCamera(servo->getDesiredVelocity());
-      }
-      if (status == CL_OK)
-      {
+        for (int i = 0; i < tag_info->size(); i++)
+        {
+          if ((*tag_info)[i].getID() == 1)
+          {
+            theta = (*tag_info)[i].getAngleFromCenter(5);
+          }
+        }
+        servo->adjustCamera(servo->calculateDesiredVelocity(theta));
         pubs->transforms.publish(servo->getTransformMsg());
       }
-    }
-    rate.sleep();
+      catch (unable_to_find_transform_error &e)
+      {
+        ROS_WARN(e.what());
+        servo->scan();
+        continue;
+      }
+    }*/
   }
 }
 
@@ -172,7 +165,7 @@ int main(int argc, char **argv)
   boost::thread thread1(trackerThread, servo, transforms_cache, tag_info, camera1); usleep(1000);
   boost::thread thread2(trackerThread, servo, transforms_cache, tag_info, camera2); usleep(1000);
   boost::thread thread3(trackerThread, servo, transforms_cache, tag_info, camera3);
-  boost::thread thread4(servoThread, servo);
+  boost::thread thread4(servoThread,   servo, tag_info);
   ros::spin();
 
   // Process images until quit

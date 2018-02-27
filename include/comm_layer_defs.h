@@ -23,6 +23,30 @@ typedef enum
   CL_TASK_QUEUED          = 0x07U
 } CommLayer_ErrorTypeDef;
 
+class cl_error : public std::runtime_error
+{
+public:
+  explicit cl_error(std::string error_msg) : std::runtime_error(error_msg) {};
+};
+
+class cl_tx_error : public cl_error
+{
+public:
+  explicit cl_tx_error(std::string error_msg) : cl_error(error_msg) {};
+};
+
+class cl_rx_error : public cl_error
+{
+public:
+  explicit cl_rx_error(std::string error_msg) : cl_error(error_msg) {};
+};
+
+class cl_checksum_error : public cl_error
+{
+public:
+  explicit cl_checksum_error(std::string error_msg) : cl_error(error_msg) {};
+};
+
 /*
  * Dynamixel
  */

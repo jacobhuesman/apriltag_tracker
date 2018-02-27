@@ -57,6 +57,8 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(${catkin_INCLUDE_DIRS})
 include_directories(include)
 
+link_directories(/usr/src/gmock/build)
+
 #############
 # Libraries #
 #############
@@ -112,8 +114,8 @@ target_link_libraries(apriltag_tracker HostCommLayer)
 target_link_libraries(apriltag_tracker Timers)
 target_link_libraries(apriltag_tracker TransformsCache)
 
-add_executable(comm_test src/util/comm_test.cpp)
-target_link_libraries(comm_test HostCommLayer)
+add_executable(comm_tool src/util/comm_tool.cpp)
+target_link_libraries(comm_tool HostCommLayer)
 
 add_executable(speed_test src/util/speed_test.cpp)
 
@@ -130,6 +132,13 @@ target_link_libraries(transforms_publisher ${catkin_LIBRARIES})
 #########
 # Tests #
 #########
+catkin_add_gtest(servo_tests src/tests/servo_tests.cpp)
+if(TARGET servo_tests)
+  target_link_libraries(servo_tests ${catkin_LIBRARIES})
+  target_link_libraries(servo_tests HostCommLayer)
+  target_link_libraries(servo_tests gmock_main)
+endif()
+
 catkin_add_gtest(tag_tests src/tests/tag_tests.cpp)
 if(TARGET tag_tests)
   target_link_libraries(tag_tests ${catkin_LIBRARIES})

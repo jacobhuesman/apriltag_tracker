@@ -3,7 +3,6 @@
 
 #include <cstdint>
 #include <cmath>
-#include <boost/thread/mutex.hpp>
 
 #include <mraa.hpp>
 
@@ -15,42 +14,64 @@
 
 namespace HostCommLayer
 {
+  class I2cInterface
+  {
+  public:
+    virtual ~I2cInterface() {};
+    virtual mraa::Result write(const uint8_t* data, int length) = 0;
+    virtual int read(uint8_t* data, int length) = 0;
+  };
+
+  class MraaI2c : public I2cInterface
+  {
+  public:
+    MraaI2c(int bus, uint8_t address);
+    mraa::Result write(const uint8_t* data, int length);
+    int read(uint8_t* data, int length);
+  private:
+    mraa::I2c *i2c;
+    int bus;
+    uint8_t address;
+  };
+
+
   class Dynamixel
   {
   public:
     explicit Dynamixel(uint8_t i2c_address);
-    Dynamixel(uint8_t i2c_address, uint8_t i2c_bus);
     ~Dynamixel();
 
-    // Thread-Safe
     tf2::Transform getTransform();
     tf2::Stamped<tf2::Transform> getStampedTransform();
     geometry_msgs::TransformStamped getTransformMsg();
-    uint8_t adjustCamera(int16_t velocity);
-    uint8_t scan();
-    uint8_t updateDesiredVelocity(int16_t velocity);
+    void adjustCamera(int16_t velocity);
+    void updatePosition();
+    void scan();
+    void updateDesiredVelocity(int16_t velocity);
     ros::Time getLastVelocityUpdate();
     int16_t getDesiredVelocity();
+    int16_t calculateDesiredVelocity(double theta);
 
-    // Not Thread-Safe
     void resetI2c();
+    void writeI2c(CLMessage32* message);
+    void readI2c(CLMessage32* message);
     uint8_t computeChecksum(CLMessage32 message);
-    uint8_t setPosition(uint16_t position);
-    uint8_t setVelocity(uint16_t velocity);
-    uint8_t setPollingDt(uint16_t polling_dt);
-    uint8_t getPositionTx();
-    uint8_t getPositionRx(uint16_t *position);
-    uint8_t getPosition(uint16_t *position);
-    uint8_t getTestMessage(CLMessage32 *test_msg);
+    void setPosition(uint16_t position);
+    void setVelocity(uint16_t velocity);
+    void setPollingDt(uint16_t polling_dt);
+    void getPositionTx();
+    void getPositionRx(uint16_t *position);
+    void getPosition(uint16_t *position);
+    void getTestMessage(CLMessage32 *test_msg);
 
 
     const float resolution = 0.29; // Degrees
 
   private:
     uint8_t address;
-    mraa::I2c *i2c;
+    I2cInterface *i2c;
     long errors;
-    boost::mutex mutex;
+    uint16_t current_position;
     int16_t max_velocity;
     int16_t current_velocity;
     int16_t desired_velocity;
