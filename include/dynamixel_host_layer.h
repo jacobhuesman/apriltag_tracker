@@ -39,7 +39,7 @@ namespace HostCommLayer
   {
   public:
     explicit Dynamixel(uint8_t i2c_address);
-    ~Dynamixel();
+    Dynamixel(I2cInterface *interface);
 
     tf2::Transform getTransform();
     tf2::Stamped<tf2::Transform> getStampedTransform();
@@ -52,10 +52,8 @@ namespace HostCommLayer
     int16_t getDesiredVelocity();
     int16_t calculateDesiredVelocity(double theta);
 
-    void resetI2c();
     void writeI2c(CLMessage32* message);
     void readI2c(CLMessage32* message);
-    uint8_t computeChecksum(CLMessage32 message);
     void setPosition(uint16_t position);
     void setVelocity(uint16_t velocity);
     void setPollingDt(uint16_t polling_dt);
@@ -64,6 +62,7 @@ namespace HostCommLayer
     void getPosition(uint16_t *position);
     void getTestMessage(CLMessage32 *test_msg);
 
+    static uint8_t computeChecksum(CLMessage32 message);
 
     const float resolution = 0.29; // Degrees
 

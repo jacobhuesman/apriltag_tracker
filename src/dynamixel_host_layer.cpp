@@ -5,11 +5,14 @@
 namespace HostCommLayer
 {
 
-Dynamixel::Dynamixel(uint8_t i2c_address)
+Dynamixel::Dynamixel(uint8_t i2c_address) : Dynamixel(new MraaI2c(0, i2c_address)) // TODO this might not work at all
 {
   this->address = i2c_address;
-  i2c = new MraaI2c(0, i2c_address);
+}
 
+Dynamixel::Dynamixel(I2cInterface *interface)
+{
+  this->i2c = interface;
   seq = 0;
   transform.setOrigin(tf2::Vector3(24.15e-3, 0.0, 32.5e-3));
   tf2::Quaternion q;
@@ -22,18 +25,6 @@ Dynamixel::Dynamixel(uint8_t i2c_address)
   desired_velocity = 0;
   current_velocity = 0;
   last_velocity_update = (ros::Time::now() - ros::Duration(1.0));
-}
-
-void Dynamixel::resetI2c()
-{
-  delete i2c;
-  usleep(100);
-  i2c = new MraaI2c(0, address);
-}
-
-Dynamixel::~Dynamixel()
-{
-  delete i2c;
 }
 
 uint8_t Dynamixel::computeChecksum(CLMessage32 message)
