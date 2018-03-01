@@ -126,6 +126,48 @@ TEST(DynamixelHostLayerTests, SetPositionEdgeCaseOut)
   ASSERT_THROW(servo.setPosition(1024), cl_error);
 }
 
+TEST(DynamixelHostLayerTests, SetVelocityNormal)
+{
+  MockI2c i2c;
+  EXPECT_CALL(i2c, write(_, _))
+      .With(testing::ElementsAre(DYN_SET_VELOCITY, 0xE8, 0x03, 0xFB))
+      .Times(1)
+      .WillOnce(testing::Return(mraa::SUCCESS));
+  EXPECT_CALL(i2c, read(_, _))
+      .With(testing::ElementsAre(DYN_SET_VELOCITY, 0xE8, 0x03, 0xFB))
+      .Times(1)
+      .WillOnce(testing::Return(4));
+
+  ros::Time::init();
+  Dynamixel servo(&i2c);
+  servo.setVelocity(1000);
+}
+
+TEST(DynamixelHostLayerTests, SetVelocityEdgeCaseIn)
+{
+  MockI2c i2c;
+  EXPECT_CALL(i2c, write(_, _))
+      .With(testing::ElementsAre(DYN_SET_VELOCITY, 0xFF, 0x03, 0xE4))
+      .Times(1)
+      .WillOnce(testing::Return(mraa::SUCCESS));
+  EXPECT_CALL(i2c, read(_, _))
+      .With(testing::ElementsAre(DYN_SET_VELOCITY, 0xFF, 0x03, 0xE4))
+      .Times(1)
+      .WillOnce(testing::Return(4));
+
+  ros::Time::init();
+  Dynamixel servo(&i2c);
+  servo.setVelocity(1023);
+}
+
+TEST(DynamixelHostLayerTests, SetVelocityEdgeCaseOut)
+{
+  MockI2c i2c;
+  ros::Time::init();
+  Dynamixel servo(&i2c);
+  ASSERT_THROW(servo.setVelocity(1024), cl_error);
+}
+
 /*
  * Example array tests
  */

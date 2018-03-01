@@ -68,15 +68,19 @@ void Dynamixel::setPosition(uint16_t position)
   readI2c(&message);
 }
 
+// TODO check for errors and discard
 void Dynamixel::setVelocity(uint16_t velocity)
 {
+  if (velocity > 1023)
+  {
+    throw cl_error("[setVelocity] desired velocity is out of bounds (expected velocity = 0-1023)");
+  }
   CLMessage32 message;
   message.ucl.instruction = DYN_SET_VELOCITY;
   message.ucl.data = velocity;
   message.ucl.checksum = computeChecksum(message);
   writeI2c(&message);
   readI2c(&message);
-  message.ucl.instruction; // TODO check for errors and discard
 }
 
 int16_t Dynamixel::calculateDesiredVelocity(double theta)
