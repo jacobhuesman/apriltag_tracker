@@ -168,6 +168,23 @@ TEST(DynamixelHostLayerTests, SetVelocityEdgeCaseOut)
   ASSERT_THROW(servo.setVelocity(1024), cl_error);
 }
 
+TEST(DynamixelHostLayerTests, SetPollingDt)
+{
+  MockI2c i2c;
+  EXPECT_CALL(i2c, write(_, _))
+      .With(testing::ElementsAre(DYN_SET_POLLING_DT, 0x58, 0x00, 0x82))
+      .Times(1)
+      .WillOnce(testing::Return(mraa::SUCCESS));
+  EXPECT_CALL(i2c, read(_, _))
+      .With(testing::ElementsAre(DYN_SET_POLLING_DT, 0x58, 0x00, 0x82))
+      .Times(1)
+      .WillOnce(testing::Return(4));
+
+  ros::Time::init();
+  Dynamixel servo(&i2c);
+  servo.setPollingDt(88);
+}
+
 /*
  * Example array tests
  */

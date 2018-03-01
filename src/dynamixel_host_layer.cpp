@@ -68,7 +68,7 @@ void Dynamixel::setPosition(uint16_t position)
   readI2c(&message);
 }
 
-// TODO check for errors and discard
+// TODO check for errors on read
 void Dynamixel::setVelocity(uint16_t velocity)
 {
   if (velocity > 1023)
@@ -78,6 +78,17 @@ void Dynamixel::setVelocity(uint16_t velocity)
   CLMessage32 message;
   message.ucl.instruction = DYN_SET_VELOCITY;
   message.ucl.data = velocity;
+  message.ucl.checksum = computeChecksum(message);
+  writeI2c(&message);
+  readI2c(&message);
+}
+
+// TODO check for errors on read, make sure polling dt is reasonable
+void Dynamixel::setPollingDt(uint16_t polling_dt)
+{
+  CLMessage32 message;
+  message.ucl.instruction = DYN_SET_POLLING_DT;
+  message.ucl.data = polling_dt;
   message.ucl.checksum = computeChecksum(message);
   writeI2c(&message);
   readI2c(&message);
@@ -101,23 +112,6 @@ int16_t Dynamixel::calculateDesiredVelocity(double theta)
     theta = fabs(theta);
     double v_r = sign * ((theta - deadzone) * (mx_v - mn_v) + mn_v); // Desired servo velocity
     return (int16_t)(v_s * v_r);
-}
-
-void Dynamixel::updateDesiredVelocity(int16_t velocity)
-{
-  desired_velocity = velocity;
-  last_velocity_update = ros::Time::now();
-}
-
-void Dynamixel::setPollingDt(uint16_t polling_dt)
-{
-  CLMessage32 message;
-  message.ucl.instruction = DYN_SET_POLLING_DT;
-  message.ucl.data = polling_dt;
-  message.ucl.checksum = computeChecksum(message);
-  writeI2c(&message);
-  readI2c(&message);
-  message.ucl.instruction; // TODO check for errors and discard
 }
 
 void Dynamixel::getPositionTx()
