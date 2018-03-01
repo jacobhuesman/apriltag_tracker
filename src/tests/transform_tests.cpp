@@ -67,6 +67,55 @@ TEST(AprilTagTrackerTransformTests, LessThanOperator)
   ASSERT_FALSE(test1 < test1);
 }
 
+TEST(AprilTagTrackerTransformTests, GetRPY)
+{
+  tf2::Quaternion q;
+  double roll, pitch, yaw;
+
+  q.setRPY(0.0, 0.0, 0.0);
+  Transform::getRPY(q, roll, pitch, yaw);
+  ASSERT_NEAR(roll,  0.0, 1E-10);
+  ASSERT_NEAR(pitch, 0.0, 1E-10);
+  ASSERT_NEAR(yaw,   0.0, 1E-10);
+
+  q.setRPY(M_PI_2, 0.0, 0.0);
+  Transform::getRPY(q, roll, pitch, yaw);
+  ASSERT_NEAR(roll,   M_PI_2, 1E-10);
+  ASSERT_NEAR(pitch,     0.0, 1E-10);
+  ASSERT_NEAR(yaw,       0.0, 1E-10);
+
+  q.setRPY(-M_PI_2, 0.0, 0.0);
+  Transform::getRPY(q, roll, pitch, yaw);
+  ASSERT_NEAR(roll,  -M_PI_2, 1E-10);
+  ASSERT_NEAR(pitch,     0.0, 1E-10);
+  ASSERT_NEAR(yaw,       0.0, 1E-10);
+
+  q.setRPY(0.0, M_PI_2, 0.0);
+  Transform::getRPY(q, roll, pitch, yaw);
+  ASSERT_NEAR(roll,      0.0, 1E-10);
+  ASSERT_NEAR(pitch,  M_PI_2, 1E-10);
+  ASSERT_NEAR(yaw,       0.0, 1E-10);
+
+  q.setRPY(0.0, -M_PI_2, 0.0);
+  Transform::getRPY(q, roll, pitch, yaw);
+  ASSERT_NEAR(roll,      0.0, 1E-10);
+  ASSERT_NEAR(pitch, -M_PI_2, 1E-10);
+  ASSERT_NEAR(yaw,       0.0, 1E-10);
+
+  q.setRPY(0.0, 0.0, M_PI_2);
+  Transform::getRPY(q, roll, pitch, yaw);
+  ASSERT_NEAR(roll,      0.0, 1E-10);
+  ASSERT_NEAR(pitch,     0.0, 1E-10);
+  ASSERT_NEAR(yaw,    M_PI_2, 1E-10);
+
+  q.setRPY(0.0, 0.0, -M_PI_2);
+  Transform::getRPY(q, roll, pitch, yaw);
+  ASSERT_NEAR(roll,      0.0, 1E-10);
+  ASSERT_NEAR(pitch,     0.0, 1E-10);
+  ASSERT_NEAR(yaw,   -M_PI_2, 1E-10);
+}
+
+
 int main(int argc, char **argv)
 {
   testing::InitGoogleTest(&argc, argv);

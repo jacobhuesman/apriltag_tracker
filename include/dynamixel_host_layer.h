@@ -39,7 +39,14 @@ namespace HostCommLayer
   {
   public:
     explicit Dynamixel(uint8_t i2c_address);
-    Dynamixel(I2cInterface *interface);
+    explicit Dynamixel(I2cInterface *interface);
+
+    void writeI2c(CLMessage32* message);
+    void readI2c(CLMessage32* message);
+    void setPosition(uint16_t position);
+    void setVelocity(uint16_t velocity);
+    void setPollingDt(uint16_t polling_dt);
+    void getPosition(uint16_t *position);
 
     tf2::Transform getTransform();
     tf2::Stamped<tf2::Transform> getStampedTransform();
@@ -47,34 +54,15 @@ namespace HostCommLayer
     void adjustCamera(int16_t velocity);
     void updatePosition();
     void scan();
-    void updateDesiredVelocity(int16_t velocity);
-    ros::Time getLastVelocityUpdate();
-    int16_t getDesiredVelocity();
     int16_t calculateDesiredVelocity(double theta);
-
-    void writeI2c(CLMessage32* message);
-    void readI2c(CLMessage32* message);
-    void setPosition(uint16_t position);
-    void setVelocity(uint16_t velocity);
-    void setPollingDt(uint16_t polling_dt);
-    void getPositionTx();
-    void getPositionRx(uint16_t *position);
-    void getPosition(uint16_t *position);
-    void getTestMessage(CLMessage32 *test_msg);
 
     static uint8_t computeChecksum(CLMessage32 message);
 
-    const float resolution = 0.29; // Degrees
-
   private:
-    uint8_t address;
     I2cInterface *i2c;
-    long errors;
     uint16_t current_position;
     int16_t max_velocity;
     int16_t current_velocity;
-    int16_t desired_velocity;
-    ros::Time last_velocity_update;
 
     tf2::Transform transform;
     ros::Time stamp;

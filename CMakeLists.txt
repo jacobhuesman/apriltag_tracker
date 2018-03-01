@@ -136,6 +136,7 @@ catkin_add_gtest(servo_tests src/tests/servo_tests.cpp)
 if(TARGET servo_tests)
   target_link_libraries(servo_tests ${catkin_LIBRARIES})
   target_link_libraries(servo_tests HostCommLayer)
+  target_link_libraries(servo_tests Transform)
   target_link_libraries(servo_tests gmock_main)
 endif()
 

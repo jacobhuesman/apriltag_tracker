@@ -32,6 +32,8 @@ public:
   cv::Point getDetectionCenter();
   TagDetection getDetection();
   bool operator<(Transform tag_tf);
+  
+  static void getRPY(tf2::Quaternion q, double &roll, double &pitch, double &yaw);
 
 private:
   tf2::Stamped<tf2::Transform> tag_tf;

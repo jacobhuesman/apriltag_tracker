@@ -5,10 +5,7 @@
 namespace HostCommLayer
 {
 
-Dynamixel::Dynamixel(uint8_t i2c_address) : Dynamixel(new MraaI2c(0, i2c_address)) // TODO this might not work at all
-{
-  this->address = i2c_address;
-}
+Dynamixel::Dynamixel(uint8_t i2c_address) : Dynamixel(new MraaI2c(0, i2c_address)) {}
 
 Dynamixel::Dynamixel(I2cInterface *interface)
 {
@@ -22,9 +19,7 @@ Dynamixel::Dynamixel(I2cInterface *interface)
 
   max_velocity = 50; // TODO parametrize
   current_position = 512;
-  desired_velocity = 0;
   current_velocity = 0;
-  last_velocity_update = (ros::Time::now() - ros::Duration(1.0));
 }
 
 uint8_t Dynamixel::computeChecksum(CLMessage32 message)
@@ -110,23 +105,11 @@ void Dynamixel::getPosition(uint16_t *position)
   message.ucl.checksum = computeChecksum(message);
   writeI2c(&message);
   readI2c(&message);
-  *position = message.ucl.data;
-}
-
-void Dynamixel::getTestMessage(CLMessage32 *test_msg)
-{
-  CLMessage32 message;
-
-  message.ucl.instruction = 0x01;
-  message.ucl.data = 0;
-  message.ucl.checksum = 0;
-  for (int i = 0; i < 3; i++)
+  if (message.ucl.data > 1023)
   {
-    message.ucl.checksum += message.data8[i];
+    throw cl_device_error("[getPosition] Device returned out of bounds position (not 0-1023)");
   }
-  writeI2c(&message);
-  readI2c(&message);
-  *test_msg = message;
+  *position = message.ucl.data;
 }
 
 int16_t Dynamixel::calculateDesiredVelocity(double theta)
@@ -151,9 +134,7 @@ int16_t Dynamixel::calculateDesiredVelocity(double theta)
 
 void Dynamixel::updatePosition()
 {
-  uint16_t current_position;
-  getPosition(&current_position);
-
+  getPosition(&(this->current_position));
   tf2::Quaternion q;
   q.setRPY(0.0, 0.0, ((double)current_position - 512.0) * (M_PI * 150.0) / (180.0 * 512.0)); // TODO make sure this is correct
   transform.setRotation(q);
@@ -239,16 +220,6 @@ geometry_msgs::TransformStamped Dynamixel::getTransformMsg()
   transform_msg.header.seq = seq;
   transform_msg.header.stamp = stamp;
   return transform_msg;
-}
-
-ros::Time Dynamixel::getLastVelocityUpdate()
-{
-  return last_velocity_update;
-}
-
-int16_t Dynamixel::getDesiredVelocity()
-{
-  return desired_velocity;
 }
 
 MraaI2c::MraaI2c(int bus, uint8_t address)

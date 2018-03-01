@@ -2,8 +2,10 @@
 #include <gmock/gmock.h>
 #include <dynamixel_host_layer.h>
 #include <comm_layer_defs.h>
+#include <transform.h>
 
 using namespace HostCommLayer;
+using namespace AprilTagTracker;
 using testing::_;
 
 class MockI2c : public I2cInterface
@@ -143,8 +145,7 @@ TEST(DynamixelHostLayerTests, ReadI2cChecksumError) // TODO add embedded system 
       .Times(1)
       .WillOnce(
           DoAll(
-              SetArrayArgument<0>(
-                  error_message, error_message + 4),
+              SetArrayArgument<0>(error_message, error_message + 4),
               Return(4)));
   ros::Time::init();
   Dynamixel servo(&i2c);
@@ -251,6 +252,162 @@ TEST(DynamixelHostLayerTests, SetPollingDt)
   ros::Time::init();
   Dynamixel servo(&i2c);
   servo.setPollingDt(88);
+}
+
+TEST(DynamixelHostLayerTests, GetPosition)
+{
+  using testing::DoAll;
+  using testing::SetArrayArgument;
+  using testing::Return;
+  MockI2c i2c;
+  EXPECT_CALL(i2c, write(_, _))
+      .With(testing::ElementsAre(DYN_GET_POSITION_INSTRUCTION, 0x00, 0x00, 0xE8))
+      .Times(1)
+      .WillOnce(testing::Return(mraa::SUCCESS));
+  uint8_t return_message[4] = {DYN_GET_POSITION_RESPONSE, 0xE8, 0x03, 0xFC};
+  EXPECT_CALL(i2c, read(_, 4))
+      .Times(1)
+      .WillOnce(
+          DoAll(
+              SetArrayArgument<0>(return_message, return_message + 4),
+              Return(4)));
+  ros::Time::init();
+  Dynamixel servo(&i2c);
+  uint16_t position;
+  servo.getPosition(&position);
+  ASSERT_EQ(position, 1000);
+}
+
+TEST(DynamixelHostLayerTests, GetPositionEdgeCaseInBounds)
+{
+  using testing::DoAll;
+  using testing::SetArrayArgument;
+  using testing::Return;
+  MockI2c i2c;
+  EXPECT_CALL(i2c, write(_, _))
+      .With(testing::ElementsAre(DYN_GET_POSITION_INSTRUCTION, 0x00, 0x00, 0xE8))
+      .Times(1)
+      .WillOnce(testing::Return(mraa::SUCCESS));
+  uint8_t return_message[4] = {DYN_GET_POSITION_RESPONSE, 0xFF, 0x03, 0xE5};
+  EXPECT_CALL(i2c, read(_, 4))
+      .Times(1)
+      .WillOnce(
+          DoAll(
+              SetArrayArgument<0>(return_message, return_message + 4),
+              Return(4)));
+  ros::Time::init();
+  Dynamixel servo(&i2c);
+  uint16_t position;
+  servo.getPosition(&position);
+  ASSERT_EQ(position, 1023);
+}
+
+
+TEST(DynamixelHostLayerTests, GetPositionEdgeCaseOutOfBounds)
+{
+  using testing::DoAll;
+  using testing::SetArrayArgument;
+  using testing::Return;
+  MockI2c i2c;
+  EXPECT_CALL(i2c, write(_, _))
+      .With(testing::ElementsAre(DYN_GET_POSITION_INSTRUCTION, 0x00, 0x00, 0xE8))
+      .Times(1)
+      .WillOnce(testing::Return(mraa::SUCCESS));
+  uint8_t return_message[4] = {DYN_GET_POSITION_RESPONSE, 0x00, 0x04, 0xE3};
+  EXPECT_CALL(i2c, read(_, 4))
+      .Times(1)
+      .WillOnce(
+          DoAll(
+              SetArrayArgument<0>(return_message, return_message + 4),
+              Return(4)));
+  ros::Time::init();
+  Dynamixel servo(&i2c);
+  uint16_t position;
+  ASSERT_THROW(servo.getPosition(&position), cl_device_error);
+}
+
+TEST(DynamixelHostLayerTests, UpdatePositionMiddle)
+{
+  using testing::DoAll;
+  using testing::SetArrayArgument;
+  using testing::Return;
+  MockI2c i2c;
+  EXPECT_CALL(i2c, write(_, _))
+      .With(testing::ElementsAre(DYN_GET_POSITION_INSTRUCTION, 0x00, 0x00, 0xE8))
+      .Times(1)
+      .WillOnce(testing::Return(mraa::SUCCESS));
+  uint8_t return_message[4] = {DYN_GET_POSITION_RESPONSE, 0x00, 0x02, 0xE5};
+  EXPECT_CALL(i2c, read(_, 4))
+      .Times(1)
+      .WillOnce(
+          DoAll(
+              SetArrayArgument<0>(return_message, return_message + 4),
+              Return(4)));
+  ros::Time::init();
+  Dynamixel servo(&i2c);
+  servo.updatePosition();
+  tf2::Transform message = servo.getTransform();
+  double roll, pitch, yaw;
+  Transform::getRPY(message.getRotation(), roll, pitch, yaw);
+  ASSERT_NEAR(roll,  0.0, 1E-10);
+  ASSERT_NEAR(pitch, 0.0, 1E-10);
+  ASSERT_NEAR(yaw,   0.0, 1E-10);
+}
+
+TEST(DynamixelHostLayerTests, UpdatePositionFarLeft)
+{
+  using testing::DoAll;
+  using testing::SetArrayArgument;
+  using testing::Return;
+  MockI2c i2c;
+  EXPECT_CALL(i2c, write(_, _))
+      .With(testing::ElementsAre(DYN_GET_POSITION_INSTRUCTION, 0x00, 0x00, 0xE8))
+      .Times(1)
+      .WillOnce(testing::Return(mraa::SUCCESS));
+  uint8_t return_message[4] = {DYN_GET_POSITION_RESPONSE, 0xFF, 0x03, 0xE5};
+  EXPECT_CALL(i2c, read(_, 4))
+      .Times(1)
+      .WillOnce(
+          DoAll(
+              SetArrayArgument<0>(return_message, return_message + 4),
+              Return(4)));
+  ros::Time::init();
+  Dynamixel servo(&i2c);
+  servo.updatePosition();
+  tf2::Transform message = servo.getTransform();
+  double roll, pitch, yaw;
+  Transform::getRPY(message.getRotation(), roll, pitch, yaw);
+  ASSERT_NEAR(roll,   0.0, 1E-10);
+  ASSERT_NEAR(pitch,  0.0, 1E-10);
+  ASSERT_NEAR(yaw,   2.62, 1E-2);
+}
+
+TEST(DynamixelHostLayerTests, UpdatePositionFarRight)
+{
+  using testing::DoAll;
+  using testing::SetArrayArgument;
+  using testing::Return;
+  MockI2c i2c;
+  EXPECT_CALL(i2c, write(_, _))
+      .With(testing::ElementsAre(DYN_GET_POSITION_INSTRUCTION, 0x00, 0x00, 0xE8))
+      .Times(1)
+      .WillOnce(testing::Return(mraa::SUCCESS));
+  uint8_t return_message[4] = {DYN_GET_POSITION_RESPONSE, 0x00, 0x00, 0xE7};
+  EXPECT_CALL(i2c, read(_, 4))
+      .Times(1)
+      .WillOnce(
+          DoAll(
+              SetArrayArgument<0>(return_message, return_message + 4),
+              Return(4)));
+  ros::Time::init();
+  Dynamixel servo(&i2c);
+  servo.updatePosition();
+  tf2::Transform message = servo.getTransform();
+  double roll, pitch, yaw;
+  Transform::getRPY(message.getRotation(), roll, pitch, yaw);
+  ASSERT_NEAR(roll,    0.0, 1E-10);
+  ASSERT_NEAR(pitch,   0.0, 1E-10);
+  ASSERT_NEAR(yaw,   -2.62, 1E-2);
 }
 
 /*
