@@ -49,7 +49,15 @@ void Dynamixel::readI2c(CLMessage32 *message)
 {
   if (i2c->read(message->data8, 4) != 4)
   {
-    throw cl_error("I2C RX Error");
+    throw cl_rx_error("[readI2c] I2C RX Error");
+  }
+  if (message->ucl.instruction == CL_ERROR) // TODO change to something more descriptive
+  {
+    throw cl_device_error("[readI2c] Device returned error"); // TODO maybe move these to the general methods?
+  }
+  if (computeChecksum(*message) != message->ucl.checksum)
+  {
+    throw cl_checksum_error("[readI2c] Checksum error");
   }
 }
 
@@ -94,6 +102,33 @@ void Dynamixel::setPollingDt(uint16_t polling_dt)
   readI2c(&message);
 }
 
+void Dynamixel::getPosition(uint16_t *position)
+{
+  CLMessage32 message;
+  message.ucl.instruction = DYN_GET_POSITION_INSTRUCTION;
+  message.ucl.data = 0;
+  message.ucl.checksum = computeChecksum(message);
+  writeI2c(&message);
+  readI2c(&message);
+  *position = message.ucl.data;
+}
+
+void Dynamixel::getTestMessage(CLMessage32 *test_msg)
+{
+  CLMessage32 message;
+
+  message.ucl.instruction = 0x01;
+  message.ucl.data = 0;
+  message.ucl.checksum = 0;
+  for (int i = 0; i < 3; i++)
+  {
+    message.ucl.checksum += message.data8[i];
+  }
+  writeI2c(&message);
+  readI2c(&message);
+  *test_msg = message;
+}
+
 int16_t Dynamixel::calculateDesiredVelocity(double theta)
 {
     // Adjust servo
@@ -112,52 +147,6 @@ int16_t Dynamixel::calculateDesiredVelocity(double theta)
     theta = fabs(theta);
     double v_r = sign * ((theta - deadzone) * (mx_v - mn_v) + mn_v); // Desired servo velocity
     return (int16_t)(v_s * v_r);
-}
-
-void Dynamixel::getPositionTx()
-{
-  CLMessage32 message;
-  message.ucl.instruction = DYN_GET_POSITION_INSTRUCTION;
-  message.ucl.data = 0;
-  message.ucl.checksum = computeChecksum(message);
-  writeI2c(&message);
-}
-
-void Dynamixel::getPositionRx(uint16_t *position)
-{
-  CLMessage32 message;
-  readI2c(&message);
-  if (message.ucl.instruction == CL_ERROR) // TODO change to something more descriptive
-  {
-    throw cl_error("[getPositionRx] Device returned error"); // TODO maybe move these to the general methods?
-  }
-  if (computeChecksum(message) != message.ucl.checksum)
-  {
-    throw cl_checksum_error("[getPositionRx] Checksum error");
-  }
-  *position = message.ucl.data;
-}
-
-void Dynamixel::getPosition(uint16_t *position)
-{
-  getPositionTx();
-  getPositionRx(position);
-}
-
-void Dynamixel::getTestMessage(CLMessage32 *test_msg)
-{
-  CLMessage32 message;
-
-  message.ucl.instruction = 0x01;
-  message.ucl.data = 0;
-  message.ucl.checksum = 0;
-  for (int i = 0; i < 3; i++)
-  {
-    message.ucl.checksum += message.data8[i];
-  }
-  writeI2c(&message);
-  readI2c(&message);
-  *test_msg = message;
 }
 
 void Dynamixel::updatePosition()

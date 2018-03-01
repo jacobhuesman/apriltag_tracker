@@ -42,6 +42,9 @@ TEST(DynamixelHostLayerTests, Constructor)
   ros::Time::init();
   Dynamixel servo(&i2c);
   CLMessage32 message;
+  message.ucl.instruction = DYN_SET_POSITION;
+  message.ucl.data = 0;
+  message.ucl.checksum = 0xE9;
   servo.writeI2c(&message);
   servo.readI2c(&message);
   geometry_msgs::TransformStamped tf = servo.getTransformMsg();
@@ -62,14 +65,24 @@ TEST(DynamixelHostLayerTests, WriteI2c)
 {
   MockI2c i2c;
   EXPECT_CALL(i2c, write(_, 4))
-      .Times(2)
-      .WillOnce(testing::Return(mraa::ERROR_UNSPECIFIED))
+      .Times(1)
       .WillOnce(testing::Return(mraa::SUCCESS));
   ros::Time::init();
   Dynamixel servo(&i2c);
   CLMessage32 message;
-  ASSERT_THROW(servo.writeI2c(&message), cl_error);
   servo.writeI2c(&message);
+}
+
+TEST(DynamixelHostLayerTests, WriteI2cError)
+{
+  MockI2c i2c;
+  EXPECT_CALL(i2c, write(_, 4))
+      .Times(1)
+      .WillOnce(testing::Return(mraa::ERROR_UNSPECIFIED));
+  ros::Time::init();
+  Dynamixel servo(&i2c);
+  CLMessage32 message;
+  ASSERT_THROW(servo.writeI2c(&message), cl_tx_error);
 }
 
 TEST(DynamixelHostLayerTests, ReadI2c) // TODO add embedded system specific errors
@@ -77,11 +90,66 @@ TEST(DynamixelHostLayerTests, ReadI2c) // TODO add embedded system specific erro
   MockI2c i2c;
   EXPECT_CALL(i2c, read(_, 4))
       .Times(1)
-      .WillOnce(testing::Return(-1));
+      .WillOnce(testing::Return(4));
   ros::Time::init();
   Dynamixel servo(&i2c);
   CLMessage32 message;
-  ASSERT_THROW(servo.readI2c(&message), cl_error);
+  message.ucl.instruction = DYN_SET_POSITION;
+  message.ucl.data = 0;
+  message.ucl.checksum = 0xE9;
+  servo.readI2c(&message);
+}
+
+TEST(DynamixelHostLayerTests, ReadI2cWrongReturnValue) // TODO add embedded system specific errors
+{
+  MockI2c i2c;
+  EXPECT_CALL(i2c, read(_, 4))
+      .Times(1)
+      .WillOnce(testing::Return(1));
+  ros::Time::init();
+  Dynamixel servo(&i2c);
+  CLMessage32 message;
+  ASSERT_THROW(servo.readI2c(&message), cl_rx_error);
+}
+
+TEST(DynamixelHostLayerTests, ReadI2cDeviceError) // TODO add embedded system specific errors
+{
+  using testing::DoAll;
+  using testing::SetArrayArgument;
+  using testing::Return;
+  MockI2c i2c;
+  uint8_t error_message[4] = {CL_ERROR, 0, 0, 0xFE};
+  EXPECT_CALL(i2c, read(_, 4))
+      .Times(1)
+      .WillOnce(
+          DoAll(
+              SetArrayArgument<0>(
+                  error_message, error_message + 4),
+              Return(4)));
+  ros::Time::init();
+  Dynamixel servo(&i2c);
+  CLMessage32 message;
+  ASSERT_THROW(servo.readI2c(&message), cl_device_error);
+}
+
+TEST(DynamixelHostLayerTests, ReadI2cChecksumError) // TODO add embedded system specific errors
+{
+  using testing::DoAll;
+  using testing::SetArrayArgument;
+  using testing::Return;
+  MockI2c i2c;
+  uint8_t error_message[4] = {CL_OK, 0, 0, 0x01};
+  EXPECT_CALL(i2c, read(_, 4))
+      .Times(1)
+      .WillOnce(
+          DoAll(
+              SetArrayArgument<0>(
+                  error_message, error_message + 4),
+              Return(4)));
+  ros::Time::init();
+  Dynamixel servo(&i2c);
+  CLMessage32 message;
+  ASSERT_THROW(servo.readI2c(&message), cl_checksum_error);
 }
 
 TEST(DynamixelHostLayerTests, SetPositionNormal)

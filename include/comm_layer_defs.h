@@ -47,6 +47,12 @@ public:
   explicit cl_checksum_error(std::string error_msg) : cl_error(error_msg) {};
 };
 
+class cl_device_error : public cl_error
+{
+public:
+  explicit cl_device_error(std::string error_msg) : cl_error(error_msg) {};
+};
+
 /*
  * Dynamixel
  */
