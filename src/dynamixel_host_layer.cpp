@@ -37,9 +37,29 @@ uint8_t Dynamixel::computeChecksum(CLMessage32 message)
   return ~checksum;
 }
 
+void Dynamixel::writeI2c(CLMessage32 *message)
+{
+  if (i2c->write(message->data8, 4) != mraa::SUCCESS)
+  {
+    throw cl_tx_error(" I2C TX Error");
+  }
+}
+
+void Dynamixel::readI2c(CLMessage32 *message)
+{
+  if (i2c->read(message->data8, 4) != 4)
+  {
+    throw cl_error("I2C RX Error");
+  }
+}
+
 //TODO add error checking for both setPosition and getPosition
 void Dynamixel::setPosition(uint16_t position)
 {
+  if (position > 1023)
+  {
+    throw cl_error("[setPosition] desired position is out of bounds (expected position = 0-1023)");
+  }
   CLMessage32 message;
   message.ucl.instruction = DYN_SET_POSITION;
   message.ucl.data = position;
@@ -242,22 +262,6 @@ ros::Time Dynamixel::getLastVelocityUpdate()
 int16_t Dynamixel::getDesiredVelocity()
 {
   return desired_velocity;
-}
-
-void Dynamixel::writeI2c(CLMessage32 *message)
-{
-  if (i2c->write(message->data8, 4) != mraa::SUCCESS)
-  {
-    throw cl_tx_error(" I2C TX Error");
-  }
-}
-
-void Dynamixel::readI2c(CLMessage32 *message)
-{
-  if (i2c->read(message->data8, 4) != 4)
-  {
-    throw cl_error("I2C RX Error");
-  }
 }
 
 MraaI2c::MraaI2c(int bus, uint8_t address)
