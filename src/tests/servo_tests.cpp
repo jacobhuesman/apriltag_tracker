@@ -410,6 +410,306 @@ TEST(DynamixelHostLayerTests, UpdatePositionFarRight)
   ASSERT_NEAR(yaw,   -2.62, 1E-2);
 }
 
+TEST(DynamixelHostLayerTests, AdjustCamera)
+{
+  using testing::DoAll;
+  using testing::SetArrayArgument;
+  using testing::Return;
+  MockI2c i2c;
+  EXPECT_CALL(i2c, write(_, _))
+      .With(testing::ElementsAre(DYN_ADJUST_SERVO, 0x64, 0x00, 0x75))
+      .Times(1)
+      .WillOnce(testing::Return(mraa::SUCCESS));
+  uint8_t return_message[4] = {DYN_ADJUST_SERVO, 0x00, 0x00, 0xD9};
+  EXPECT_CALL(i2c, read(_, 4))
+      .Times(1)
+      .WillOnce(
+          DoAll(
+              SetArrayArgument<0>(return_message, return_message + 4),
+              Return(4)));
+  ros::Time::init();
+  Dynamixel servo(&i2c);
+  servo.adjustCamera(100);
+}
+
+TEST(DynamixelHostLayerTests, ScanInitPositive)
+{
+  using testing::DoAll;
+  using testing::SetArrayArgument;
+  using testing::Return;
+  using testing::InSequence;
+
+  InSequence setup;
+
+  MockI2c i2c;
+  uint8_t scan_rx_message[4]         = {DYN_ADJUST_SERVO,          0x00, 0x00, 0xD9};
+
+  // First scan call
+  EXPECT_CALL(i2c, write(_, _))
+      .With(testing::ElementsAre(DYN_ADJUST_SERVO, 50, 0x00, 0xA7))
+      .Times(1)
+      .WillOnce(testing::Return(mraa::SUCCESS));
+  EXPECT_CALL(i2c, read(_, 4))
+      .Times(1)
+      .WillOnce(DoAll(
+              SetArrayArgument<0>(scan_rx_message, scan_rx_message + 4),
+              Return(4)));
+
+  ros::Time::init();
+  Dynamixel servo(&i2c);
+  servo.scan();
+}
+
+TEST(DynamixelHostLayerTests, ScanInitNegative)
+{
+  using testing::DoAll;
+  using testing::SetArrayArgument;
+  using testing::Return;
+  using testing::InSequence;
+
+  InSequence setup;
+
+  MockI2c i2c;
+  uint8_t update_position_message[4] = {DYN_GET_POSITION_RESPONSE, 0x01, 0x02, 0xE4};
+  uint8_t scan_rx_message[4]         = {DYN_ADJUST_SERVO,          0x00, 0x00, 0xD9};
+
+  // Get initial position
+  EXPECT_CALL(i2c, write(_, _))
+      .With(testing::ElementsAre(DYN_GET_POSITION_INSTRUCTION, 0x00, 0x00, 0xE8))
+      .Times(1)
+      .WillOnce(testing::Return(mraa::SUCCESS));
+  EXPECT_CALL(i2c, read(_, 4))
+      .Times(1)
+      .WillOnce(DoAll(
+              SetArrayArgument<0>(update_position_message, update_position_message + 4),
+              Return(4)));
+
+  // First scan call
+  EXPECT_CALL(i2c, write(_, _))
+      .With(testing::ElementsAre(DYN_ADJUST_SERVO, 0xCE, 0xFF, 0x0C))
+      .Times(1)
+      .WillOnce(testing::Return(mraa::SUCCESS));
+  EXPECT_CALL(i2c, read(_, 4))
+      .Times(1)
+      .WillOnce(DoAll(
+          SetArrayArgument<0>(scan_rx_message, scan_rx_message + 4),
+          Return(4)));
+
+  ros::Time::init();
+  Dynamixel servo(&i2c);
+  servo.updatePosition();
+  servo.scan();
+}
+
+TEST(DynamixelHostLayerTests, ScanSaturateVelocityPositive)
+{
+  using testing::DoAll;
+  using testing::SetArrayArgument;
+  using testing::Return;
+  using testing::InSequence;
+
+  InSequence setup;
+
+  MockI2c i2c;
+  uint8_t update_velocity_message[4] = {DYN_ADJUST_SERVO, 0x10, 0x00, 0xC9};
+  uint8_t scan_rx_message[4]         = {DYN_ADJUST_SERVO, 0x00, 0x00, 0xD9};
+
+  // Set initial velocity
+  EXPECT_CALL(i2c, write(_, _))
+      .With(testing::ElementsAre(DYN_ADJUST_SERVO, 0x10, 0x00, 0xC9))
+      .Times(1)
+      .WillOnce(testing::Return(mraa::SUCCESS));
+  EXPECT_CALL(i2c, read(_, 4))
+      .Times(1)
+      .WillOnce(DoAll(
+          SetArrayArgument<0>(update_velocity_message, update_velocity_message + 4),
+          Return(4)));
+
+  // First scan call
+  EXPECT_CALL(i2c, write(_, _))
+      .With(testing::ElementsAre(DYN_ADJUST_SERVO, 0x32, 0x00, 0xA7))
+      .Times(1)
+      .WillOnce(testing::Return(mraa::SUCCESS));
+  EXPECT_CALL(i2c, read(_, 4))
+      .Times(1)
+      .WillOnce(DoAll(
+          SetArrayArgument<0>(scan_rx_message, scan_rx_message + 4),
+          Return(4)));
+
+  ros::Time::init();
+  Dynamixel servo(&i2c);
+  servo.adjustCamera(0x10);
+  servo.scan();
+}
+
+TEST(DynamixelHostLayerTests, ScanSaturateVelocityNegative)
+{
+  using testing::DoAll;
+  using testing::SetArrayArgument;
+  using testing::Return;
+  using testing::InSequence;
+
+  InSequence setup;
+
+  MockI2c i2c;
+  uint8_t update_velocity_message[4] = {DYN_ADJUST_SERVO, 0xF6, 0xFF, 0xE4};
+  uint8_t scan_rx_message[4]         = {DYN_ADJUST_SERVO, 0x00, 0x00, 0xD9};
+
+  // Set initial velocity
+  EXPECT_CALL(i2c, write(_, _))
+      .With(testing::ElementsAre(DYN_ADJUST_SERVO, 0xF6, 0xFF, 0xE4))
+      .Times(1)
+      .WillOnce(testing::Return(mraa::SUCCESS));
+  EXPECT_CALL(i2c, read(_, 4))
+      .Times(1)
+      .WillOnce(DoAll(
+          SetArrayArgument<0>(update_velocity_message, update_velocity_message + 4),
+          Return(4)));
+
+  // First scan call
+  EXPECT_CALL(i2c, write(_, _))
+      .With(testing::ElementsAre(DYN_ADJUST_SERVO, 0xCE, 0xFF, 0x0C))
+      .Times(1)
+      .WillOnce(testing::Return(mraa::SUCCESS));
+  EXPECT_CALL(i2c, read(_, 4))
+      .Times(1)
+      .WillOnce(DoAll(
+          SetArrayArgument<0>(scan_rx_message, scan_rx_message + 4),
+          Return(4)));
+
+  ros::Time::init();
+  Dynamixel servo(&i2c);
+  servo.adjustCamera(-10);
+  servo.scan();
+}
+
+TEST(DynamixelHostLayerTests, Scan)
+{
+  using testing::DoAll;
+  using testing::SetArrayArgument;
+  using testing::Return;
+  using testing::InSequence;
+
+  InSequence setup;
+
+  MockI2c i2c;
+  uint8_t scan_rx_message[4]         = {DYN_ADJUST_SERVO, 0x00, 0x00, 0xD9};
+
+  // Move in positive direction
+  EXPECT_CALL(i2c, write(_, _))
+      .With(testing::ElementsAre(DYN_ADJUST_SERVO, 50, 0x00, 0xA7))
+      .Times(1)
+      .WillOnce(testing::Return(mraa::SUCCESS));
+  EXPECT_CALL(i2c, read(_, 4))
+      .Times(1)
+      .WillOnce(DoAll(
+          SetArrayArgument<0>(scan_rx_message, scan_rx_message + 4),
+          Return(4)));
+
+  // Keep moving
+  uint8_t update_position_message_1[4] = {DYN_GET_POSITION_RESPONSE, 0xBC, 0x02, 0x29};
+  EXPECT_CALL(i2c, write(_, _))
+      .With(testing::ElementsAre(DYN_GET_POSITION_INSTRUCTION, 0x00, 0x00, 0xE8))
+      .Times(1)
+      .WillOnce(testing::Return(mraa::SUCCESS));
+  EXPECT_CALL(i2c, read(_, 4))
+      .Times(1)
+      .WillOnce(DoAll(
+          SetArrayArgument<0>(update_position_message_1, update_position_message_1 + 4),
+          Return(4)));
+
+  // No change
+  EXPECT_CALL(i2c, write(_, _))
+      .With(testing::ElementsAre(DYN_ADJUST_SERVO, 50, 0x00, 0xA7))
+      .Times(1)
+      .WillOnce(testing::Return(mraa::SUCCESS));
+  EXPECT_CALL(i2c, read(_, 4))
+      .Times(1)
+      .WillOnce(DoAll(
+          SetArrayArgument<0>(scan_rx_message, scan_rx_message + 4),
+          Return(4)));
+
+  // Reached end
+  uint8_t update_position_message_2[4] = {DYN_GET_POSITION_RESPONSE, 0xFF, 0x03, 0xE5};
+  EXPECT_CALL(i2c, write(_, _))
+      .With(testing::ElementsAre(DYN_GET_POSITION_INSTRUCTION, 0x00, 0x00, 0xE8))
+      .Times(1)
+      .WillOnce(testing::Return(mraa::SUCCESS));
+  EXPECT_CALL(i2c, read(_, 4))
+      .Times(1)
+      .WillOnce(DoAll(
+          SetArrayArgument<0>(update_position_message_2, update_position_message_2 + 4),
+          Return(4)));
+
+  // Reverse direction
+  EXPECT_CALL(i2c, write(_, _))
+      .With(testing::ElementsAre(DYN_ADJUST_SERVO, 0xCE, 0xFF, 0x0C))
+      .Times(1)
+      .WillOnce(testing::Return(mraa::SUCCESS));
+  EXPECT_CALL(i2c, read(_, 4))
+      .Times(1)
+      .WillOnce(DoAll(
+          SetArrayArgument<0>(scan_rx_message, scan_rx_message + 4),
+          Return(4)));
+
+  // Keep moving
+  uint8_t update_position_message_3[4] = {DYN_GET_POSITION_RESPONSE, 0x20, 0x03, 0xC4};
+  EXPECT_CALL(i2c, write(_, _))
+      .With(testing::ElementsAre(DYN_GET_POSITION_INSTRUCTION, 0x00, 0x00, 0xE8))
+      .Times(1)
+      .WillOnce(testing::Return(mraa::SUCCESS));
+  EXPECT_CALL(i2c, read(_, 4))
+      .Times(1)
+      .WillOnce(DoAll(
+          SetArrayArgument<0>(update_position_message_3, update_position_message_3 + 4),
+          Return(4)));
+
+  // No change
+  EXPECT_CALL(i2c, write(_, _))
+      .With(testing::ElementsAre(DYN_ADJUST_SERVO, 0xCE, 0xFF, 0x0C))
+      .Times(1)
+      .WillOnce(testing::Return(mraa::SUCCESS));
+  EXPECT_CALL(i2c, read(_, 4))
+      .Times(1)
+      .WillOnce(DoAll(
+          SetArrayArgument<0>(scan_rx_message, scan_rx_message + 4),
+          Return(4)));
+
+  // Reached the other end
+  uint8_t update_position_message_4[4] = {DYN_GET_POSITION_RESPONSE, 0x00, 0x00, 0xE7};
+  EXPECT_CALL(i2c, write(_, _))
+      .With(testing::ElementsAre(DYN_GET_POSITION_INSTRUCTION, 0x00, 0x00, 0xE8))
+      .Times(1)
+      .WillOnce(testing::Return(mraa::SUCCESS));
+  EXPECT_CALL(i2c, read(_, 4))
+      .Times(1)
+      .WillOnce(DoAll(
+          SetArrayArgument<0>(update_position_message_4, update_position_message_4 + 4),
+          Return(4)));
+
+  EXPECT_CALL(i2c, write(_, _))
+      .With(testing::ElementsAre(DYN_ADJUST_SERVO, 50, 0x00, 0xA7))
+      .Times(1)
+      .WillOnce(testing::Return(mraa::SUCCESS));
+  EXPECT_CALL(i2c, read(_, 4))
+      .Times(1)
+      .WillOnce(DoAll(
+          SetArrayArgument<0>(scan_rx_message, scan_rx_message + 4),
+          Return(4)));
+
+  ros::Time::init();
+  Dynamixel servo(&i2c);
+  servo.scan();            // Move in the positive direction
+  servo.updatePosition();  // Keep moving
+  servo.scan();            // No change
+  servo.updatePosition();  // Reached end
+  servo.scan();            // Reverse direction
+  servo.updatePosition();  // Keep moving
+  servo.scan();            // No change
+  servo.updatePosition();  // Reached other end
+  servo.scan();            // Reverse direction
+}
+
 /*
  * Example array tests
  */

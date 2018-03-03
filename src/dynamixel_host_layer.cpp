@@ -174,6 +174,7 @@ void Dynamixel::scan()
   }
 
   // If we are moving, continue moving in the same direction but faster
+  // TODO maybe add a ramp here?
   else if (current_velocity > 0)
   {
     message.cl.data = max_velocity;
