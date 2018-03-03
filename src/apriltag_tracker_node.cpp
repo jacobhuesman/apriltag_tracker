@@ -30,7 +30,7 @@ struct Publishers
 };
 Publishers *pubs;
 
-const bool track_servo = true;
+const bool servo_track_tag = true;
 const bool publish_pose_estimate = true;
 
 void trackerThread(HostCommLayer::Dynamixel *servo, AprilTagTracker::TransformsCache transforms_cache,
@@ -102,8 +102,9 @@ void servoThread(HostCommLayer::Dynamixel *servo, std::vector<AprilTagTracker::T
   ros::Rate rate(30);
   while(ros::ok())
   {
-    rate.sleep();/*
-    if (track_servo)
+    rate.sleep();
+    /*servo->updatePosition();
+    if (servo_track_tag)
     {
       double theta = 0.0;
       ros::Time last_tag_update;
