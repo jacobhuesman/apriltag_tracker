@@ -31,7 +31,7 @@ struct Publishers
 Publishers *pubs;
 
 const bool servo_track_tag = true;
-const bool publish_pose_estimate = true;
+const bool publish_pose_estimate = false;
 
 void trackerThread(HostCommLayer::Dynamixel *servo, AprilTagTracker::TransformsCache transforms_cache,
                    std::vector<AprilTagTracker::Tag> *tag_info, apriltag_tracker::Camera *camera)
@@ -57,6 +57,7 @@ void trackerThread(HostCommLayer::Dynamixel *servo, AprilTagTracker::TransformsC
     std::vector<geometry_msgs::TransformStamped> tag_transforms = tracker.getTagTransforms();
     for (int i = 0; i < tag_transforms.size(); i++)
     {
+      ROS_INFO("Publishing transform");
       pubs->transforms.publish(tag_transforms[i]);
     }
     timer.publish_tag_transforms.stop();
@@ -139,7 +140,7 @@ int main(int argc, char **argv)
   pubs = new Publishers;
   pubs->diagnostics = nh.advertise<apriltag_tracker::ATTLocalTiming>("info/timing_diagnostics", 30);
   pubs->pose = nh.advertise<geometry_msgs::PoseStamped>("pose_estimate", 30);
-  pubs->transforms = nh.advertise<geometry_msgs::TransformStamped>("transforms_cache", 30);
+  pubs->transforms = nh.advertise<geometry_msgs::TransformStamped>("transforms", 30);
   pubs->image = it.advertise("image", 1);
 
   // Initialize tags and transforms_cache cache
@@ -166,7 +167,7 @@ int main(int argc, char **argv)
   boost::thread thread1(trackerThread, servo, transforms_cache, tag_info, camera1); usleep(1000);
   boost::thread thread2(trackerThread, servo, transforms_cache, tag_info, camera2); usleep(1000);
   boost::thread thread3(trackerThread, servo, transforms_cache, tag_info, camera3);
-  boost::thread thread4(servoThread,   servo, tag_info);
+  boost::thread thread4(servoThread, servo, tag_info);
   ros::spin();
 
   // Process images until quit
@@ -176,4 +177,3 @@ int main(int argc, char **argv)
   thread3.join();
   thread4.join();
 }
-
