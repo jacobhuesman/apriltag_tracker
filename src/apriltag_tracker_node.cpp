@@ -57,7 +57,6 @@ void trackerThread(HostCommLayer::Dynamixel *servo, AprilTagTracker::TransformsC
     std::vector<geometry_msgs::TransformStamped> tag_transforms = tracker.getTagTransforms();
     for (int i = 0; i < tag_transforms.size(); i++)
     {
-      ROS_INFO("Publishing transform");
       pubs->transforms.publish(tag_transforms[i]);
     }
     timer.publish_tag_transforms.stop();
