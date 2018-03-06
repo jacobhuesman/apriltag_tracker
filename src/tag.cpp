@@ -9,7 +9,7 @@ Tag::Tag(int id, int priority, double size)
   this->size = size;
   this->mutex = new boost::mutex;
   this->seq = 0;
-  this->list_size = 15;
+  this->list_size = 10;
   this->compare_mode = CompareType::distance;
 }
 
@@ -69,10 +69,19 @@ Transform Tag::getMovingAverageTransform(int n_tf)
   }
   mutex->lock();
   this->compare_mode = CompareType::distance;
-  Transform tag_transform = transforms.front();
-  tf2::Stamped<tf2::Transform> tag_tf = tag_transform.getTagTf();
-  double x = 0, y = 0, z = 0;
   auto it = transforms.begin();
+  if (n_tf <= 2)
+  {
+    for (int i = 0; i < n_tf / 2; it++, i++); // Pick middle one so servo tf doesn't lead quite so badly
+  }
+  else
+  {
+    it++; // TODO figure out what element this is actually grabbing...
+  }
+  Transform tag_transform = *it;
+  tf2::Stamped<tf2::Transform> tag_tf = tag_transform.getTagTf();
+  it = transforms.begin();
+  double x = 0, y = 0, z = 0;
   for (int i = 0; i < n_tf; it++, i++)
   {
     tf2::Vector3 origin = it->getTagTf().getOrigin();

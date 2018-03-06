@@ -121,7 +121,7 @@ void servoThread(HostCommLayer::Dynamixel *servo, std::vector<AprilTagTracker::T
         {
           if ((*tag_info)[i].getID() == 1)
           {
-            theta = (*tag_info)[i].getAngleFromCenter(2);
+            theta = (*tag_info)[i].getAngleFromCenter(1);
           }
         }
         servo->adjustCamera(-servo->calculateDesiredVelocity(theta));
