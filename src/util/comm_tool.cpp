@@ -8,27 +8,6 @@
 #include <comm_layer_defs.h>
 
 using namespace HostCommLayer;
-
-void printStatus(uint8_t status)
-{
-  if (status == CL_OK)
-  {
-    std::cout << "Success" << std::endl;
-  }
-  else if (status == CL_TX_ERROR)
-  {
-    std::cout << "TX Error" << std::endl;
-  }
-  else if (status == CL_RX_ERROR) {
-    std::cout << "RX Error" << std::endl;
-  }
-  else
-  {
-    std::cout << "System returned: " << (int)status << std::endl;
-  }
-
-}
-
 using namespace boost::program_options;
 
 int main(int argc, char *argv[])
@@ -59,71 +38,76 @@ int main(int argc, char *argv[])
     if (vm.count("setPosition"))
     {
       uint16_t position = vm["setPosition"].as<uint16_t>();
-      std::cout << "Setting position: " << position << std::endl;
-      uint8_t status = servo.setPosition(position);
-      if (status == CL_TASK_QUEUED)
+      try
       {
-        std::cout << "Setting position: " << position << std::endl;
+        std::cout << "Setting position: " << position << "... ";
+        servo.setPosition(position);
+        std::cout << "Success" << std::endl;
       }
-      else
+      catch (cl_error &e)
       {
-        printStatus(status);
+        std::cout << e.what() << std::endl;
       }
     }
     if (vm.count("getPosition"))
     {
       uint16_t position;
-      uint8_t status = servo.getPosition(&position);
-      if (status == CL_OK)
+      try
       {
-        std::cout << "Read position: " << position << std::endl;
+        std::cout << "Reading position... ";
+        servo.getPosition(&position);
+        std::cout << position << " Success" << std::endl;
       }
-      else
+      catch (cl_error &e)
       {
-        printStatus(status);
+        std::cout << e.what() << std::endl;
       }
     }
     if (vm.count("setVelocity"))
     {
       uint16_t velocity = vm["setVelocity"].as<uint16_t>();
-      uint8_t status = servo.setVelocity(velocity);
-      if (status == CL_TASK_QUEUED)
+      try
       {
-        std::cout << "Setting velocity: " << velocity << std::endl;
+        std::cout << "Setting velocity: " << velocity << "...";
+        servo.setVelocity(velocity);
+        std::cout << "Success" << std::endl;
       }
-      else
+      catch (cl_error &e)
       {
-        printStatus(status);
+        std::cout << e.what() << std::endl;
       }
     }
     if (vm.count("adjustCamera"))
     {
       int16_t velocity = vm["adjustCamera"].as<int16_t>();
-      uint8_t status = servo.adjustCamera(velocity);
-      if (status == CL_TASK_QUEUED)
+      try
       {
-        std::cout << "Adjust camera velocity to: " << velocity << std::endl;
+        std::cout << "Adjusting camera velocity to: " << velocity << "... ";
+        servo.adjustCamera(velocity);
+        std::cout << "Success" << std::endl;
       }
-      else
+      catch (cl_error &e)
       {
-        printStatus(status);
+        std::cout << e.what() << std::endl;
       }
     }
     if (vm.count("setPollingDt"))
     {
       uint16_t polling_dt = vm["setPollingDt"].as<uint16_t>();
-      uint8_t status = servo.setPollingDt(polling_dt);
-      if (status == CL_TASK_QUEUED)
+      try
       {
-        std::cout << "Setting polling dt: " << polling_dt << std::endl;
+        std::cout << "Setting polling dt: " << polling_dt << "... ";
+        servo.setPollingDt(polling_dt);
+        std::cout << "Success" << std::endl;
       }
-      else
+      catch (cl_error &e)
       {
-        printStatus(status);
+        std::cout << e.what() << std::endl;
       }
     }
     if (vm.count("testPolling"))
     {
+      // TODO rework and add try catch blocks
       std::vector<uint16_t> options = vm["testPolling"].as<std::vector<uint16_t>>();
       uint16_t polling_dt = options[0];
       uint16_t polling_velocity = options[1];
@@ -219,79 +203,4 @@ int main(int argc, char *argv[])
   {
     std::cerr << ex.what() << '\n';
   }
-  /*int c;
-  while ((c = getopt(argc, argv, "v:s:ght")) != -1)
-  {
-    switch (c)
-    {
-      case 's':
-      {
-        position = (uint16_t)std::stoi(optarg);
-        std::cout << "Setting position: " << position << std::endl;
-        uint8_t status = servo.setPosition(position);
-        printStatus(status);
-        break;
-      }
-      case 'g':
-      {
-        uint8_t status = servo.getPosition(&position);
-        if (status == CL_OK)
-        {
-          std::cout << "Read position: " << position << std::endl;
-        }
-        else
-        {
-          printStatus(status);
-        }
-        break;
-      }
-      case 'v':
-      {
-        uint16_t velocity = (uint16_t)std::stoi(optarg);
-        uint8_t status = servo.setVelocity(velocity);
-        printStatus(status);
-        break;
-      }
-      case 'h':
-      {
-        std::cout << "Options: " << std::endl;
-        std::cout << " -s <pos> : set position" << std::endl;
-        std::cout << " -g       : get position" << std::endl;
-        std::cout << " -h       : get help"     << std::endl;
-        break;
-      }
-      case 't':
-      {
-        std::cout << "Running getPosition test" << std::endl;
-        std::chrono::system_clock::time_point start, end;
-        std::chrono::microseconds difference;
-        long running_count = 0;
-        CLMessage32 test_msg;
-        long i = 0;
-        for (i = 0; i < 100000; i++)
-        {
-          start = std::chrono::system_clock::now();
-          position = servo.adjustPosition(0);
-          end = std::chrono::system_clock::now();
-          difference = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-          std::cout << "Test " << std::setw(3) << i << " time: " << std::setw(8) << difference.count();
-          std::cout << "us, position: " << std::setw(4) << position << std::endl;
-          running_count += difference.count();
-          usleep(100);
-        }
-        std::cout << "Test results: " << running_count/i << "us" << std::endl;
-        break;
-      }
-      case '?':
-      {
-        std::cout << "Invalid option" << std::endl;
-        abort();
-      }
-      default:
-      {
-        std::cout << "Please select an option" << std::endl;
-        abort();
-      }
-    }
-  }*/
 }

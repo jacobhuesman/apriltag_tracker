@@ -9,7 +9,7 @@ Tag::Tag(int id, int priority, double size)
   this->size = size;
   this->mutex = new boost::mutex;
   this->seq = 0;
-  this->list_size = 15;
+  this->list_size = 10;
   this->compare_mode = CompareType::distance;
 }
 
@@ -61,18 +61,53 @@ Transform Tag::getMedianFilteredTransform()
   return *it;
 }
 
-Transform Tag::getMovingAverageTransform()
+Transform Tag::getMovingAverageTransform(int n_tf)
 {
-  if (transforms.size() < list_size)
+  mutex->lock();
+  // Flush old detections
+  auto it = transforms.begin();
+  int good_tfs = 0;
+  bool clean = false;
+  for (int i = 0; i < transforms.size(); i++, it++)
   {
+    ros::Duration time_diff(ros::Time::now() - it->getTagTf().stamp_);
+    if (time_diff > ros::Duration(1.5))
+    {
+      clean = true;
+      good_tfs = i;
+      break;
+    }
+  }
+  if (clean)
+  {
+    int size = transforms.size();
+    for (int i = 0; (i + good_tfs) < size; i++)
+    {
+      transforms.pop_back();
+    }
+  }
+
+  if (transforms.size() < n_tf)
+  {
+    mutex->unlock();
     throw unable_to_find_transform_error("Moving average filter not populated");
   }
-  mutex->lock();
   this->compare_mode = CompareType::distance;
-  Transform tag_transform = transforms.front();
+  it = transforms.begin();
+  if (n_tf <= 2)
+  {
+    // TODO add moving average filter for servo tfs
+    for (int i = 0; i < n_tf / 2; it++, i++); // Pick middle one so servo tf doesn't lead quite so badly
+  }
+  else
+  {
+    it++; // TODO figure out what element this is actually grabbing...
+  }
+  Transform tag_transform = *it;
   tf2::Stamped<tf2::Transform> tag_tf = tag_transform.getTagTf();
+  it = transforms.begin();
   double x = 0, y = 0, z = 0;
-  for (auto it = transforms.begin(); it != transforms.end(); it++)
+  for (int i = 0; i < n_tf; it++, i++)
   {
     tf2::Vector3 origin = it->getTagTf().getOrigin();
     x += origin.getX();
@@ -80,11 +115,15 @@ Transform Tag::getMovingAverageTransform()
     z += origin.getZ();
   }
   mutex->unlock();
-  double size = transforms.size();
-  tag_tf.setOrigin(tf2::Vector3(x / size, y / size, z / size));
+  tag_tf.setOrigin(tf2::Vector3(x / n_tf, y / n_tf, z / n_tf));
   // TODO average the Quaternions?
   return Transform(tag_transform.getDetection(), tag_tf, tag_transform.getServoTf(), tag_transform.getMapToTagTf(),
                    &(this->compare_mode));
+}
+
+Transform Tag::getMovingAverageTransform()
+{
+  return Tag::getMovingAverageTransform(this->list_size);
 }
 
 Transform Tag::getMedianMovingAverageTransform()
@@ -119,6 +158,17 @@ Transform Tag::getMedianMovingAverageTransform()
   // TODO average the Quaternions?
   return Transform(tag_transform.getDetection(), tag_tf, tag_transform.getServoTf(), tag_transform.getMapToTagTf(),
                    &(this->compare_mode));
+}
+
+double Tag::getAngleFromCenter(int n_tf)
+{
+  tf2::Vector3 origin = getMovingAverageTransform(n_tf).getTagTf().getOrigin();
+  return atan(origin.getX() / origin.getZ());
+}
+
+double Tag::getAngleFromCenter()
+{
+  return getAngleFromCenter(5);
 }
 
 int Tag::getID()
@@ -160,6 +210,8 @@ cv::Point Tag::getDetectionCenter()
 {
   return transforms.front().getDetectionCenter();
 }
+
+
 
 
 

@@ -87,46 +87,6 @@ void AprilTagTracker::drawDetections(cv::Mat *image)
   }
 }
 
-// TODO add unit test
-// - Velocity is sane
-// - Sequences are correct
-// - Throw error is we can't get desired servo velocity
-int16_t AprilTagTracker::getDesiredServoVelocity()
-{
-  int best_tag = -1;
-  bool updated_tag_available = false;
-  for (int i = 0; i < tag_info->size(); i++)
-  {
-    if ((*tag_info)[i].getSeq() == current_seq)
-    {
-      updated_tag_available = true;
-      best_tag = i;
-      break;
-    }
-  }
-  if (!updated_tag_available)
-  {
-    throw unable_to_find_transform_error("No tag detections available for setting the servo");
-  }
-
-  // Find best up to date tag
-  for (int i = 0; i < tag_info->size(); i++)
-  {
-    bool updated = (*tag_info)[i].getSeq() == current_seq;
-    bool higher_priority = (*tag_info)[i].getPriority() > (*tag_info)[best_tag].getPriority();
-    if (updated && higher_priority)
-    {
-      best_tag = i;
-    }
-  }
-
-  // Adjust servo
-  const double servo_resolution = 0.29;
-  //printf("Detection center: %i\n", (*tag_info)[best_tag].getDetectionCenter().x);
-  double difference = ((*tag_info)[best_tag].getDetectionCenter().x - camera_info->getWidth() / 2);
-  return -(int16_t) (camera_info->getDegreesPerPixel().x * difference / servo_resolution);
-}
-
 void AprilTagTracker::processImage(cv::Mat *image, unsigned int current_seq, ros::Time capture_time,
                                    tf2::Stamped<tf2::Transform> servo_tf)
 {
@@ -237,6 +197,9 @@ Transform AprilTagTracker::performThetaCorrection(Transform tag_a, Transform tag
   tf2::Vector3 point_A = tag_a.getTagTf().getOrigin();
   tf2::Vector3 point_B = tag_b.getTagTf().getOrigin();
 
+  //ROS_INFO("Point A: %f, %f, %f | Point B: %f, %f, %f", point_A.getX(), point_A.getY(), point_A.getZ(),
+  //                                                      point_B.getX(), point_B.getY(), point_B.getZ());
+
   // Find the distances between points (distances labeled as the legs of a triangle opposite each point)
   double a_sq = pow(point_B.getX(), 2.0) + pow(point_B.getZ(), 2.0);
   double b_sq = pow(point_A.getX(), 2.0) + pow(point_A.getZ(), 2.0);
@@ -252,18 +215,24 @@ Transform AprilTagTracker::performThetaCorrection(Transform tag_a, Transform tag
   double c_sq = pow(c, 2.0);
 
   // By law of cosines
-  double A = acos((-a_sq + b_sq + c_sq) / (2 * b * c));
+  double theta = acos((-a_sq + b_sq + c_sq) / (2 * b * c));
+  double alpha = atan(point_A.getX()/point_A.getZ());
+
+
   //printf("A: %f\n", A);
 
   tf2::Stamped<tf2::Transform> new_tf = tag_a.getTagTf();
-  tf2::Quaternion q1, q2, q3;
+  tf2::Quaternion q1, q2, q3, q4;
   q1.setRPY(0.0, M_PI, M_PI); // TODO combine q1 and q3
-  q2.setRPY(0.0, A, 0.0);
-  q3.setRPY(0.0, -M_PI_2, 0.0);
+  q2.setRPY(0.0, theta, 0.0);
+  q3.setRPY(0.0, -alpha, 0.0);
+  q4.setRPY(0.0, -M_PI_2, 0.0);
 
-
-  new_tf.setRotation(q1*q2*q3);
+  new_tf.setRotation(q1*q2*q3*q4);
   Transform new_transform(tag_a.getDetection(), new_tf, tag_a.getServoTf(), tag_a.getMapToTagTf());
+  double roll, pitch, yaw;
+  Transform::getRPY(new_tf.getRotation(), roll, pitch, yaw);
+  //ROS_INFO("A: %f | Y %f", theta, pitch);
   return new_transform;
 }
 

@@ -30,13 +30,15 @@ public:
   double getGoodness();
   double getPriority();
   double getSize();
-  bool isReady();
   std::vector<Transform> getTransforms();
   Transform getMovingAverageTransform();
+  Transform getMovingAverageTransform(int number_of_transforms);
   Transform getMedianMovingAverageTransform();
   Transform getMedianFilteredTransform();
   Transform getMostRecentTransform();
   tf2::Transform getMapToTagTf();
+  double getAngleFromCenter(int number_of_transforms);
+  double getAngleFromCenter();
 
 private:
   boost::mutex *mutex;

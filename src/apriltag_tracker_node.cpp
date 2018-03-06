@@ -30,7 +30,7 @@ struct Publishers
 };
 Publishers *pubs;
 
-const bool track_servo = true;
+const bool servo_track_tag = true;
 const bool publish_pose_estimate = true;
 
 void trackerThread(HostCommLayer::Dynamixel *servo, AprilTagTracker::TransformsCache transforms_cache,
@@ -51,18 +51,6 @@ void trackerThread(HostCommLayer::Dynamixel *servo, AprilTagTracker::TransformsC
     tracker.processImage(camera->getImagePtr(), camera->getSeq(), camera->getCaptureTime(),
                          servo->getStampedTransform());
     timer.process_image.stop();
-
-
-    timer.adjust_servo.start();
-    try
-    {
-      servo->updateDesiredVelocity(tracker.getDesiredServoVelocity());
-    }
-    catch(AprilTagTracker::unable_to_find_transform_error &e)
-    {
-      ROS_WARN("%s", e.what());
-    }
-    timer.adjust_servo.stop();
 
     // Send Transforms
     timer.publish_tag_transforms.start();
@@ -109,30 +97,55 @@ void trackerThread(HostCommLayer::Dynamixel *servo, AprilTagTracker::TransformsC
   }
 }
 
-void servoThread(HostCommLayer::Dynamixel *servo)
+void servoThread(HostCommLayer::Dynamixel *servo, std::vector<AprilTagTracker::Tag> *tag_info)
 {
   ros::Rate rate(30);
   while(ros::ok())
   {
-    if (track_servo)
+    rate.sleep();
+    try
     {
-      // Start scanning if enough time has elapsed since last capture
-      uint8_t status;
-      ros::Duration difference = ros::Time::now() - servo->getLastVelocityUpdate();
-      if (difference.toSec() > 0.5)
+      servo->updatePosition();
+    }
+    catch (cl_error &e)
+    {
+      ROS_WARN("%s", e.what());
+    }
+    if (servo_track_tag)
+    {
+      double theta = 0.0;
+      ros::Time last_tag_update;
+      try
       {
-        status = servo->scan();
-      }
-      else
-      {
-        status = servo->adjustCamera(servo->getDesiredVelocity());
-      }
-      if (status == CL_OK)
-      {
+        for (int i = 0; i < tag_info->size(); i++)
+        {
+          if ((*tag_info)[i].getID() == 1)
+          {
+            theta = (*tag_info)[i].getAngleFromCenter(1);
+          }
+        }
+        servo->adjustCamera(-servo->calculateDesiredVelocity(theta));
         pubs->transforms.publish(servo->getTransformMsg());
       }
+      catch (unable_to_find_transform_error &e)
+      {
+        ROS_WARN("%s | Starting scan", e.what());
+        try
+        {
+          servo->scan();
+        }
+        catch (cl_error &e)
+        {
+          ROS_WARN("%s", e.what());
+        }
+        continue;
+      }
+      catch (cl_error &e)
+      {
+        ROS_WARN("%s", e.what());
+        continue;
+      }
     }
-    rate.sleep();
   }
 }
 
@@ -145,7 +158,7 @@ int main(int argc, char **argv)
   pubs = new Publishers;
   pubs->diagnostics = nh.advertise<apriltag_tracker::ATTLocalTiming>("info/timing_diagnostics", 30);
   pubs->pose = nh.advertise<geometry_msgs::PoseStamped>("pose_estimate", 30);
-  pubs->transforms = nh.advertise<geometry_msgs::TransformStamped>("transforms_cache", 30);
+  pubs->transforms = nh.advertise<geometry_msgs::TransformStamped>("transforms", 30);
   pubs->image = it.advertise("image", 1);
 
   // Initialize tags and transforms_cache cache
@@ -172,7 +185,7 @@ int main(int argc, char **argv)
   boost::thread thread1(trackerThread, servo, transforms_cache, tag_info, camera1); usleep(1000);
   boost::thread thread2(trackerThread, servo, transforms_cache, tag_info, camera2); usleep(1000);
   boost::thread thread3(trackerThread, servo, transforms_cache, tag_info, camera3);
-  boost::thread thread4(servoThread, servo);
+  boost::thread thread4(servoThread, servo, tag_info);
   ros::spin();
 
   // Process images until quit
@@ -182,4 +195,3 @@ int main(int argc, char **argv)
   thread3.join();
   thread4.join();
 }
-
