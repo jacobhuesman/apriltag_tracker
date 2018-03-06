@@ -61,8 +61,9 @@ namespace HostCommLayer
   private:
     I2cInterface *i2c;
     uint16_t current_position;
-    int16_t max_velocity;
-    int16_t current_velocity;
+    double max_velocity;
+    double current_velocity;
+    double v_s;
 
     tf2::Transform transform;
     ros::Time stamp;

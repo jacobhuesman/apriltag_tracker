@@ -129,7 +129,7 @@ Transform Tag::getMedianMovingAverageTransform()
 double Tag::getAngleFromCenter(int n_tf)
 {
   tf2::Vector3 origin = getMovingAverageTransform(n_tf).getTagTf().getOrigin();
-  return atan(origin.getX() / origin.getY());
+  return atan(origin.getX() / origin.getZ());
 }
 
 double Tag::getAngleFromCenter()

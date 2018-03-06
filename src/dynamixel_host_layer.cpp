@@ -17,7 +17,8 @@ Dynamixel::Dynamixel(I2cInterface *interface)
   frame_id = "servo_base_link"; // TODO parametrize
   child_frame_id = "servo_joint"; // TODO parametrize
 
-  max_velocity = 50; // TODO parametrize
+  max_velocity = 0.8; // TODO parametrize
+  v_s = 86.0297; // Conversion from rad/s to servo units
   current_position = 512;
   current_velocity = 0;
 }
@@ -114,22 +115,22 @@ void Dynamixel::getPosition(uint16_t *position)
 
 int16_t Dynamixel::calculateDesiredVelocity(double theta)
 {
-    // Adjust servo
-    double mx_v = max_velocity;
-    double mn_v = 0.0;
-    double fov = 62.2;
-    double v_s = 86.0297; // Conversion from rad/s to servo units
-    double deadzone = 0.01745; // one degree
+  // Adjust servo
+  double mx_v = max_velocity;
+  double mn_v = 0.0;
+  double fov = 0.542797; // 62.2 / 180 / 2 * pi
+  double deadzone = 0.01745 * 3; // one degree / 2
 
-    if (fabs(theta) <= deadzone)
-    {
-      return 0;
-    }
+  if (fabs(theta) <= deadzone)
+  {
+    return 0;
+  }
 
-    double sign = (theta < 0.0 ? -1 : 1);
-    theta = fabs(theta);
-    double v_r = sign * ((theta - deadzone) * (mx_v - mn_v) + mn_v); // Desired servo velocity
-    return (int16_t)(v_s * v_r);
+  double sign = (theta < 0.0 ? -1 : 1);
+  theta = fabs(theta);
+  double v_r = sign * mx_v * theta / fov; // Desired servo velocity
+  printf("v_s*v_rs: %f\n", v_s*v_r);
+  return (int16_t)(v_s * v_r);
 }
 
 void Dynamixel::updatePosition()
@@ -151,25 +152,24 @@ void Dynamixel::adjustCamera(int16_t velocity)
   message.cl.checksum = computeChecksum(message);
   writeI2c(&message);
   readI2c(&message);
-  this->current_velocity = velocity;
+  this->current_velocity = ((double)velocity) / v_s;
 }
 
 void Dynamixel::scan()
 {
   // Send control message
-  CLMessage32 message;
-  message.cl.instruction = DYN_ADJUST_SERVO;
+  double velocity = 0.0;
 
   // If we aren't moving, pick the direction that covers the most area
   if (current_velocity == 0)
   {
     if (current_position <= 512)
     {
-      message.cl.data = max_velocity;
+      velocity = max_velocity;
     }
     else
     {
-      message.cl.data = -max_velocity;
+      velocity = -max_velocity;
     }
   }
 
@@ -177,28 +177,24 @@ void Dynamixel::scan()
   // TODO maybe add a ramp here?
   else if (current_velocity > 0)
   {
-    message.cl.data = max_velocity;
+    velocity = max_velocity;
   }
   else if (current_velocity < 0)
   {
-    message.cl.data = -max_velocity;
+    velocity = -max_velocity;
   }
 
   // If we've hit the end, change direction
   if (current_position >= 1011)
   {
-    message.cl.data = -max_velocity;
+    velocity = -max_velocity;
   }
   if (current_position <= 12)
   {
-    message.cl.data = max_velocity;
+    velocity = max_velocity;
   }
-  current_velocity = message.cl.data;
 
-  // Send decision
-  message.cl.checksum = computeChecksum(message);
-  writeI2c(&message);
-  readI2c(&message); // TODO is this necessary?
+  adjustCamera(velocity*v_s); // TODO bad
 }
 
 tf2::Transform Dynamixel::getTransform()

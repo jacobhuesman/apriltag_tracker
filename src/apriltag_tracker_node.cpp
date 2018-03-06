@@ -30,7 +30,7 @@ struct Publishers
 };
 Publishers *pubs;
 
-const bool servo_track_tag = false;
+const bool servo_track_tag = true;
 const bool publish_pose_estimate = true;
 
 void trackerThread(HostCommLayer::Dynamixel *servo, AprilTagTracker::TransformsCache transforms_cache,
@@ -121,16 +121,28 @@ void servoThread(HostCommLayer::Dynamixel *servo, std::vector<AprilTagTracker::T
         {
           if ((*tag_info)[i].getID() == 1)
           {
-            theta = (*tag_info)[i].getAngleFromCenter(5);
+            theta = (*tag_info)[i].getAngleFromCenter(2);
           }
         }
-        servo->adjustCamera(servo->calculateDesiredVelocity(theta));
+        servo->adjustCamera(-servo->calculateDesiredVelocity(theta));
         pubs->transforms.publish(servo->getTransformMsg());
       }
       catch (unable_to_find_transform_error &e)
       {
+        ROS_WARN("%s | Starting scan", e.what());
+        try
+        {
+          servo->scan();
+        }
+        catch (cl_error &e)
+        {
+          ROS_WARN("%s", e.what());
+        }
+        continue;
+      }
+      catch (cl_error &e)
+      {
         ROS_WARN("%s", e.what());
-        servo->scan();
         continue;
       }
     }
