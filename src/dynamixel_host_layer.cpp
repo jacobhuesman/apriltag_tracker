@@ -129,7 +129,7 @@ int16_t Dynamixel::calculateDesiredVelocity(double theta)
   double sign = (theta < 0.0 ? -1 : 1);
   theta = fabs(theta);
   double v_r = sign * mx_v * theta / fov; // Desired servo velocity
-  printf("v_s*v_rs: %f\n", v_s*v_r);
+  //printf("v_s*v_rs: %f\n", v_s*v_r);
   return (int16_t)(v_s * v_r);
 }
 
@@ -194,7 +194,7 @@ void Dynamixel::scan()
     velocity = max_velocity;
   }
 
-  adjustCamera(velocity*v_s); // TODO bad
+  adjustCamera(velocity*v_s/2); // TODO bad
 }
 
 tf2::Transform Dynamixel::getTransform()

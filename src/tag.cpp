@@ -63,15 +63,40 @@ Transform Tag::getMedianFilteredTransform()
 
 Transform Tag::getMovingAverageTransform(int n_tf)
 {
+  mutex->lock();
+  // Flush old detections
+  auto it = transforms.begin();
+  int good_tfs = 0;
+  bool clean = false;
+  for (int i = 0; i < transforms.size(); i++, it++)
+  {
+    ros::Duration time_diff(ros::Time::now() - it->getTagTf().stamp_);
+    if (time_diff > ros::Duration(1.5))
+    {
+      clean = true;
+      good_tfs = i;
+      break;
+    }
+  }
+  if (clean)
+  {
+    int size = transforms.size();
+    for (int i = 0; (i + good_tfs) < size; i++)
+    {
+      transforms.pop_back();
+    }
+  }
+
   if (transforms.size() < n_tf)
   {
+    mutex->unlock();
     throw unable_to_find_transform_error("Moving average filter not populated");
   }
-  mutex->lock();
   this->compare_mode = CompareType::distance;
-  auto it = transforms.begin();
+  it = transforms.begin();
   if (n_tf <= 2)
   {
+    // TODO add moving average filter for servo tfs
     for (int i = 0; i < n_tf / 2; it++, i++); // Pick middle one so servo tf doesn't lead quite so badly
   }
   else
