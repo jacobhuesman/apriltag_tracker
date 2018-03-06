@@ -30,8 +30,8 @@ struct Publishers
 };
 Publishers *pubs;
 
-const bool servo_track_tag = true;
-const bool publish_pose_estimate = false;
+const bool servo_track_tag = false;
+const bool publish_pose_estimate = true;
 
 void trackerThread(HostCommLayer::Dynamixel *servo, AprilTagTracker::TransformsCache transforms_cache,
                    std::vector<AprilTagTracker::Tag> *tag_info, apriltag_tracker::Camera *camera)
@@ -103,7 +103,14 @@ void servoThread(HostCommLayer::Dynamixel *servo, std::vector<AprilTagTracker::T
   while(ros::ok())
   {
     rate.sleep();
-    /*servo->updatePosition();
+    try
+    {
+      servo->updatePosition();
+    }
+    catch (cl_error &e)
+    {
+      ROS_WARN("%s", e.what());
+    }
     if (servo_track_tag)
     {
       double theta = 0.0;
@@ -122,11 +129,11 @@ void servoThread(HostCommLayer::Dynamixel *servo, std::vector<AprilTagTracker::T
       }
       catch (unable_to_find_transform_error &e)
       {
-        ROS_WARN(e.what());
+        ROS_WARN("%s", e.what());
         servo->scan();
         continue;
       }
-    }*/
+    }
   }
 }
 
