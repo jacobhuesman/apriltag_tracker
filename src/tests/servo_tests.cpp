@@ -442,7 +442,7 @@ TEST(DynamixelHostLayerTests, ScanInitPositive)
   InSequence setup;
 
   MockI2c i2c;
-  uint8_t scan_rx_message[4]         = {DYN_ADJUST_SERVO,          0x00, 0x00, 0xD9};
+  uint8_t scan_rx_message[4] = {DYN_ADJUST_SERVO, 0x00, 0x00, 0xD9};
 
   // First scan call
   EXPECT_CALL(i2c, write(_, _))
