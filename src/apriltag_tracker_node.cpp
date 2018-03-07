@@ -162,7 +162,7 @@ int main(int argc, char **argv)
   pubs->image = it.advertise("image", 1);
 
   // Initialize tags and transforms_cache cache
-  std::vector<apriltag_tracker::Tag> *tag_info = new std::vector<Tag>;
+  std::vector<Tag> *tag_info = new std::vector<Tag>;
   Tag tag1(1, 2, 0.42545);
   Tag tag3(3, 1, 0.42545);
   tag_info->push_back(tag1);
@@ -174,11 +174,11 @@ int main(int argc, char **argv)
   HostCommLayer::Dynamixel *servo = new HostCommLayer::Dynamixel(0x11);
 
   // Initialize Camera Objects
-  apriltag_tracker::CameraMaster camera_master(nh);
-  apriltag_tracker::Camera *camera0 = camera_master.generateCameraObject();
-  apriltag_tracker::Camera *camera1 = camera_master.generateCameraObject();
-  apriltag_tracker::Camera *camera2 = camera_master.generateCameraObject();
-  apriltag_tracker::Camera *camera3 = camera_master.generateCameraObject();
+  CameraMaster camera_master(nh);
+  Camera *camera0 = camera_master.generateCameraObject();
+  Camera *camera1 = camera_master.generateCameraObject();
+  Camera *camera2 = camera_master.generateCameraObject();
+  Camera *camera3 = camera_master.generateCameraObject();
 
   // Start threads
   boost::thread thread0(trackerThread, servo, transforms_cache, tag_info, camera0); usleep(1000);

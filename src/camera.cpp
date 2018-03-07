@@ -15,8 +15,8 @@ CameraMaster::CameraMaster(ros::NodeHandle nh)
   std::string info_path = "package://apriltag_tracker/calibrations/${NAME}.yaml";
   manager_camera_info = new camera_info_manager::CameraInfoManager(nh, "camera", info_path);
 
-  server = new dynamic_reconfigure::Server<apriltag_tracker::DynamicCameraConfig>;
-  dynamic_reconfigure::Server<apriltag_tracker::DynamicCameraConfig>::CallbackType f;
+  server = new dynamic_reconfigure::Server<DynamicCameraConfig>;
+  dynamic_reconfigure::Server<DynamicCameraConfig>::CallbackType f;
   f = boost::bind(&CameraMaster::reconfigureCallback, this, _1, _2 );
   server->setCallback(f);
 
@@ -25,7 +25,7 @@ CameraMaster::CameraMaster(ros::NodeHandle nh)
 }
 
 // TODO add setCaptureSize?
-void CameraMaster::reconfigureCallback(apriltag_tracker::DynamicCameraConfig &config, uint32_t level) {
+void CameraMaster::reconfigureCallback(DynamicCameraConfig &config, uint32_t level) {
   ROS_INFO("Reconfigure - Height: %d,  Width: %d, Brightness: %d, Contrast: %d, Shutter Speed: %d, "
                "FPS: %d, Video Stabilization: %s",
            config.height, config.width, config.brightness, config.contrast,

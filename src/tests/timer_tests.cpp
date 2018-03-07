@@ -94,7 +94,7 @@ TEST(AprilTagTrackerTimerTests, TimersMsg)
   timer.draw_detections.start();          usleep( 8000); timer.draw_detections.stop();
   timer.publish_detections_image.start(); usleep( 9000); timer.publish_detections_image.stop();
   timer.spin.start();                     usleep(10000); timer.spin.stop();
-  apriltag_tracker::ATTLocalTiming timing_msg = timer.getTimingMsg();
+  ATTLocalTiming timing_msg = timer.getTimingMsg();
 
   ASSERT_GT(timing_msg.get_image,                  800);
   ASSERT_LT(timing_msg.get_image,                 1200);
