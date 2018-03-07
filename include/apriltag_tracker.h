@@ -1,5 +1,5 @@
-#ifndef PROJECT_APRILTAG_TRACKER_H
-#define PROJECT_APRILTAG_TRACKER_H
+#ifndef APRILTAG_TRACKER_H
+#define APRILTAG_TRACKER_H
 
 #include <chrono>
 #include <list>
@@ -24,7 +24,7 @@
 #include <tag.h>
 #include <transforms_cache.h>
 
-namespace AprilTagTracker
+namespace apriltag_tracker
 {
 
 class AprilTagTracker
@@ -61,4 +61,4 @@ private:
 
 }
 
-#endif //PROJECT_APRILTAG_TRACKER_H
+#endif //APRILTAG_TRACKER_H

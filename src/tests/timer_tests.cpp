@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <timers.h>
 
-using namespace AprilTagTracker;
+using namespace apriltag_tracker;
 
 TEST(AprilTagTrackerTimerTests, DefaultTimer)
 {

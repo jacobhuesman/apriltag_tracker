@@ -1,7 +1,7 @@
-#ifndef PROJECT_ERRORS_H
-#define PROJECT_ERRORS_H
+#ifndef APRILTAG_TRACKER_ERRORS_H
+#define APRILTAG_TRACKER_ERRORS_H
 
-namespace AprilTagTracker
+namespace apriltag_tracker
 {
 
 class unable_to_find_transform_error : public std::runtime_error
@@ -12,4 +12,4 @@ public:
 
 }
 
-#endif //PROJECT_ERRORS_H
+#endif //APRILTAG_TRACKER_ERRORS_H

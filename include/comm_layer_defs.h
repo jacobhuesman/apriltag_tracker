@@ -1,5 +1,5 @@
-#ifndef __CL_STATUS_DEF_H__
-#define __CL_STATUS_DEF_H__
+#ifndef CL_STATUS_DEF_H
+#define CL_STATUS_DEF_H
 
 /*
  * Status
@@ -116,4 +116,4 @@ typedef union
   uint32_t               data32;
 } CLMessage32;
 
-#endif //__CL_STATUS_DEF_H__
+#endif //CL_STATUS_DEF_H

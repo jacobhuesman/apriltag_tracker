@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <tag.h>
 
-using namespace AprilTagTracker;
+using namespace apriltag_tracker;
 
 TEST(AprilTagTrackerTagTests, Constructor)
 {

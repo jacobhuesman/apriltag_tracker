@@ -1,5 +1,5 @@
-#ifndef PROJECT_TAG_H
-#define PROJECT_TAG_H
+#ifndef APRILTAG_TRACKER_TAG_H
+#define APRILTAG_TRACKER_TAG_H
 
 #include <list>
 
@@ -10,7 +10,7 @@
 #include <transform.h>
 #include <errors.h>
 
-namespace AprilTagTracker
+namespace apriltag_tracker
 {
 
 class Tag
@@ -52,7 +52,7 @@ private:
 
   int list_size;
   tf2::Transform map_to_tag_tf;
-  std::list<AprilTagTracker::Transform> transforms;
+  std::list<apriltag_tracker::Transform> transforms;
 };
 
 }

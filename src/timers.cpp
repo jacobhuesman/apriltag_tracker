@@ -1,19 +1,19 @@
 #include <timers.h>
 
-void AprilTagTracker::Timer::start()
+void apriltag_tracker::Timer::start()
 {
   started = true;
   ready = false;
   start_time = std::chrono::system_clock::now();
 }
 
-void AprilTagTracker::Timer::stop()
+void apriltag_tracker::Timer::stop()
 {
   ready = true;
   end_time = std::chrono::system_clock::now();
 }
 
-long AprilTagTracker::Timer::getTime()
+long apriltag_tracker::Timer::getTime()
 {
   if (ready && started)
   {
@@ -22,7 +22,7 @@ long AprilTagTracker::Timer::getTime()
   return 0;
 }
 
-long AprilTagTracker::Timers::getTotalTime()
+long apriltag_tracker::Timers::getTotalTime()
 {
   long total_time = 0;
   total_time += this->get_image.getTime();
@@ -38,7 +38,7 @@ long AprilTagTracker::Timers::getTotalTime()
   return total_time;
 }
 
-long AprilTagTracker::Timers::getProcessingTime()
+long apriltag_tracker::Timers::getProcessingTime()
 {
   long processing_time = 0;
   processing_time += this->process_image.getTime();
@@ -53,7 +53,7 @@ long AprilTagTracker::Timers::getProcessingTime()
   return processing_time;
 }
 
-apriltag_tracker::ATTLocalTiming AprilTagTracker::Timers::getTimingMsg()
+apriltag_tracker::ATTLocalTiming apriltag_tracker::Timers::getTimingMsg()
 {
   apriltag_tracker::ATTLocalTiming timing_msg;
   timing_msg.get_image = this->get_image.getTime();

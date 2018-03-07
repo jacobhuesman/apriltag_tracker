@@ -3,14 +3,14 @@
 #include <camera_info.h>
 #include <errors.h>
 
-using namespace AprilTagTracker;
+using namespace apriltag_tracker;
 
 TEST(AprilTagTrackerTests, TrivialTest)
 {
   ASSERT_EQ(true, true);
 }
 
-AprilTagTracker::AprilTagTracker buildAprilTagTracker()
+apriltag_tracker::AprilTagTracker buildAprilTagTracker()
 {
   // Create properties object
   apriltag_tracker::CameraInfo *properties = new apriltag_tracker::CameraInfo;
@@ -34,7 +34,7 @@ AprilTagTracker::AprilTagTracker buildAprilTagTracker()
   map_to_tag02_tf.setRotation(q);
 
   // Initialize transforms cache
-  AprilTagTracker::TransformsCache transforms;
+  apriltag_tracker::TransformsCache transforms;
 
   q.setRPY(-M_PI_2, 0, -M_PI_2);
   tf2::Transform servo_joint_to_optical_link_tf;
@@ -48,12 +48,12 @@ AprilTagTracker::AprilTagTracker buildAprilTagTracker()
   base_link_to_servo_base_link_tf.setOrigin(tf2::Vector3(-0.4191, 0.0, 0.0));
   transforms.servo_base_link_to_base_link = base_link_to_servo_base_link_tf.inverse();
 
-  return AprilTagTracker::AprilTagTracker(properties, tag_info, transforms);
+  return apriltag_tracker::AprilTagTracker(properties, tag_info, transforms);
 }
 
 TEST(AprilTagTrackerTests, Constructor)
 {
-  AprilTagTracker::AprilTagTracker tracker = buildAprilTagTracker();
+  apriltag_tracker::AprilTagTracker tracker = buildAprilTagTracker();
 
   ASSERT_THROW(tracker.getTransform(), unable_to_find_transform_error);
 }

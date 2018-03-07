@@ -1,6 +1,6 @@
 #include <tag.h>
 
-using namespace AprilTagTracker;
+using namespace apriltag_tracker;
 
 Tag::Tag(int id, int priority, double size)
 {
