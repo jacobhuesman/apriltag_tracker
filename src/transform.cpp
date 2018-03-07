@@ -1,6 +1,6 @@
 #include <transform.h>
 
-using namespace AprilTagTracker;
+using namespace apriltag_tracker;
 
 Transform::Transform(TagDetection detection, tf2::Stamped<tf2::Transform> tag_tf, tf2::Stamped<tf2::Transform> servo_tf,
                      tf2::Transform map_to_tag_tf, CompareType* compare_mode)

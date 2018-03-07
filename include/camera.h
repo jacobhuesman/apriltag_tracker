@@ -1,5 +1,5 @@
-#ifndef PROJECT_APRILTAG_TRACKER_CAMERA_H
-#define PROJECT_APRILTAG_TRACKER_CAMERA_H
+#ifndef APRILTAG_TRACKER_CAMERA_H
+#define APRILTAG_TRACKER_CAMERA_H
 
 #include <boost/thread/thread.hpp>
 #include <opencv2/opencv.hpp>
@@ -86,4 +86,4 @@ private:
 
 }
 
-#endif //PROJECT_APRILTAG_TRACKER_CAMERA_H
+#endif //APRILTAG_TRACKER_CAMERA_H

@@ -1,19 +1,21 @@
 #include <timers.h>
 
-void AprilTagTracker::Timer::start()
+using namespace apriltag_tracker;
+
+void Timer::start()
 {
   started = true;
   ready = false;
   start_time = std::chrono::system_clock::now();
 }
 
-void AprilTagTracker::Timer::stop()
+void Timer::stop()
 {
   ready = true;
   end_time = std::chrono::system_clock::now();
 }
 
-long AprilTagTracker::Timer::getTime()
+long Timer::getTime()
 {
   if (ready && started)
   {
@@ -22,7 +24,7 @@ long AprilTagTracker::Timer::getTime()
   return 0;
 }
 
-long AprilTagTracker::Timers::getTotalTime()
+long Timers::getTotalTime()
 {
   long total_time = 0;
   total_time += this->get_image.getTime();
@@ -38,7 +40,7 @@ long AprilTagTracker::Timers::getTotalTime()
   return total_time;
 }
 
-long AprilTagTracker::Timers::getProcessingTime()
+long Timers::getProcessingTime()
 {
   long processing_time = 0;
   processing_time += this->process_image.getTime();
@@ -53,9 +55,9 @@ long AprilTagTracker::Timers::getProcessingTime()
   return processing_time;
 }
 
-apriltag_tracker::ATTLocalTiming AprilTagTracker::Timers::getTimingMsg()
+ATTLocalTiming Timers::getTimingMsg()
 {
-  apriltag_tracker::ATTLocalTiming timing_msg;
+  ATTLocalTiming timing_msg;
   timing_msg.get_image = this->get_image.getTime();
   timing_msg.process_image = this->process_image.getTime();
   timing_msg.adjust_servo = this->adjust_servo.getTime();

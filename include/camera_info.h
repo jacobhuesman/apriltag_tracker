@@ -1,5 +1,5 @@
-#ifndef PROJECT_CAMERA_INFO_H
-#define PROJECT_CAMERA_INFO_H
+#ifndef APRILTAG_TRACKER_CAMERA_INFO_H
+#define APRILTAG_TRACKER_CAMERA_INFO_H
 
 #include <opencv2/opencv.hpp>
 
@@ -45,4 +45,4 @@ struct CameraInfo
 
 }
 
-#endif //PROJECT_CAMERA_INFO_H
+#endif //APRILTAG_TRACKER_CAMERA_INFO_H

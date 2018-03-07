@@ -2,7 +2,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 
-using namespace AprilTagTracker;
+using namespace apriltag_tracker;
 
 void TransformsCache::initializeTagVector(std::vector<Tag> *tag_info)
 {

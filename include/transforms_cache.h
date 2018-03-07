@@ -1,11 +1,11 @@
-#ifndef PROJECT_TRANSFORMS_CACHE_H
-#define PROJECT_TRANSFORMS_CACHE_H
+#ifndef APRILTAG_TRACKER_TRANSFORMS_CACHE_H
+#define APRILTAG_TRACKER_TRANSFORMS_CACHE_H
 
 #include <tf2/transform_datatypes.h>
 #include <tf2_ros/transform_listener.h>
 #include <tag.h>
 
-namespace AprilTagTracker
+namespace apriltag_tracker
 {
 
 class TransformsCache
@@ -21,4 +21,4 @@ public:
 
 }
 
-#endif //PROJECT_TRANSFORMS_CACHE_H
+#endif //APRILTAG_TRACKER_TRANSFORMS_CACHE_H

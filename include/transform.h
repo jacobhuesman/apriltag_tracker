@@ -1,5 +1,5 @@
-#ifndef PROJECT_TRANSFORM_H
-#define PROJECT_TRANSFORM_H
+#ifndef APRILTAG_TRACKER_TRANSFORM_H
+#define APRILTAG_TRACKER_TRANSFORM_H
 
 #include <tf2/transform_datatypes.h>
 #include <tf2/LinearMath/Transform.h>
@@ -7,7 +7,7 @@
 #include <TagDetection.h>
 
 
-namespace AprilTagTracker
+namespace apriltag_tracker
 {
 
 enum class CompareType
@@ -46,4 +46,4 @@ private:
 
 }
 
-#endif //PROJECT_TRANSFORM_H
+#endif //APRILTAG_TRACKER_TRANSFORM_H

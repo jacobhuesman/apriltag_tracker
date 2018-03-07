@@ -5,7 +5,7 @@
 #include <transform.h>
 
 using namespace HostCommLayer;
-using namespace AprilTagTracker;
+using namespace apriltag_tracker;
 using testing::_;
 
 class MockI2c : public I2cInterface

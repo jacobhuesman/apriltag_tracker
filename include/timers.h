@@ -1,11 +1,11 @@
-#ifndef PROJECT_TIMER_H
-#define PROJECT_TIMER_H
+#ifndef APRILTAG_TRACKER_TIMER_H
+#define APRILTAG_TRACKER_TIMER_H
 
 #include <chrono>
 #include <vector>
 #include <apriltag_tracker/ATTLocalTiming.h>
 
-namespace AprilTagTracker
+namespace apriltag_tracker
 {
 
 class Timer

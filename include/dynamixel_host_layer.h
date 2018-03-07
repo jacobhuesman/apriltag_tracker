@@ -1,5 +1,5 @@
-#ifndef PROJECT_HOST_COMM_LAYER_H
-#define PROJECT_HOST_COMM_LAYER_H
+#ifndef DYNAMIXEL_HOST_LAYER_H
+#define DYNAMIXEL_HOST_LAYER_H
 
 #include <cstdint>
 #include <cmath>
@@ -74,4 +74,4 @@ namespace HostCommLayer
 }
 
 
-#endif //PROJECT_HOST_COMM_LAYER_H
+#endif //DYNAMIXEL_HOST_LAYER_H

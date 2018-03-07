@@ -3,10 +3,10 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <errors.h>
 
-namespace AprilTagTracker
+namespace apriltag_tracker
 {
 
-AprilTagTracker::AprilTagTracker(apriltag_tracker::CameraInfo *camera_info, std::vector<Tag> *tag_info,
+AprilTagTracker::AprilTagTracker(CameraInfo *camera_info, std::vector<Tag> *tag_info,
                                  TransformsCache transforms)
 {
   // TODO use dynamic reconfigure
