@@ -76,7 +76,7 @@ TEST(AprilTagTrackerTagTests, Add20Transforms)
 
   std::vector<Transform> data = test.getTransforms();
 
-  ASSERT_EQ(15, data.size());
+  ASSERT_EQ(10, data.size());
   ASSERT_EQ(20, test.getSeq());
   ASSERT_EQ(19, data[0].getTagTf().getOrigin().getX());
   ASSERT_EQ(18, data[1].getTagTf().getOrigin().getX());
@@ -143,7 +143,7 @@ TEST(AprilTagTrackerTagTests, GetMedianFilteredTransform)
 
   std::vector<Transform> data = test.getTransforms();
 
-  ASSERT_EQ(15, data.size());
+  ASSERT_EQ(10, data.size());
   ASSERT_EQ(15, test.getSeq());
   ASSERT_NEAR(0.5, test.getMedianFilteredTransform().getTagTheta(), 1e-10);
 }
@@ -151,11 +151,12 @@ TEST(AprilTagTrackerTagTests, GetMedianFilteredTransform)
 TEST(AprilTagTrackerTagTests, GetMovingAverageTransform)
 {
   Tag test(1, 1, 1.0);
+  ros::Time::init();
 
   tf2::Stamped<tf2::Transform> servo_tf;
   TagDetection detection;
   tf2::Stamped<tf2::Transform> tag_tf;
-  tf2::Quaternion q;
+  tag_tf.stamp_ = ros::Time::now();
   tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf,  1);
   tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf,  2);
   tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf,  3);
@@ -174,19 +175,20 @@ TEST(AprilTagTrackerTagTests, GetMovingAverageTransform)
 
   std::vector<Transform> data = test.getTransforms();
 
-  ASSERT_EQ(15, data.size());
+  ASSERT_EQ(10, data.size());
   ASSERT_EQ(15, test.getSeq());
-  ASSERT_NEAR(2.0/15.0, test.getMovingAverageTransform().getTagTf().getOrigin().getX(), 1e-10);
+  ASSERT_NEAR(2.0/10.0, test.getMovingAverageTransform().getTagTf().getOrigin().getX(), 1e-10);
 }
 
 TEST(AprilTagTrackerTagTests, GetMovingAverageTransform5)
 {
   Tag test(1, 1, 1.0);
+  ros::Time::init();
 
   tf2::Stamped<tf2::Transform> servo_tf;
   TagDetection detection;
   tf2::Stamped<tf2::Transform> tag_tf;
-  tf2::Quaternion q;
+  tag_tf.stamp_ = ros::Time::now();
   tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf,  1);
   tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf,  2);
   tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf,  3);
@@ -205,7 +207,7 @@ TEST(AprilTagTrackerTagTests, GetMovingAverageTransform5)
 
   std::vector<Transform> data = test.getTransforms();
 
-  ASSERT_EQ(15, data.size());
+  ASSERT_EQ(10, data.size());
   ASSERT_EQ(15, test.getSeq());
   ASSERT_NEAR(2.0/5.0, test.getMovingAverageTransform(5).getTagTf().getOrigin().getX(), 1e-10);
 }
@@ -213,16 +215,17 @@ TEST(AprilTagTrackerTagTests, GetMovingAverageTransform5)
 TEST(AprilTagTrackerTagTests, GetAngleFromCenterMostRecent)
 {
   Tag test(1, 1, 1.0);
+  ros::Time::init();
 
   tf2::Stamped<tf2::Transform> servo_tf;
   TagDetection detection;
   tf2::Stamped<tf2::Transform> tag_tf;
-  tf2::Quaternion q;
-  tag_tf.setOrigin(tf2::Vector3(0.0, 1.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf,  1);
-  tag_tf.setOrigin(tf2::Vector3(0.0, 1.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf,  2);
-  tag_tf.setOrigin(tf2::Vector3(0.0, 1.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf,  3);
-  tag_tf.setOrigin(tf2::Vector3(0.0, 1.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf,  4);
-  tag_tf.setOrigin(tf2::Vector3(1.0, 1.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf,  5);
+  tag_tf.stamp_ = ros::Time::now();
+  tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 1.0)); test.addTransform(detection, tag_tf, servo_tf,  1);
+  tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 1.0)); test.addTransform(detection, tag_tf, servo_tf,  2);
+  tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 1.0)); test.addTransform(detection, tag_tf, servo_tf,  3);
+  tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 1.0)); test.addTransform(detection, tag_tf, servo_tf,  4);
+  tag_tf.setOrigin(tf2::Vector3(1.0, 0.0, 1.0)); test.addTransform(detection, tag_tf, servo_tf,  5);
 
   std::vector<Transform> data = test.getTransforms();
 
@@ -232,28 +235,30 @@ TEST(AprilTagTrackerTagTests, GetAngleFromCenterMostRecent)
 TEST(AprilTagTrackerTagTests, GetAngleFromCenterFiltered)
 {
   Tag test(1, 1, 1.0);
+  ros::Time::init();
 
   tf2::Stamped<tf2::Transform> servo_tf;
   TagDetection detection;
   tf2::Stamped<tf2::Transform> tag_tf;
-  tag_tf.setOrigin(tf2::Vector3(1.0, 1.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf, 1);
-  tag_tf.setOrigin(tf2::Vector3(1.0, 1.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf, 2);
-  tag_tf.setOrigin(tf2::Vector3(1.0, 1.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf, 3);
-  tag_tf.setOrigin(tf2::Vector3(1.0, 1.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf, 4);
+  tag_tf.stamp_ = ros::Time::now();
+  tag_tf.setOrigin(tf2::Vector3(1.0, 0.0, 1.0)); test.addTransform(detection, tag_tf, servo_tf, 1);
+  tag_tf.setOrigin(tf2::Vector3(1.0, 0.0, 1.0)); test.addTransform(detection, tag_tf, servo_tf, 2);
+  tag_tf.setOrigin(tf2::Vector3(1.0, 0.0, 1.0)); test.addTransform(detection, tag_tf, servo_tf, 3);
+  tag_tf.setOrigin(tf2::Vector3(1.0, 0.0, 1.0)); test.addTransform(detection, tag_tf, servo_tf, 4);
 
   ASSERT_NEAR(M_PI_4, test.getAngleFromCenter(4), 1e-10);
 
-  tag_tf.setOrigin(tf2::Vector3(-1.0, 1.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf, 5);
-  tag_tf.setOrigin(tf2::Vector3(-1.0, 1.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf, 6);
-  tag_tf.setOrigin(tf2::Vector3(1.0, 1.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf,  7);
-  tag_tf.setOrigin(tf2::Vector3(1.0, 1.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf,  8);
+  tag_tf.setOrigin(tf2::Vector3(-1.0, 0.0, 1.0)); test.addTransform(detection, tag_tf, servo_tf, 5);
+  tag_tf.setOrigin(tf2::Vector3(-1.0, 0.0, 1.0)); test.addTransform(detection, tag_tf, servo_tf, 6);
+  tag_tf.setOrigin(tf2::Vector3( 1.0, 0.0, 1.0)); test.addTransform(detection, tag_tf, servo_tf,  7);
+  tag_tf.setOrigin(tf2::Vector3( 1.0, 0.0, 1.0)); test.addTransform(detection, tag_tf, servo_tf,  8);
 
   ASSERT_NEAR(0.0, test.getAngleFromCenter(4), 1e-10);
 
-  tag_tf.setOrigin(tf2::Vector3(-1.0, 1.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf, 5);
-  tag_tf.setOrigin(tf2::Vector3(-1.0, 1.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf, 6);
-  tag_tf.setOrigin(tf2::Vector3(-1.0, 1.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf, 7);
-  tag_tf.setOrigin(tf2::Vector3(-1.0, 1.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf, 8);
+  tag_tf.setOrigin(tf2::Vector3(-1.0, 0.0, 1.0)); test.addTransform(detection, tag_tf, servo_tf, 5);
+  tag_tf.setOrigin(tf2::Vector3(-1.0, 0.0, 1.0)); test.addTransform(detection, tag_tf, servo_tf, 6);
+  tag_tf.setOrigin(tf2::Vector3(-1.0, 0.0, 1.0)); test.addTransform(detection, tag_tf, servo_tf, 7);
+  tag_tf.setOrigin(tf2::Vector3(-1.0, 0.0, 1.0)); test.addTransform(detection, tag_tf, servo_tf, 8);
 
   ASSERT_NEAR(-M_PI_4, test.getAngleFromCenter(4), 1e-10);
 }
@@ -261,16 +266,17 @@ TEST(AprilTagTrackerTagTests, GetAngleFromCenterFiltered)
 TEST(AprilTagTrackerTagTests, GetAngleFromCenterExceptionWhenUnloaded)
 {
   Tag test(1, 1, 1.0);
+  ros::Time::init();
 
   tf2::Stamped<tf2::Transform> servo_tf;
   TagDetection detection;
   tf2::Stamped<tf2::Transform> tag_tf;
-  tf2::Quaternion q;
-  tag_tf.setOrigin(tf2::Vector3(1.0, 1.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf,  1);
-  tag_tf.setOrigin(tf2::Vector3(1.0, 1.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf,  2);
-  tag_tf.setOrigin(tf2::Vector3(1.0, 1.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf,  3);
-  tag_tf.setOrigin(tf2::Vector3(1.0, 1.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf,  4);
-  tag_tf.setOrigin(tf2::Vector3(1.0, 1.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf,  5);
+  tag_tf.stamp_ = ros::Time::now();
+  tag_tf.setOrigin(tf2::Vector3(1.0, 0.0, 1.0)); test.addTransform(detection, tag_tf, servo_tf,  1);
+  tag_tf.setOrigin(tf2::Vector3(1.0, 0.0, 1.0)); test.addTransform(detection, tag_tf, servo_tf,  2);
+  tag_tf.setOrigin(tf2::Vector3(1.0, 0.0, 1.0)); test.addTransform(detection, tag_tf, servo_tf,  3);
+  tag_tf.setOrigin(tf2::Vector3(1.0, 0.0, 1.0)); test.addTransform(detection, tag_tf, servo_tf,  4);
+  tag_tf.setOrigin(tf2::Vector3(1.0, 0.0, 1.0)); test.addTransform(detection, tag_tf, servo_tf,  5);
 
   std::vector<Transform> data = test.getTransforms();
 
@@ -281,11 +287,12 @@ TEST(AprilTagTrackerTagTests, GetAngleFromCenterExceptionWhenUnloaded)
 TEST(AprilTagTrackerTagTests, GetAngleFromCenterOrdering)
 {
   Tag test(1, 1, 1.0);
+  ros::Time::init();
 
   tf2::Stamped<tf2::Transform> servo_tf;
   TagDetection detection;
   tf2::Stamped<tf2::Transform> tag_tf;
-  tf2::Quaternion q;
+  tag_tf.stamp_ = ros::Time::now();
   tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf,  1);
   tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf,  2);
   tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf,  3);
@@ -296,11 +303,11 @@ TEST(AprilTagTrackerTagTests, GetAngleFromCenterOrdering)
   tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf,  8);
   tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf,  9);
   tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf, 10);
-  tag_tf.setOrigin(tf2::Vector3(1.0, 1.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf, 11);
-  tag_tf.setOrigin(tf2::Vector3(1.0, 1.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf, 12);
-  tag_tf.setOrigin(tf2::Vector3(1.0, 1.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf, 13);
-  tag_tf.setOrigin(tf2::Vector3(1.0, 1.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf, 14);
-  tag_tf.setOrigin(tf2::Vector3(1.0, 1.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf, 15);
+  tag_tf.setOrigin(tf2::Vector3(1.0, 0.0, 1.0)); test.addTransform(detection, tag_tf, servo_tf, 11);
+  tag_tf.setOrigin(tf2::Vector3(1.0, 0.0, 1.0)); test.addTransform(detection, tag_tf, servo_tf, 12);
+  tag_tf.setOrigin(tf2::Vector3(1.0, 0.0, 1.0)); test.addTransform(detection, tag_tf, servo_tf, 13);
+  tag_tf.setOrigin(tf2::Vector3(1.0, 0.0, 1.0)); test.addTransform(detection, tag_tf, servo_tf, 14);
+  tag_tf.setOrigin(tf2::Vector3(1.0, 0.0, 1.0)); test.addTransform(detection, tag_tf, servo_tf, 15);
 
   std::vector<Transform> data = test.getTransforms();
 
