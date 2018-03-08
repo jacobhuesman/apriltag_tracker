@@ -12,6 +12,10 @@
 #include <geometry_msgs/TransformStamped.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
+#include <dynamic_reconfigure/server.h>
+#include <apriltag_tracker/DynamicServoConfig.h>
+
+
 namespace apriltag_tracker
 {
   class I2cInterface
@@ -70,6 +74,9 @@ namespace apriltag_tracker
     unsigned int seq;
     std::string frame_id;
     std::string child_frame_id;
+
+    dynamic_reconfigure::Server<apriltag_tracker::DynamicServoConfig> *server;
+    void reconfigureCallback(apriltag_tracker::DynamicServoConfig &config, uint32_t level);
   };
 }
 

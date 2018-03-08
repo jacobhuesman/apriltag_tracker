@@ -98,9 +98,11 @@ target_link_libraries(AprilTagTracker apriltags)
 target_link_libraries(AprilTagTracker CameraInfo)
 target_link_libraries(AprilTagTracker Tag)
 
-add_library(HostCommLayer src/dynamixel.cpp)
-target_link_libraries(HostCommLayer mraa)
-target_link_libraries(HostCommLayer ${catkin_LIBRARIES})
+add_library(Dynamixel src/dynamixel.cpp)
+add_dependencies(Dynamixel ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(Dynamixel ${PROJECT_NAME}_gencfg)
+target_link_libraries(Dynamixel mraa)
+target_link_libraries(Dynamixel ${catkin_LIBRARIES})
 
 ############
 # Programs #
@@ -111,12 +113,12 @@ target_link_libraries(apriltag_tracker ${catkin_LIBRARIES})
 target_link_libraries(apriltag_tracker ${OpenCV_LIBS})
 target_link_libraries(apriltag_tracker AprilTagTracker)
 target_link_libraries(apriltag_tracker Camera)
-target_link_libraries(apriltag_tracker HostCommLayer)
+target_link_libraries(apriltag_tracker Dynamixel)
 target_link_libraries(apriltag_tracker Timers)
 target_link_libraries(apriltag_tracker TransformsCache)
 
 add_executable(comm_tool src/util/comm_tool.cpp)
-target_link_libraries(comm_tool HostCommLayer)
+target_link_libraries(comm_tool Dynamixel)
 
 add_executable(speed_test src/util/speed_test.cpp)
 
@@ -136,7 +138,7 @@ target_link_libraries(transforms_publisher ${catkin_LIBRARIES})
 catkin_add_gtest(servo_tests src/tests/servo_tests.cpp)
 if(TARGET servo_tests)
   target_link_libraries(servo_tests ${catkin_LIBRARIES})
-  target_link_libraries(servo_tests HostCommLayer)
+  target_link_libraries(servo_tests Dynamixel)
   target_link_libraries(servo_tests Transform)
   target_link_libraries(servo_tests gmock_main)
 endif()

@@ -9,6 +9,11 @@ Dynamixel::Dynamixel(uint8_t i2c_address) : Dynamixel(new MraaI2c(0, i2c_address
 
 Dynamixel::Dynamixel(I2cInterface *interface)
 {
+  server = new dynamic_reconfigure::Server<DynamicServoConfig>;
+  dynamic_reconfigure::Server<DynamicServoConfig>::CallbackType f;
+  f = boost::bind(&Dynamixel::reconfigureCallback, this, _1, _2 );
+  server->setCallback(f);
+
   this->i2c = interface;
   seq = 0;
   transform.setOrigin(tf2::Vector3(24.15e-3, 0.0, 32.5e-3));
@@ -21,6 +26,12 @@ Dynamixel::Dynamixel(I2cInterface *interface)
   v_s = 86.0297; // Conversion from rad/s to servo units
   current_position = 512;
   current_velocity = 0;
+}
+
+void Dynamixel::reconfigureCallback(DynamicServoConfig &config, uint32_t level)
+{
+  ROS_INFO("Reconfigure request - Max Velocity: %f", config.max_velocity);
+  this->max_velocity = config.max_velocity;
 }
 
 uint8_t Dynamixel::computeChecksum(CLMessage32 message)
