@@ -25,7 +25,8 @@ CameraMaster::CameraMaster(ros::NodeHandle nh)
 }
 
 // TODO add setCaptureSize?
-void CameraMaster::reconfigureCallback(DynamicCameraConfig &config, uint32_t level) {
+void CameraMaster::reconfigureCallback(DynamicCameraConfig &config, uint32_t level)
+{
   ROS_INFO("Reconfigure - Height: %d,  Width: %d, Brightness: %d, Contrast: %d, Shutter Speed: %d, "
                "FPS: %d, Video Stabilization: %s",
            config.height, config.width, config.brightness, config.contrast,
