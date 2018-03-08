@@ -38,6 +38,7 @@ generate_messages(DEPENDENCIES
 generate_dynamic_reconfigure_options(
     cfg/TFTest.cfg
     cfg/DynamicCamera.cfg
+    cfg/DynamicServo.cfg
 )
 
 catkin_package(
@@ -97,7 +98,7 @@ target_link_libraries(AprilTagTracker apriltags)
 target_link_libraries(AprilTagTracker CameraInfo)
 target_link_libraries(AprilTagTracker Tag)
 
-add_library(HostCommLayer src/dynamixel_host_layer.cpp)
+add_library(HostCommLayer src/dynamixel.cpp)
 target_link_libraries(HostCommLayer mraa)
 target_link_libraries(HostCommLayer ${catkin_LIBRARIES})
 

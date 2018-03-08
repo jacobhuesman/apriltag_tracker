@@ -1,8 +1,8 @@
-#include <dynamixel_host_layer.h>
+#include <dynamixel.h>
 #include <comm_layer_defs.h>
 #include <iostream>
 
-namespace HostCommLayer
+namespace apriltag_tracker
 {
 
 Dynamixel::Dynamixel(uint8_t i2c_address) : Dynamixel(new MraaI2c(0, i2c_address)) {}
