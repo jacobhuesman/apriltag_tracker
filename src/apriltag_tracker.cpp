@@ -7,12 +7,14 @@ namespace apriltag_tracker
 {
 
 AprilTagTracker::AprilTagTracker(CameraInfo *camera_info, std::vector<Tag> *tag_info,
-                                 TransformsCache transforms)
+                                 AprilTagTrackerConfig *tracker_config, TransformsCache transforms)
 {
-  // TODO use dynamic reconfigure
+  this->tracker_config = tracker_config;
+
+  TagDetectorParams tag_params;
   tag_params.newQuadAlgorithm = true;
-  //tag_params.adaptiveThresholdValue = 12; //TODO figure out what this means and parametrize
-  //tag_params.adaptiveThresholdValue = 20; //TODO figure out what this means and parametrize
+  //tag_params.adaptiveThresholdValue = 12; //TODO optimize these gains
+  //tag_params.adaptiveThresholdValue = 20; //TODO optimize these gains
   tag_family = new TagFamily("Tag36h11");
   tag_detector = new TagDetector(*tag_family, tag_params);
 
@@ -275,8 +277,10 @@ Transform AprilTagTracker::getTransform()
   }
   if (tag1 != -1 && tag2 != -1)
   {
-    return performThetaCorrection((*tag_info)[tag1].getMovingAverageTransform(),
-                                  (*tag_info)[tag2].getMovingAverageTransform(),
+    double dt = this->tracker_config->getMaxDt();
+    int f_sz = this->tracker_config->getFilterSize();
+    return performThetaCorrection((*tag_info)[tag1].getMovingAverageTransform(f_sz, dt),
+                                  (*tag_info)[tag2].getMovingAverageTransform(f_sz, dt),
                                   (*tag_info)[tag1].getMapToTagTf(), (*tag_info)[tag2].getMapToTagTf());
   }
   else
@@ -314,6 +318,33 @@ void AprilTagTracker::estimateRobotPose(geometry_msgs::PoseStamped *pose_estimat
   }
 }
 
+AprilTagTrackerConfig::AprilTagTrackerConfig()
+{
+  this->filter_size = 10;
+  this->max_dt = 1.0;
+
+  server = new dynamic_reconfigure::Server<DynamicAprilTagTrackerConfig>;
+  dynamic_reconfigure::Server<DynamicAprilTagTrackerConfig>::CallbackType f;
+  f = boost::bind(&AprilTagTrackerConfig::reconfigureCallback, this, _1, _2 );
+  server->setCallback(f);
+}
+
+int AprilTagTrackerConfig::getFilterSize()
+{
+  return filter_size;
+}
+
+double AprilTagTrackerConfig::getMaxDt()
+{
+  return max_dt;
+}
+
+void AprilTagTrackerConfig::reconfigureCallback(apriltag_tracker::DynamicAprilTagTrackerConfig &config, uint32_t level)
+{
+  ROS_INFO("Reconfigure - Filter Size: %i, Max Dt: %f", config.filter_size, config.max_dt);
+  this->filter_size = config.filter_size;
+  this->max_dt = config.max_dt;
+}
 }
 
 

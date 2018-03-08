@@ -39,6 +39,7 @@ generate_dynamic_reconfigure_options(
     cfg/TFTest.cfg
     cfg/DynamicCamera.cfg
     cfg/DynamicServo.cfg
+    cfg/DynamicAprilTagTracker.cfg
 )
 
 catkin_package(
@@ -90,6 +91,7 @@ target_link_libraries(TransformsCache Tag)
 
 add_library(AprilTagTracker src/apriltag_tracker.cpp)
 add_dependencies(AprilTagTracker ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(Camera ${PROJECT_NAME}_gencfg)
 target_link_libraries(AprilTagTracker raspicam ${raspicam_LIBS})
 target_link_libraries(AprilTagTracker ${Eigen3_LIBS})
 target_link_libraries(AprilTagTracker ${catkin_LIBRARIES})

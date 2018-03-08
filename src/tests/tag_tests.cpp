@@ -76,7 +76,7 @@ TEST(AprilTagTrackerTagTests, Add20Transforms)
 
   std::vector<Transform> data = test.getTransforms();
 
-  ASSERT_EQ(10, data.size());
+  ASSERT_EQ(20, data.size());
   ASSERT_EQ(20, test.getSeq());
   ASSERT_EQ(19, data[0].getTagTf().getOrigin().getX());
   ASSERT_EQ(18, data[1].getTagTf().getOrigin().getX());
@@ -143,7 +143,7 @@ TEST(AprilTagTrackerTagTests, GetMedianFilteredTransform)
 
   std::vector<Transform> data = test.getTransforms();
 
-  ASSERT_EQ(10, data.size());
+  ASSERT_EQ(15, data.size());
   ASSERT_EQ(15, test.getSeq());
   ASSERT_NEAR(0.5, test.getMedianFilteredTransform().getTagTheta(), 1e-10);
 }
@@ -172,12 +172,17 @@ TEST(AprilTagTrackerTagTests, GetMovingAverageTransform)
   tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf, 13);
   tag_tf.setOrigin(tf2::Vector3(1.0, 0.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf, 14);
   tag_tf.setOrigin(tf2::Vector3(1.0, 0.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf, 15);
+  tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf, 16);
+  tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf, 17);
+  tag_tf.setOrigin(tf2::Vector3(0.0, 0.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf, 18);
+  tag_tf.setOrigin(tf2::Vector3(1.0, 0.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf, 19);
+  tag_tf.setOrigin(tf2::Vector3(1.0, 0.0, 0.0)); test.addTransform(detection, tag_tf, servo_tf, 20);
 
   std::vector<Transform> data = test.getTransforms();
 
-  ASSERT_EQ(10, data.size());
-  ASSERT_EQ(15, test.getSeq());
-  ASSERT_NEAR(2.0/10.0, test.getMovingAverageTransform().getTagTf().getOrigin().getX(), 1e-10);
+  ASSERT_EQ(20, data.size());
+  ASSERT_EQ(20, test.getSeq());
+  ASSERT_NEAR(4.0/20.0, test.getMovingAverageTransform().getTagTf().getOrigin().getX(), 1e-10);
 }
 
 TEST(AprilTagTrackerTagTests, GetMovingAverageTransform5)
@@ -207,7 +212,7 @@ TEST(AprilTagTrackerTagTests, GetMovingAverageTransform5)
 
   std::vector<Transform> data = test.getTransforms();
 
-  ASSERT_EQ(10, data.size());
+  ASSERT_EQ(15, data.size());
   ASSERT_EQ(15, test.getSeq());
   ASSERT_NEAR(2.0/5.0, test.getMovingAverageTransform(5).getTagTf().getOrigin().getX(), 1e-10);
 }

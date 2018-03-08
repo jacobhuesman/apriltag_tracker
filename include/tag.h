@@ -33,6 +33,7 @@ public:
   std::vector<Transform> getTransforms();
   Transform getMovingAverageTransform();
   Transform getMovingAverageTransform(int number_of_transforms);
+  Transform getMovingAverageTransform(int number_of_transforms, double max_dt);
   Transform getMedianMovingAverageTransform();
   Transform getMedianFilteredTransform();
   Transform getMostRecentTransform();

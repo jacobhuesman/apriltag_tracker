@@ -9,7 +9,7 @@ Tag::Tag(int id, int priority, double size)
   this->size = size;
   this->mutex = new boost::mutex;
   this->seq = 0;
-  this->list_size = 10;
+  this->list_size = 20;
   this->compare_mode = CompareType::distance;
 }
 
@@ -61,7 +61,7 @@ Transform Tag::getMedianFilteredTransform()
   return *it;
 }
 
-Transform Tag::getMovingAverageTransform(int n_tf)
+Transform Tag::getMovingAverageTransform(int n_tf, double max_dt)
 {
   mutex->lock();
   // Flush old detections
@@ -71,7 +71,7 @@ Transform Tag::getMovingAverageTransform(int n_tf)
   for (int i = 0; i < transforms.size(); i++, it++)
   {
     ros::Duration time_diff(ros::Time::now() - it->getTagTf().stamp_);
-    if (time_diff > ros::Duration(1.5))
+    if (time_diff > ros::Duration(max_dt))
     {
       clean = true;
       good_tfs = i;
@@ -119,6 +119,11 @@ Transform Tag::getMovingAverageTransform(int n_tf)
   // TODO average the Quaternions?
   return Transform(tag_transform.getDetection(), tag_tf, tag_transform.getServoTf(), tag_transform.getMapToTagTf(),
                    &(this->compare_mode));
+}
+
+Transform Tag::getMovingAverageTransform(int n_tf)
+{
+  return Tag::getMovingAverageTransform(n_tf, 1.0);
 }
 
 Transform Tag::getMovingAverageTransform()

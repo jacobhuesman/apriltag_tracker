@@ -66,7 +66,6 @@ namespace apriltag_tracker
     I2cInterface *i2c;
     uint16_t current_position;
     double max_velocity;
-    double current_velocity;
     double v_s;
 
     tf2::Transform transform;
@@ -74,6 +73,9 @@ namespace apriltag_tracker
     unsigned int seq;
     std::string frame_id;
     std::string child_frame_id;
+
+    double current_velocity;
+    bool track_tag;
 
     dynamic_reconfigure::Server<apriltag_tracker::DynamicServoConfig> *server;
     void reconfigureCallback(apriltag_tracker::DynamicServoConfig &config, uint32_t level);

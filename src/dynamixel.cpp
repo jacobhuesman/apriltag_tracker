@@ -9,6 +9,9 @@ Dynamixel::Dynamixel(uint8_t i2c_address) : Dynamixel(new MraaI2c(0, i2c_address
 
 Dynamixel::Dynamixel(I2cInterface *interface)
 {
+  track_tag = false;
+  max_velocity = 0.8;
+
   server = new dynamic_reconfigure::Server<DynamicServoConfig>;
   dynamic_reconfigure::Server<DynamicServoConfig>::CallbackType f;
   f = boost::bind(&Dynamixel::reconfigureCallback, this, _1, _2 );
@@ -22,7 +25,6 @@ Dynamixel::Dynamixel(I2cInterface *interface)
   frame_id = "servo_base_link"; // TODO parametrize
   child_frame_id = "servo_joint"; // TODO parametrize
 
-  max_velocity = 0.8; // TODO parametrize
   v_s = 86.0297; // Conversion from rad/s to servo units
   current_position = 512;
   current_velocity = 0;
@@ -30,8 +32,16 @@ Dynamixel::Dynamixel(I2cInterface *interface)
 
 void Dynamixel::reconfigureCallback(DynamicServoConfig &config, uint32_t level)
 {
-  ROS_INFO("Reconfigure request - Max Velocity: %f", config.max_velocity);
+  ROS_INFO("Reconfigure request - Max Velocity: %f, Track Tag: %s",
+           config.max_velocity, config.track_tag ? "true" : "false");
   this->max_velocity = config.max_velocity;
+  this->track_tag = config.track_tag;
+  if (level == 1 && !this->track_tag)
+  {
+    ROS_INFO("Setting position to: %i", config.set_position);
+    this->setVelocity(50);
+    this->setPosition((uint16_t)config.set_position);
+  }
 }
 
 uint8_t Dynamixel::computeChecksum(CLMessage32 message)
