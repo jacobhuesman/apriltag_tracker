@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
-#include <dynamixel_host_layer.h>
+#include <dynamixel.h>
 #include <comm_layer_defs.h>
 #include <transform.h>
 
-using namespace HostCommLayer;
+using namespace apriltag_tracker;
 using namespace apriltag_tracker;
 using testing::_;
 

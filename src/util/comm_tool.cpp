@@ -4,10 +4,10 @@
 #include <chrono>
 #include <boost/program_options.hpp>
 
-#include <dynamixel_host_layer.h>
+#include <dynamixel.h>
 #include <comm_layer_defs.h>
 
-using namespace HostCommLayer;
+using namespace apriltag_tracker;
 using namespace boost::program_options;
 
 int main(int argc, char *argv[])

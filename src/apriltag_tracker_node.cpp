@@ -16,7 +16,7 @@
 
 #include <apriltag_tracker.h>
 #include <timers.h>
-#include <dynamixel_host_layer.h>
+#include <dynamixel.h>
 #include <camera.h>
 
 using namespace apriltag_tracker;
@@ -33,7 +33,7 @@ Publishers *pubs;
 const bool servo_track_tag = true;
 const bool publish_pose_estimate = true;
 
-void trackerThread(HostCommLayer::Dynamixel *servo, TransformsCache transforms_cache,
+void trackerThread(apriltag_tracker::Dynamixel *servo, TransformsCache transforms_cache,
                    std::vector<Tag> *tag_info, Camera *camera)
 {
   Timers timer;
@@ -97,7 +97,7 @@ void trackerThread(HostCommLayer::Dynamixel *servo, TransformsCache transforms_c
   }
 }
 
-void servoThread(HostCommLayer::Dynamixel *servo, std::vector<apriltag_tracker::Tag> *tag_info)
+void servoThread(apriltag_tracker::Dynamixel *servo, std::vector<apriltag_tracker::Tag> *tag_info)
 {
   ros::Rate rate(30);
   while(ros::ok())
@@ -171,7 +171,7 @@ int main(int argc, char **argv)
   TransformsCache transforms_cache(nh);
 
   // Initialize servo
-  HostCommLayer::Dynamixel *servo = new HostCommLayer::Dynamixel(0x11);
+  apriltag_tracker::Dynamixel *servo = new apriltag_tracker::Dynamixel(0x11);
 
   // Initialize Camera Objects
   CameraMaster camera_master(nh);

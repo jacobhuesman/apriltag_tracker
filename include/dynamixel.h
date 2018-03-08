@@ -12,7 +12,7 @@
 #include <geometry_msgs/TransformStamped.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
-namespace HostCommLayer
+namespace apriltag_tracker
 {
   class I2cInterface
   {
