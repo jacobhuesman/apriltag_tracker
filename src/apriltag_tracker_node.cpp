@@ -164,6 +164,10 @@ int main(int argc, char **argv)
 
   // Initialize servo
   apriltag_tracker::Dynamixel *servo = new apriltag_tracker::Dynamixel(0x11);
+  dynamic_reconfigure::Server<apriltag_tracker::DynamicServoConfig> server;
+  dynamic_reconfigure::Server<DynamicServoConfig>::CallbackType f;
+  f = boost::bind(&Dynamixel::reconfigureCallback, servo, _1, _2 );
+  server.setCallback(f);
 
   // Initialize Camera Objects
   CameraMaster camera_master(nh);
