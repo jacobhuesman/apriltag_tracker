@@ -16,7 +16,7 @@
 
 #include <apriltag_tracker.h>
 #include <timers.h>
-#include <dynamixel_host_layer.h>
+#include <dynamixel.h>
 #include <camera.h>
 
 using namespace apriltag_tracker;
@@ -30,14 +30,12 @@ struct Publishers
 };
 Publishers *pubs;
 
-const bool servo_track_tag = true;
-const bool publish_pose_estimate = true;
-
-void trackerThread(HostCommLayer::Dynamixel *servo, TransformsCache transforms_cache,
-                   std::vector<Tag> *tag_info, Camera *camera)
+void trackerThread(apriltag_tracker::Dynamixel *servo, TransformsCache transforms_cache,
+                   std::vector<Tag> *tag_info, AprilTagTrackerConfig *tracker_config,
+                   Camera *camera)
 {
   Timers timer;
-  AprilTagTracker tracker(camera->getCameraInfo(), tag_info, transforms_cache);
+  AprilTagTracker tracker(camera->getCameraInfo(), tag_info, tracker_config, transforms_cache);
 
   // Note: Entire loop must take less than 33ms
   while(ros::ok())
@@ -62,18 +60,15 @@ void trackerThread(HostCommLayer::Dynamixel *servo, TransformsCache transforms_c
     timer.publish_tag_transforms.stop();
 
     timer.publish_transforms.start();
-    if (publish_pose_estimate)
+    try
     {
-      try
-      {
-        geometry_msgs::PoseStamped pose_estimate_msg;
-        tracker.estimateRobotPose(&pose_estimate_msg);
-        pubs->pose.publish(pose_estimate_msg);
-      }
-      catch (apriltag_tracker::unable_to_find_transform_error &e)
-      {
-        ROS_WARN("%s", e.what());
-      }
+      geometry_msgs::PoseStamped pose_estimate_msg;
+      tracker.estimateRobotPose(&pose_estimate_msg);
+      pubs->pose.publish(pose_estimate_msg);
+    }
+    catch (apriltag_tracker::unable_to_find_transform_error &e)
+    {
+      ROS_WARN("%s", e.what());
     }
     timer.publish_transforms.stop();
 
@@ -97,7 +92,7 @@ void trackerThread(HostCommLayer::Dynamixel *servo, TransformsCache transforms_c
   }
 }
 
-void servoThread(HostCommLayer::Dynamixel *servo, std::vector<apriltag_tracker::Tag> *tag_info)
+void servoThread(apriltag_tracker::Dynamixel *servo, std::vector<apriltag_tracker::Tag> *tag_info)
 {
   ros::Rate rate(30);
   while(ros::ok())
@@ -111,40 +106,37 @@ void servoThread(HostCommLayer::Dynamixel *servo, std::vector<apriltag_tracker::
     {
       ROS_WARN("%s", e.what());
     }
-    if (servo_track_tag)
+    double theta = 0.0;
+    ros::Time last_tag_update;
+    try
     {
-      double theta = 0.0;
-      ros::Time last_tag_update;
+      for (int i = 0; i < tag_info->size(); i++)
+      {
+        if ((*tag_info)[i].getID() == 1)
+        {
+          theta = (*tag_info)[i].getAngleFromCenter(1);
+        }
+      }
+      servo->adjustCamera(-servo->calculateDesiredVelocity(theta));
+      pubs->transforms.publish(servo->getTransformMsg());
+    }
+    catch (unable_to_find_transform_error &e)
+    {
+      ROS_WARN("%s | Starting scan", e.what());
       try
       {
-        for (int i = 0; i < tag_info->size(); i++)
-        {
-          if ((*tag_info)[i].getID() == 1)
-          {
-            theta = (*tag_info)[i].getAngleFromCenter(1);
-          }
-        }
-        servo->adjustCamera(-servo->calculateDesiredVelocity(theta));
-        pubs->transforms.publish(servo->getTransformMsg());
-      }
-      catch (unable_to_find_transform_error &e)
-      {
-        ROS_WARN("%s | Starting scan", e.what());
-        try
-        {
-          servo->scan();
-        }
-        catch (cl_error &e)
-        {
-          ROS_WARN("%s", e.what());
-        }
-        continue;
+        servo->scan();
       }
       catch (cl_error &e)
       {
         ROS_WARN("%s", e.what());
-        continue;
       }
+      continue;
+    }
+    catch (cl_error &e)
+    {
+      ROS_WARN("%s", e.what());
+      continue;
     }
   }
 }
@@ -171,7 +163,11 @@ int main(int argc, char **argv)
   TransformsCache transforms_cache(nh);
 
   // Initialize servo
-  HostCommLayer::Dynamixel *servo = new HostCommLayer::Dynamixel(0x11);
+  apriltag_tracker::Dynamixel *servo = new apriltag_tracker::Dynamixel(0x11);
+  dynamic_reconfigure::Server<apriltag_tracker::DynamicServoConfig> server;
+  dynamic_reconfigure::Server<DynamicServoConfig>::CallbackType f;
+  f = boost::bind(&Dynamixel::reconfigureCallback, servo, _1, _2 );
+  server.setCallback(f);
 
   // Initialize Camera Objects
   CameraMaster camera_master(nh);
@@ -180,11 +176,14 @@ int main(int argc, char **argv)
   Camera *camera2 = camera_master.generateCameraObject();
   Camera *camera3 = camera_master.generateCameraObject();
 
+  // Initialize apriltag tracker config object
+  AprilTagTrackerConfig *tracker_config = new AprilTagTrackerConfig();
+
   // Start threads
-  boost::thread thread0(trackerThread, servo, transforms_cache, tag_info, camera0); usleep(1000);
-  boost::thread thread1(trackerThread, servo, transforms_cache, tag_info, camera1); usleep(1000);
-  boost::thread thread2(trackerThread, servo, transforms_cache, tag_info, camera2); usleep(1000);
-  boost::thread thread3(trackerThread, servo, transforms_cache, tag_info, camera3);
+  boost::thread thread0(trackerThread, servo, transforms_cache, tag_info, tracker_config, camera0); usleep(1000);
+  boost::thread thread1(trackerThread, servo, transforms_cache, tag_info, tracker_config, camera1); usleep(1000);
+  boost::thread thread2(trackerThread, servo, transforms_cache, tag_info, tracker_config, camera2); usleep(1000);
+  boost::thread thread3(trackerThread, servo, transforms_cache, tag_info, tracker_config, camera3);
   boost::thread thread4(servoThread, servo, tag_info);
   ros::spin();
 

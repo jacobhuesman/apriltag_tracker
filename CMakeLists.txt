@@ -4,20 +4,26 @@ project(apriltag_tracker)
 set(CMAKE_CXX_STANDARD 11)
 
 find_package(catkin REQUIRED COMPONENTS
+    # standard
     roscpp
+    dynamic_reconfigure
+    # custom
+    dynamixel
+    # messages
+    std_msgs
     sensor_msgs
     geometry_msgs
-    tf2
-    tf2_ros
     tf2_geometry_msgs
     message_generation
-    nodelet
-    std_msgs
-    cmake_modules
+    # tf
+    tf2
+    tf2_ros
+    # images
     cv_bridge
     image_transport
+    compressed_image_transport
+    theora_image_transport
     camera_info_manager
-    dynamic_reconfigure
 )
 
 add_message_files(
@@ -34,17 +40,36 @@ generate_messages(DEPENDENCIES
     geometry_msgs
 )
 
-
 generate_dynamic_reconfigure_options(
     cfg/TFTest.cfg
     cfg/DynamicCamera.cfg
+    cfg/DynamicAprilTagTracker.cfg
 )
 
 catkin_package(
     #INCLUDE_DIRS include
     #LIBRARIES apriltag_detector
-    CATKIN_DEPENDS roscpp sensor_msgs geometry_msgs tf2 tf2_ros tf2_geometry_msgs
-    message_runtime nodelet std_msgs cv_bridge image_transport
+    CATKIN_DEPENDS
+        # standard
+        roscpp
+        dynamic_reconfigure
+        # custom
+        dynamixel
+        # messages
+        std_msgs
+        sensor_msgs
+        geometry_msgs
+        tf2_geometry_msgs
+        message_generation
+        # tf
+        tf2
+        tf2_ros
+        # images
+        cv_bridge
+        image_transport
+        compressed_image_transport
+        theora_image_transport
+        camera_info_manager
 )
 
 set(raspicam_DIR /usr/local/lib/cmake)
@@ -57,7 +82,9 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(${catkin_INCLUDE_DIRS})
 include_directories(include)
 
+# Add gmock
 link_directories(/usr/src/gmock/build)
+set(GTEST_LIBRARIES gmock_main)
 
 #############
 # Libraries #
@@ -89,6 +116,7 @@ target_link_libraries(TransformsCache Tag)
 
 add_library(AprilTagTracker src/apriltag_tracker.cpp)
 add_dependencies(AprilTagTracker ${${PROJECT_NAME}_EXPORTED_TARGETS})
+add_dependencies(Camera ${PROJECT_NAME}_gencfg)
 target_link_libraries(AprilTagTracker raspicam ${raspicam_LIBS})
 target_link_libraries(AprilTagTracker ${Eigen3_LIBS})
 target_link_libraries(AprilTagTracker ${catkin_LIBRARIES})
@@ -96,10 +124,6 @@ target_link_libraries(AprilTagTracker ${OpenCV_LIBS})
 target_link_libraries(AprilTagTracker apriltags)
 target_link_libraries(AprilTagTracker CameraInfo)
 target_link_libraries(AprilTagTracker Tag)
-
-add_library(HostCommLayer src/dynamixel_host_layer.cpp)
-target_link_libraries(HostCommLayer mraa)
-target_link_libraries(HostCommLayer ${catkin_LIBRARIES})
 
 ############
 # Programs #
@@ -110,12 +134,9 @@ target_link_libraries(apriltag_tracker ${catkin_LIBRARIES})
 target_link_libraries(apriltag_tracker ${OpenCV_LIBS})
 target_link_libraries(apriltag_tracker AprilTagTracker)
 target_link_libraries(apriltag_tracker Camera)
-target_link_libraries(apriltag_tracker HostCommLayer)
+target_link_libraries(apriltag_tracker Dynamixel)
 target_link_libraries(apriltag_tracker Timers)
 target_link_libraries(apriltag_tracker TransformsCache)
-
-add_executable(comm_tool src/util/comm_tool.cpp)
-target_link_libraries(comm_tool HostCommLayer)
 
 add_executable(speed_test src/util/speed_test.cpp)
 
@@ -132,14 +153,6 @@ target_link_libraries(transforms_publisher ${catkin_LIBRARIES})
 #########
 # Tests #
 #########
-catkin_add_gtest(servo_tests src/tests/servo_tests.cpp)
-if(TARGET servo_tests)
-  target_link_libraries(servo_tests ${catkin_LIBRARIES})
-  target_link_libraries(servo_tests HostCommLayer)
-  target_link_libraries(servo_tests Transform)
-  target_link_libraries(servo_tests gmock_main)
-endif()
-
 catkin_add_gtest(tag_tests src/tests/tag_tests.cpp)
 if(TARGET tag_tests)
   target_link_libraries(tag_tests ${catkin_LIBRARIES})

@@ -24,13 +24,30 @@
 #include <tag.h>
 #include <transforms_cache.h>
 
+#include <dynamic_reconfigure/server.h>
+#include <apriltag_tracker/DynamicAprilTagTrackerConfig.h>
+
 namespace apriltag_tracker
 {
+class AprilTagTrackerConfig
+{
+public:
+  AprilTagTrackerConfig();
+  int getFilterSize();
+  double getMaxDt();
+
+private:
+  dynamic_reconfigure::Server<apriltag_tracker::DynamicAprilTagTrackerConfig> *server;
+  void reconfigureCallback(apriltag_tracker::DynamicAprilTagTrackerConfig &config, uint32_t level);
+  int filter_size;
+  double max_dt;
+};
 
 class AprilTagTracker
 {
 public:
-  AprilTagTracker(apriltag_tracker::CameraInfo *camera_info, std::vector<Tag> *tag_info, TransformsCache transforms);
+  AprilTagTracker(apriltag_tracker::CameraInfo *camera_info, std::vector<Tag> *tag_info,
+                  AprilTagTrackerConfig *tracker_config, TransformsCache transforms);
   ~AprilTagTracker();
 
   Eigen::Matrix4d getRelativeTransform(const cv::Point2d tagPts[], double tag_size);
@@ -48,7 +65,6 @@ public:
   apriltag_tracker::CameraInfo *camera_info;
 
 private:
-  TagDetectorParams tag_params;
   TagFamily *tag_family;
   TagDetector *tag_detector;
   TagDetectionArray tag_detections;
@@ -57,6 +73,8 @@ private:
   unsigned int current_seq;
   ros::Time last_capture_time;
   TransformsCache transforms;
+
+  AprilTagTrackerConfig *tracker_config;
 };
 
 }

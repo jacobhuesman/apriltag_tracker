@@ -88,7 +88,7 @@ TEST(AprilTagTrackerTimerTests, TimersMsg)
   timer.process_image.start();            usleep( 2000); timer.process_image.stop();
   timer.adjust_servo.start();             usleep( 3000); timer.adjust_servo.stop();
   timer.calculate_transforms.start();     usleep( 4000); timer.calculate_transforms.stop();
-  timer.publish_tag_transforms.start(); usleep( 5000); timer.publish_tag_transforms.stop();
+  timer.publish_tag_transforms.start();   usleep( 5000); timer.publish_tag_transforms.stop();
   timer.publish_transforms.start();       usleep( 6000); timer.publish_transforms.stop();
   timer.publish_plain_image.start();      usleep( 7000); timer.publish_plain_image.stop();
   timer.draw_detections.start();          usleep( 8000); timer.draw_detections.stop();
