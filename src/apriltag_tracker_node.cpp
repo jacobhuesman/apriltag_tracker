@@ -144,7 +144,7 @@ void servoThread(apriltag_tracker::Dynamixel *servo, std::vector<apriltag_tracke
 int main(int argc, char **argv)
 {
   // Initialize ROS
-  ros::init(argc, argv, "position_sensor");
+  ros::init(argc, argv, "node0");
   ros::NodeHandle nh("~");
   image_transport::ImageTransport it(nh);
   pubs = new Publishers;
@@ -170,6 +170,10 @@ int main(int argc, char **argv)
   server.setCallback(f);
 
   // Initialize Camera Objects
+  if (mraa_get_platform_type() != MRAA_RASPBERRY_PI)
+  {
+    throw cl_host_error("Host must be a Raspberry PI");
+  }
   CameraMaster camera_master(nh);
   Camera *camera0 = camera_master.generateCameraObject();
   Camera *camera1 = camera_master.generateCameraObject();

@@ -15,8 +15,8 @@ public:
   TransformsCache(ros::NodeHandle nh); // TODO test with ROS tests
   static void initializeTagVector(std::vector<Tag> *tag_info);
 
-  tf2::Transform camera_optical_to_servo_joint;
-  tf2::Transform servo_base_link_to_base_link;
+  tf2::Transform camera_optical_to_camera_mount;
+  tf2::Transform dynamixel_to_base_link;
 };
 
 }

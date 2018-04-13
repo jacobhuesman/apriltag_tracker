@@ -40,7 +40,7 @@ TEST(AprilTagTrackerTests, TrivialTest)
   tf2::Transform servo_joint_to_optical_link_tf;
   servo_joint_to_optical_link_tf.setRotation(q);
   servo_joint_to_optical_link_tf.setOrigin(tf2::Vector3(9.0e-3, 0.0, 25.0e-3));
-  transforms.camera_optical_to_servo_joint = servo_joint_to_optical_link_tf.inverse();
+  transforms.camera_optical_to_camera_mount = servo_joint_to_optical_link_tf.inverse();
 
   q.setRPY(0.0, 0, M_PI);
   tf2::Transform base_link_to_servo_base_link_tf;

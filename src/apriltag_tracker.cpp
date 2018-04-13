@@ -302,9 +302,9 @@ void AprilTagTracker::estimateRobotPose(geometry_msgs::PoseStamped *pose_estimat
   {
     tf2::Transform pose_estimate = map_to_tag_tf
                                    * tag_transform.inverse()
-                                   * transforms.camera_optical_to_servo_joint
+                                   * transforms.camera_optical_to_camera_mount
                                    * servo_transform.inverse()
-                                   * transforms.servo_base_link_to_base_link;
+                                   * transforms.dynamixel_to_base_link;
     pose_estimate_msg->header.frame_id = "map";
     pose_estimate_msg->header.seq = current_seq;
     pose_estimate_msg->header.stamp = tag_transform.stamp_;

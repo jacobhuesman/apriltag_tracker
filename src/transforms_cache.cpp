@@ -35,6 +35,8 @@ void TransformsCache::initializeTagVector(std::vector<Tag> *tag_info)
 
 TransformsCache::TransformsCache(ros::NodeHandle nh)
 {
+  std::string name = ros::this_node::getName().substr(1);
+
   if (!nh.ok())
   {
     throw unable_to_find_transform_error("Node handle not active!");
@@ -43,36 +45,44 @@ TransformsCache::TransformsCache(ros::NodeHandle nh)
   tf2_ros::Buffer tfBuffer;
   tf2_ros::TransformListener tfListener(tfBuffer);
   std::stringstream ss;
-  bool transformed = false;
+  bool transformed;
   do
   {
-    transformed = tfBuffer.canTransform("camera_optical", "servo_joint", ros::Time(0), ros::Duration(1));
+    transformed = tfBuffer.canTransform(name + "_camera_optical",
+                                        name + "_camera_mount",
+                                        ros::Time(0), ros::Duration(1));
     if (!transformed)
     {
       ss.clear();
-      ss << "Unable to find transform from " << "camera_optical" << " to " << "base_link";
+      ss << "Unable to find transform from "
+         << name << "_camera_optical to "
+         << name << "_servo_joint";
       ROS_WARN("%s", ss.str().c_str());
     }
   } while(ros::ok() && !transformed);
   ss.clear();
-  ss << "Found transform from " << "camera_optical" << " to " << "servo_joint";
+  ss << "Found transform from "
+      << name << "_camera_optical" << " to "
+      << name << "_servo_mount";
   ROS_INFO("%s", ss.str().c_str());
   geometry_msgs::TransformStamped transform_msg;
-  transform_msg = tfBuffer.lookupTransform("camera_optical", "servo_joint", ros::Time(0));
-  tf2::fromMsg(transform_msg.transform, this->camera_optical_to_servo_joint);
+  transform_msg = tfBuffer.lookupTransform(name + "_camera_optical",
+                                           name + "_camera_mount",
+                                           ros::Time(0));
+  tf2::fromMsg(transform_msg.transform, this->camera_optical_to_camera_mount);
   do
   {
-    transformed = tfBuffer.canTransform("servo_base_link", "base_link", ros::Time(0), ros::Duration(1));
+    transformed = tfBuffer.canTransform(name + "_dynamixel", "base_link", ros::Time(0), ros::Duration(1));
     if (!transformed)
     {
       ss.clear();
-      ss << "Unable to find transform from " << "servo_base_link" << " to " << "base_link";
+      ss << "Unable to find transform from " << name << "_dynamixel to base_link";
       ROS_WARN("%s", ss.str().c_str());
     }
   } while(ros::ok() && !transformed);
   ss.clear();
-  ss << "Found transform from " << "servo_base_link" << " to " << "base_link";
+  ss << "Found transform from " << name << "_dynamixel to base_link";
   ROS_INFO("%s", ss.str().c_str());
-  transform_msg = tfBuffer.lookupTransform("servo_base_link", "base_link", ros::Time(0));
-  tf2::fromMsg(transform_msg.transform, this->servo_base_link_to_base_link);
+  transform_msg = tfBuffer.lookupTransform(name + "_dynamixel", "base_link", ros::Time(0));
+  tf2::fromMsg(transform_msg.transform, this->dynamixel_to_base_link);
 }
