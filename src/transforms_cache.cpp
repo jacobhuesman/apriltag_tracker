@@ -56,14 +56,14 @@ TransformsCache::TransformsCache(ros::NodeHandle nh)
       ss.clear();
       ss << "Unable to find transform from "
          << name << "_camera_optical to "
-         << name << "_servo_joint";
+         << name << "_camera_mount";
       ROS_WARN("%s", ss.str().c_str());
     }
   } while(ros::ok() && !transformed);
   ss.clear();
   ss << "Found transform from "
       << name << "_camera_optical" << " to "
-      << name << "_servo_mount";
+      << name << "_camera_mount";
   ROS_INFO("%s", ss.str().c_str());
   geometry_msgs::TransformStamped transform_msg;
   transform_msg = tfBuffer.lookupTransform(name + "_camera_optical",
