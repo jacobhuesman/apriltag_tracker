@@ -136,6 +136,40 @@ TEST(PoseEstimateFilterTests, getAveragePosition)
   ASSERT_NEAR(PoseEstimateFilter::getAveragePosition(poses).y,  1.5, 1e-10);
 }
 
+TEST(PoseEstimateFilterTests, flushOldPoses)
+{
+  using geometry_msgs::PoseStamped;
+  ros::Time current_time = ros::Time(100);
+  PoseStamped pose;
+  std::list<PoseStamped> poses;
+
+  pose.header.seq = 1; pose.header.stamp = ros::Time(99); poses.emplace_back(pose);
+  pose.header.seq = 2; pose.header.stamp = ros::Time(90); poses.emplace_back(pose);
+  PoseEstimateFilter::flushOldPoses(&poses, current_time, ros::Duration(10));
+  ASSERT_EQ(2, poses.size());
+
+  poses.clear();
+  pose.header.seq = 1; pose.header.stamp = ros::Time(99); poses.emplace_back(pose);
+  pose.header.seq = 2; pose.header.stamp = ros::Time(89); poses.emplace_back(pose);
+  PoseEstimateFilter::flushOldPoses(&poses, current_time, ros::Duration(10));
+  ASSERT_EQ(1, poses.size());
+}
+
+TEST(PoseEstimateFilterTests, addPoseEstimate)
+{
+  using geometry_msgs::PoseStamped;
+  ros::Time current_time = ros::Time(100);
+  PoseStamped pose;
+  std::list<PoseStamped> poses;
+  PoseEstimateFilter test(2, 10);
+
+  test.addPoseEstimate(pose);
+  test.addPoseEstimate(pose);
+  test.addPoseEstimate(pose);
+  poses = test.getPoses();
+  ASSERT_EQ(2, poses.size());
+}
+
 int main(int argc, char **argv)
 {
   testing::InitGoogleTest(&argc, argv);

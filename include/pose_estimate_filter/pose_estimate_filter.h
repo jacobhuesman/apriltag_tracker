@@ -16,15 +16,21 @@ class PoseEstimateFilter
 public:
 
   PoseEstimateFilter(int list_size, double max_dt);
+
   void addPoseEstimate(geometry_msgs::PoseStamped &pose);
   geometry_msgs::PoseStamped getMovingAverageTransform();
   geometry_msgs::PoseStamped getMovingAverageTransform(ros::Time current_time);
   void flushOldPoses(std::list<geometry_msgs::PoseStamped> *poses, ros::Time current_time);
 
+  static void flushOldPoses(std::list<geometry_msgs::PoseStamped> *poses, ros::Time current_time,
+                            ros::Duration max_dt);
   static void getRPY(tf2::Quaternion q, double &roll, double &pitch, double &yaw);
   static double getTheta(geometry_msgs::Quaternion orientation);
   static geometry_msgs::Quaternion getAverageOrientation(std::list<geometry_msgs::PoseStamped> &poses);
   static geometry_msgs::Point getAveragePosition(std::list<geometry_msgs::PoseStamped> &poses);
+
+  // Not thread-safe
+  std::list<geometry_msgs::PoseStamped> getPoses();
 
 private:
   boost::mutex *mutex;

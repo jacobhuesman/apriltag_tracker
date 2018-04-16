@@ -14,6 +14,7 @@ PoseEstimateFilter::PoseEstimateFilter(int list_size, double max_dt)
   this->seq = 0;
   this->list_size = list_size;
   this->max_dt = ros::Duration(max_dt);
+  this->mutex = new boost::mutex;
 }
 
 void PoseEstimateFilter::addPoseEstimate(PoseStamped &pose)
@@ -28,6 +29,12 @@ void PoseEstimateFilter::addPoseEstimate(PoseStamped &pose)
 }
 
 void PoseEstimateFilter::flushOldPoses(std::list<PoseStamped> *poses, ros::Time current_time)
+{
+  flushOldPoses(poses, current_time, this->max_dt);
+}
+
+void PoseEstimateFilter::flushOldPoses(std::list<PoseStamped> *poses, ros::Time current_time,
+                                       ros::Duration max_dt)
 {
   auto it = poses->begin();
   int good_poses = 0;
@@ -117,6 +124,11 @@ PoseStamped PoseEstimateFilter::getMovingAverageTransform(ros::Time current_time
   pose.pose.position = getAveragePosition(poses);
   mutex->unlock();
   return pose;
+}
+
+std::list<geometry_msgs::PoseStamped> PoseEstimateFilter::getPoses()
+{
+  return poses;
 }
 
 
