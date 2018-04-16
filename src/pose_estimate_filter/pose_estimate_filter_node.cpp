@@ -23,10 +23,13 @@ int main(int argc, char **argv)
 {
   ros::init(argc, argv, "pose_estimate_filter");
   ros::NodeHandle nh;
+  pose_pub = new ros::Publisher;
   *pose_pub = nh.advertise<geometry_msgs::PoseStamped>("pose_estimate", 100);
 
   filter = new PoseEstimateFilter(4, 1.0);
 
   ros::Subscriber node0 = nh.subscribe("/node0/pose_estimate", 100, callback);
-  //ros::Subscriber node1 = nh.subscribe("/node1/pose_estimate", 100, callback);
+  ros::Subscriber node1 = nh.subscribe("/node1/pose_estimate", 100, callback);
+
+  ros::spin();
 }
