@@ -3,6 +3,7 @@
 #include <geometry_msgs/Quaternion.h>
 
 
+using geometry_msgs::PoseStamped;
 using geometry_msgs::Point;
 using geometry_msgs::Quaternion;
 using namespace apriltag_tracker;
@@ -50,11 +51,6 @@ void PoseEstimateFilter::flushOldPoses(std::list<PoseStamped> *poses, ros::Time 
   }
 }
 
-PoseStamped PoseEstimateFilter::getMovingAverageTransform()
-{
-  return getMovingAverageTransform(ros::Time::now());
-}
-
 void PoseEstimateFilter::getRPY(tf2::Quaternion q, double &roll, double &pitch, double &yaw)
 {
   tf2::Matrix3x3 matrix;
@@ -72,34 +68,55 @@ double PoseEstimateFilter::getTheta(geometry_msgs::Quaternion orientation)
 }
 
 // Assumes that the thetas are close enough not to negate each other
-double PoseEstimateFilter::getAverageTheta(std::vector<double> thetas)
+Quaternion PoseEstimateFilter::getAverageOrientation(std::list<PoseStamped> &poses)
 {
   double x = 0.0, y = 0.0;
-  for (int i = 0; i < thetas.size(); i++)
+  for (auto it = poses.begin(); it != poses.end(); it++)
   {
-    x += cos(thetas[i]);
-    y += sin(thetas[i]);
+    Quaternion orientation = it->pose.orientation;
+    x += cos(getTheta(orientation));
+    y += sin(getTheta(orientation));
   }
-  return atan2(y,x);
+  tf2::Quaternion q;
+  q.setRPY(0.0, 0.0, atan2(y,x));
+  return tf2::toMsg(q);
 }
 
-PoseStamped PoseEstimateFilter::getMovingAverageTransform(ros::Time current_time)
+Point PoseEstimateFilter::getAveragePosition(std::list<PoseStamped> &poses)
 {
-  mutex->lock();
-
-  flushOldPoses(&poses, current_time);
-
-  auto it = poses.begin();
-  double x = 0, y = 0, z = 0, th = 0;
-  for (int i = 0; i < poses.size(); i++, it++)
+  double x = 0.0, y = 0.0, z = 0.0;
+  for (auto it = poses.begin(); it != poses.end(); it++)
   {
     Point position = it->pose.position;
     x += position.x;
     y += position.y;
     z += position.z;
-
   }
+  double size = poses.size();
+  Point position;
+  position.x = x / size;
+  position.y = y / size;
+  position.z = z / size;
+  return position;
+}
+
+PoseStamped PoseEstimateFilter::getMovingAverageTransform()
+{
+  return getMovingAverageTransform(ros::Time::now());
+}
+
+PoseStamped PoseEstimateFilter::getMovingAverageTransform(ros::Time current_time)
+{
+  mutex->lock();
+  flushOldPoses(&poses, current_time);
+  PoseStamped pose;
+  pose.header.stamp = current_time;
+  pose.header.frame_id = "base_link";
+  pose.header.seq = this->seq++;
+  pose.pose.orientation = getAverageOrientation(poses);
+  pose.pose.position = getAveragePosition(poses);
   mutex->unlock();
+  return pose;
 }
 
 
