@@ -163,7 +163,8 @@ int main(int argc, char **argv)
   TransformsCache transforms_cache(nh);
 
   // Initialize servo
-  apriltag_tracker::Dynamixel *servo = new apriltag_tracker::Dynamixel(0x11);
+  std::string name = ros::this_node::getName();
+  Dynamixel *servo = new Dynamixel(0x11, name + "_dynamixel", name + "_camera_mount");
   dynamic_reconfigure::Server<apriltag_tracker::DynamicServoConfig> server;
   dynamic_reconfigure::Server<DynamicServoConfig>::CallbackType f;
   f = boost::bind(&Dynamixel::reconfigureCallback, servo, _1, _2 );
