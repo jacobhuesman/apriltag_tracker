@@ -128,7 +128,7 @@ PoseStamped PoseEstimateFilter::getMovingAverageTransform(ros::Time current_time
   }
   PoseStamped pose;
   pose.header.stamp = current_time;
-  pose.header.frame_id = "base_link";
+  pose.header.frame_id = "map";
   pose.header.seq = this->seq++;
   pose.pose.orientation = getAverageOrientation(poses);
   pose.pose.position = getAveragePosition(poses);
