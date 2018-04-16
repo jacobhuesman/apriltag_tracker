@@ -118,7 +118,6 @@ void servoThread(apriltag_tracker::Dynamixel *servo, std::vector<apriltag_tracke
         }
       }
       servo->adjustCamera(-servo->calculateDesiredVelocity(theta));
-      pubs->transforms.publish(servo->getTransformMsg());
     }
     catch (unable_to_find_transform_error &e)
     {
@@ -131,13 +130,12 @@ void servoThread(apriltag_tracker::Dynamixel *servo, std::vector<apriltag_tracke
       {
         ROS_WARN("%s", e.what());
       }
-      continue;
     }
     catch (cl_error &e)
     {
       ROS_WARN("%s", e.what());
-      continue;
     }
+    pubs->transforms.publish(servo->getTransformMsg());
   }
 }
 

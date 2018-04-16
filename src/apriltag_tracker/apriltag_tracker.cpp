@@ -79,13 +79,13 @@ void AprilTagTracker::drawDetections(cv::Mat *image)
     cv::line(*image, p[3], p[0], cv::Scalar(255, 0, 255, 0));
 
     // mark center
-    cv::circle(*image, cv::Point2d(cxy.x, cxy.y), 8, cv::Scalar(0, 0, 255, 0), 2);
+    cv::circle(*image, cv::Point2d(cxy.x, cxy.y), 8, cv::Scalar(128, 128, 128, 0), 2);
 
     // print ID
     std::ostringstream strSt;
     strSt << "#" << id;
     cv::putText(*image, strSt.str(), cv::Point2d(cxy.x + 10, cxy.y + 10),
-                cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0, 0, 255));
+                cv::FONT_HERSHEY_PLAIN, 2, cv::Scalar(128, 128, 128), 2);
   }
 }
 
