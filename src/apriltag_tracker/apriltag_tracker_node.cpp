@@ -144,7 +144,8 @@ int main(int argc, char **argv)
   // Initialize ROS
   ros::init(argc, argv, "node0");
   ros::NodeHandle nh("~");
-  image_transport::ImageTransport it(nh);
+  ros::NodeHandle imt_nh("~image_transport");
+  image_transport::ImageTransport it(imt_nh);
   pubs = new Publishers;
   pubs->diagnostics = nh.advertise<ATTLocalTiming>("info/timing_diagnostics", 30);
   pubs->pose = nh.advertise<geometry_msgs::PoseStamped>("pose_estimate", 30);
