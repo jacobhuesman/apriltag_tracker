@@ -161,7 +161,7 @@ int main(int argc, char **argv)
   TransformsCache transforms_cache(nh);
 
   // Initialize servo
-  ros::NodeHandle dyn_nh("~/servo");
+  ros::NodeHandle dyn_nh("~servo");
   std::string name = ros::this_node::getName();
   Dynamixel *servo = new Dynamixel(0x11, name + "_dynamixel", name + "_camera_mount");
   dynamic_reconfigure::Server<apriltag_tracker::DynamicServoConfig> server(dyn_nh);
@@ -174,7 +174,7 @@ int main(int argc, char **argv)
   {
     throw cl_host_error("Host must be a Raspberry PI");
   }
-  ros::NodeHandle cam_nh("~/camera");
+  ros::NodeHandle cam_nh("~camera");
   CameraMaster camera_master(cam_nh);
   Camera *camera0 = camera_master.generateCameraObject();
   Camera *camera1 = camera_master.generateCameraObject();

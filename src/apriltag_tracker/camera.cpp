@@ -15,7 +15,7 @@ CameraMaster::CameraMaster(ros::NodeHandle nh)
   std::string info_path = "package://apriltag_tracker/calibrations/${NAME}.yaml";
   manager_camera_info = new camera_info_manager::CameraInfoManager(nh, "camera", info_path);
 
-  server = new dynamic_reconfigure::Server<DynamicCameraConfig>;
+  server = new dynamic_reconfigure::Server<DynamicCameraConfig>(nh);
   dynamic_reconfigure::Server<DynamicCameraConfig>::CallbackType f;
   f = boost::bind(&CameraMaster::reconfigureCallback, this, _1, _2 );
   server->setCallback(f);
