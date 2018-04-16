@@ -11,13 +11,22 @@
 namespace apriltag_tracker
 {
 
+class empty_list_error : public std::runtime_error
+{
+public:
+  explicit empty_list_error(std::string error_msg) : std::runtime_error(error_msg) {};
+};
+
+
+
 class PoseEstimateFilter
 {
 public:
 
   PoseEstimateFilter(int list_size, double max_dt);
 
-  void addPoseEstimate(geometry_msgs::PoseStamped &pose);
+  void addPoseEstimate(geometry_msgs::PoseStamped pose);
+  void addPoseEstimate(geometry_msgs::PoseStamped pose, ros::Time current_time);
   geometry_msgs::PoseStamped getMovingAverageTransform();
   geometry_msgs::PoseStamped getMovingAverageTransform(ros::Time current_time);
   void flushOldPoses(std::list<geometry_msgs::PoseStamped> *poses, ros::Time current_time);

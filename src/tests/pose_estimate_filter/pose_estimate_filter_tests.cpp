@@ -163,9 +163,9 @@ TEST(PoseEstimateFilterTests, addPoseEstimate)
   std::list<PoseStamped> poses;
   PoseEstimateFilter test(2, 10);
 
-  test.addPoseEstimate(pose);
-  test.addPoseEstimate(pose);
-  test.addPoseEstimate(pose);
+  test.addPoseEstimate(pose, current_time);
+  test.addPoseEstimate(pose, current_time);
+  test.addPoseEstimate(pose, current_time);
   poses = test.getPoses();
   ASSERT_EQ(2, poses.size());
 }

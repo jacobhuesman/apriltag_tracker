@@ -17,9 +17,15 @@ PoseEstimateFilter::PoseEstimateFilter(int list_size, double max_dt)
   this->mutex = new boost::mutex;
 }
 
-void PoseEstimateFilter::addPoseEstimate(PoseStamped &pose)
+void PoseEstimateFilter::addPoseEstimate(PoseStamped pose)
+{
+  addPoseEstimate(pose, ros::Time::now());
+}
+
+void PoseEstimateFilter::addPoseEstimate(PoseStamped pose, ros::Time current_time)
 {
   mutex->lock();
+  pose.header.stamp = current_time; // Not great, but we care more about arrival time anyways
   poses.emplace_front(pose);
   while (poses.size() > list_size)
   {
@@ -116,6 +122,10 @@ PoseStamped PoseEstimateFilter::getMovingAverageTransform(ros::Time current_time
 {
   mutex->lock();
   flushOldPoses(&poses, current_time);
+  if (poses.size() < 1)
+  {
+    throw empty_list_error("Not enough poses to perform transform");
+  }
   PoseStamped pose;
   pose.header.stamp = current_time;
   pose.header.frame_id = "base_link";

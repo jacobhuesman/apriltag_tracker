@@ -161,6 +161,10 @@ target_link_libraries(transform_cache_test ${catkin_LIBRARIES})
 add_executable(transforms_publisher src/util/transforms_publisher.cpp)
 target_link_libraries(transforms_publisher ${catkin_LIBRARIES})
 
+add_executable(pose_estimate_filter src/pose_estimate_filter/pose_estimate_filter_node.cpp)
+target_link_libraries(pose_estimate_filter ${catkin_LIBRARIES})
+target_link_libraries(pose_estimate_filter PoseEstimateFilter)
+
 #########
 # Tests #
 #########
