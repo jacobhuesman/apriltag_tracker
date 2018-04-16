@@ -66,41 +66,44 @@ TEST(PoseEstimateFilterTests, getTheta)
   ASSERT_NEAR(PoseEstimateFilter::getTheta(orientation), 0.0, 1e-10);
 }
 
-TEST(PoseEstimateFilterTests, getAverageTheta)
+TEST(PoseEstimateFilterTests, getAverageOrientation)
 {
-  std::vector<double> thetas;
-  double theta;
+  using geometry_msgs::PoseStamped;
+  std::list<PoseStamped> poses;
+  tf2::Quaternion q;
+  geometry_msgs::Quaternion orientation;
+  PoseStamped pose;
 
-  thetas.push_back(-1.0);
-  thetas.push_back(1.0);
-  thetas.push_back(-2.0);
-  thetas.push_back(2.0);
-  theta = PoseEstimateFilter::getAverageTheta(thetas);
-  ASSERT_NEAR(theta, 0.0, 1e-10);
+  q.setRPY(0.0, 0.0, -1.0); pose.pose.orientation = tf2::toMsg(q); poses.push_back(pose);
+  q.setRPY(0.0, 0.0, -2.0); pose.pose.orientation = tf2::toMsg(q); poses.push_back(pose);
+  q.setRPY(0.0, 0.0,  2.0); pose.pose.orientation = tf2::toMsg(q); poses.push_back(pose);
+  q.setRPY(0.0, 0.0,  1.0); pose.pose.orientation = tf2::toMsg(q); poses.push_back(pose);
+  orientation = PoseEstimateFilter::getAverageOrientation(poses);
+  ASSERT_NEAR(PoseEstimateFilter::getTheta(orientation), 0.0, 1e-10);
 
-  thetas.clear();
-  thetas.push_back(M_PI_2);
-  thetas.push_back(0.0);
-  theta = PoseEstimateFilter::getAverageTheta(thetas);
-  ASSERT_NEAR(theta, M_PI_4, 1e-10);
+  poses.clear();
+  q.setRPY(0.0, 0.0, M_PI_2); pose.pose.orientation = tf2::toMsg(q); poses.push_back(pose);
+  q.setRPY(0.0, 0.0,    0.0); pose.pose.orientation = tf2::toMsg(q); poses.push_back(pose);
+  orientation = PoseEstimateFilter::getAverageOrientation(poses);
+  ASSERT_NEAR(PoseEstimateFilter::getTheta(orientation), M_PI_4, 1e-10);
 
-  thetas.clear();
-  thetas.push_back(M_PI);
-  thetas.push_back(M_PI_2);
-  theta = PoseEstimateFilter::getAverageTheta(thetas);
-  ASSERT_NEAR(theta, 3*M_PI_4, 1e-10);
+  poses.clear();
+  q.setRPY(0.0, 0.0,   M_PI); pose.pose.orientation = tf2::toMsg(q); poses.push_back(pose);
+  q.setRPY(0.0, 0.0, M_PI_2); pose.pose.orientation = tf2::toMsg(q); poses.push_back(pose);
+  orientation = PoseEstimateFilter::getAverageOrientation(poses);
+  ASSERT_NEAR(PoseEstimateFilter::getTheta(orientation), 3*M_PI_4, 1e-10);
 
-  thetas.clear();
-  thetas.push_back(M_PI);
-  thetas.push_back(-M_PI_2);
-  theta = PoseEstimateFilter::getAverageTheta(thetas);
-  ASSERT_NEAR(theta, -3*M_PI_4, 1e-10);
+  poses.clear();
+  q.setRPY(0.0, 0.0,    M_PI); pose.pose.orientation = tf2::toMsg(q); poses.push_back(pose);
+  q.setRPY(0.0, 0.0, -M_PI_2); pose.pose.orientation = tf2::toMsg(q); poses.push_back(pose);
+  orientation = PoseEstimateFilter::getAverageOrientation(poses);
+  ASSERT_NEAR(PoseEstimateFilter::getTheta(orientation), -3*M_PI_4, 1e-10);
 
-  thetas.clear();
-  thetas.push_back(-M_PI_2);
-  thetas.push_back(0.0);
-  theta = PoseEstimateFilter::getAverageTheta(thetas);
-  ASSERT_NEAR(theta, -M_PI_4, 1e-10);
+  poses.clear();
+  q.setRPY(0.0, 0.0, -M_PI_2); pose.pose.orientation = tf2::toMsg(q); poses.push_back(pose);
+  q.setRPY(0.0, 0.0,     0.0); pose.pose.orientation = tf2::toMsg(q); poses.push_back(pose);
+  orientation = PoseEstimateFilter::getAverageOrientation(poses);
+  ASSERT_NEAR(PoseEstimateFilter::getTheta(orientation), -M_PI_4, 1e-10);
 }
 
 int main(int argc, char **argv)
