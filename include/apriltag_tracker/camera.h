@@ -11,7 +11,7 @@
 #include <camera_info_manager/camera_info_manager.h>
 #include <apriltag_tracker/DynamicCameraConfig.h>
 #include <dynamic_reconfigure/server.h>
-#include <camera_info.h>
+#include <apriltag_tracker/camera_info.h>
 
 namespace apriltag_tracker
 {

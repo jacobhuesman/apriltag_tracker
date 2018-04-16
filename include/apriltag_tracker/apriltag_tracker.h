@@ -19,10 +19,10 @@
 #include <TagDetector.h>
 
 #include <sensor_msgs/CameraInfo.h>
-#include <camera_info.h>
-#include <transform.h>
-#include <tag.h>
-#include <transforms_cache.h>
+#include <apriltag_tracker/camera_info.h>
+#include <apriltag_tracker/transform.h>
+#include <apriltag_tracker/tag.h>
+#include <apriltag_tracker/transforms_cache.h>
 
 #include <dynamic_reconfigure/server.h>
 #include <apriltag_tracker/DynamicAprilTagTrackerConfig.h>

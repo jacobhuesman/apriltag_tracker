@@ -1,7 +1,7 @@
-#include <apriltag_tracker.h>
+#include <apriltag_tracker/apriltag_tracker.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include <errors.h>
+#include <apriltag_tracker/errors.h>
 
 namespace apriltag_tracker
 {

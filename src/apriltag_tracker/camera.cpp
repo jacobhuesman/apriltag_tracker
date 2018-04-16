@@ -1,4 +1,4 @@
-#include <camera.h>
+#include <apriltag_tracker/camera.h>
 
 namespace apriltag_tracker
 {

@@ -89,14 +89,14 @@ set(GTEST_LIBRARIES gmock_main)
 #############
 # Libraries #
 #############
-add_library(Timers src/timers.cpp)
+add_library(Timers src/apriltag_tracker/timers.cpp)
 add_dependencies(Timers ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
-add_library(CameraInfo src/camera_info.cpp)
+add_library(CameraInfo src/apriltag_tracker/camera_info.cpp)
 target_link_libraries(CameraInfo ${OpenCV_LIBS})
 
 if (raspicam_FOUND)
-  add_library(Camera src/camera.cpp)
+  add_library(Camera src/apriltag_tracker/camera.cpp)
   add_dependencies(Camera ${${PROJECT_NAME}_EXPORTED_TARGETS})
   add_dependencies(Camera ${PROJECT_NAME}_gencfg)
   target_link_libraries(Camera raspicam ${raspicam_LIBS})
@@ -107,18 +107,18 @@ else()
   message("[WARNING] raspicam not found")
 endif()
 
-add_library(Transform src/transform.cpp)
+add_library(Transform src/apriltag_tracker/transform.cpp)
 target_link_libraries(Transform ${catkin_LIBRARIES})
 
-add_library(Tag src/tag.cpp)
+add_library(Tag src/apriltag_tracker/tag.cpp)
 target_link_libraries(Tag ${catkin_LIBRARIES})
 target_link_libraries(Tag Transform)
 
-add_library(TransformsCache src/transforms_cache.cpp)
+add_library(TransformsCache src/apriltag_tracker/transforms_cache.cpp)
 target_link_libraries(TransformsCache ${catkin_LIBRARIES})
 target_link_libraries(TransformsCache Tag)
 
-add_library(AprilTagTracker src/apriltag_tracker.cpp)
+add_library(AprilTagTracker src/apriltag_tracker/apriltag_tracker.cpp)
 add_dependencies(AprilTagTracker ${${PROJECT_NAME}_EXPORTED_TARGETS})
 add_dependencies(AprilTagTracker ${PROJECT_NAME}_gencfg)
 target_link_libraries(AprilTagTracker raspicam ${raspicam_LIBS})
@@ -129,11 +129,16 @@ target_link_libraries(AprilTagTracker apriltags)
 target_link_libraries(AprilTagTracker CameraInfo)
 target_link_libraries(AprilTagTracker Tag)
 
+add_library(PoseEstimateFilter src/pose_estimate_filter/pose_estimate_filter.cpp)
+target_link_libraries(AprilTagTracker ${Eigen3_LIBS})
+target_link_libraries(AprilTagTracker ${catkin_LIBRARIES})
+
+
 ############
 # Programs #
 ############
 if (raspicam_FOUND)
-  add_executable(apriltag_tracker src/apriltag_tracker_node.cpp)
+  add_executable(apriltag_tracker src/apriltag_tracker/apriltag_tracker_node.cpp)
   add_dependencies(apriltag_tracker ${${PROJECT_NAME}_EXPORTED_TARGETS})
   target_link_libraries(apriltag_tracker ${catkin_LIBRARIES})
   target_link_libraries(apriltag_tracker ${OpenCV_LIBS})
@@ -159,33 +164,38 @@ target_link_libraries(transforms_publisher ${catkin_LIBRARIES})
 #########
 # Tests #
 #########
-catkin_add_gtest(tag_tests src/tests/tag_tests.cpp)
+catkin_add_gtest(tag_tests src/tests/apriltag_tracker/tag_tests.cpp)
 if(TARGET tag_tests)
   target_link_libraries(tag_tests ${catkin_LIBRARIES})
   target_link_libraries(tag_tests Tag)
 endif()
 
-catkin_add_gtest(transform_tests src/tests/transform_tests.cpp)
+catkin_add_gtest(transform_tests src/tests/apriltag_tracker/transform_tests.cpp)
 if(TARGET transform_tests)
   target_link_libraries(transform_tests ${catkin_LIBRARIES})
   target_link_libraries(transform_tests Transform)
 endif()
 
-catkin_add_gtest(timer_tests src/tests/timer_tests.cpp)
+catkin_add_gtest(timer_tests src/tests/apriltag_tracker/timer_tests.cpp)
 if(TARGET timer_tests)
   target_link_libraries(timer_tests Timers)
 endif()
 
 if (raspicam_FOUND)
-  catkin_add_gtest(camera_tests src/tests/camera_tests.cpp)
+  catkin_add_gtest(camera_tests src/tests/apriltag_tracker/camera_tests.cpp)
   if(TARGET camera_tests)
     target_link_libraries(camera_tests Camera)
   endif()
 endif()
 
-catkin_add_gtest(apriltag_tracker_tests src/tests/apriltag_tracker_tests.cpp)
+catkin_add_gtest(apriltag_tracker_tests src/tests/apriltag_tracker/apriltag_tracker_tests.cpp)
 if(TARGET apriltag_tracker_tests)
   target_link_libraries(apriltag_tracker_tests AprilTagTracker)
   target_link_libraries(apriltag_tracker_tests TransformsCache)
 endif()
 
+catkin_add_gtest(pose_estimate_filter_tests src/tests/pose_estimate_filter/pose_estimate_filter_tests.cpp)
+if(TARGET pose_estimate_filter_tests)
+  target_link_libraries(pose_estimate_filter_tests ${catkin_LIBRARIES})
+  target_link_libraries(pose_estimate_filter_tests PoseEstimateFilter)
+endif()

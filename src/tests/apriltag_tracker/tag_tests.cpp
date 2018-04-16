@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <tag.h>
+#include <apriltag_tracker/tag.h>
 
 using namespace apriltag_tracker;
 

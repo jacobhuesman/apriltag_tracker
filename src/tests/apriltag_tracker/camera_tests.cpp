@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <camera.h>
+#include <apriltag_tracker/camera.h>
 #include <boost/thread.hpp>
 
 using namespace apriltag_tracker;

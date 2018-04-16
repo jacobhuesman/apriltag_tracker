@@ -14,10 +14,10 @@
 #include <apriltag_tracker/AprilTagDetectionArray.h>
 #include <apriltag_tracker/ATTDiagnostics.h>
 
-#include <apriltag_tracker.h>
-#include <timers.h>
+#include <apriltag_tracker/apriltag_tracker.h>
+#include <apriltag_tracker/timers.h>
 #include <dynamixel.h>
-#include <camera.h>
+#include <apriltag_tracker/camera.h>
 
 using namespace apriltag_tracker;
 

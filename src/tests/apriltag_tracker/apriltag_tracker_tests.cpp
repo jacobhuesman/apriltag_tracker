@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include <apriltag_tracker.h>
-#include <camera_info.h>
-#include <errors.h>
+#include <apriltag_tracker/apriltag_tracker.h>
+#include <apriltag_tracker/camera_info.h>
+#include <apriltag_tracker/errors.h>
 
 using namespace apriltag_tracker;
 

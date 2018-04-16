@@ -7,8 +7,8 @@
 #include <tf2/LinearMath/Transform.h>
 #include <boost/thread/thread.hpp>
 
-#include <transform.h>
-#include <errors.h>
+#include <apriltag_tracker/transform.h>
+#include <apriltag_tracker/errors.h>
 
 namespace apriltag_tracker
 {
