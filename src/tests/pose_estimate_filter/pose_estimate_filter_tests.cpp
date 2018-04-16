@@ -106,6 +106,36 @@ TEST(PoseEstimateFilterTests, getAverageOrientation)
   ASSERT_NEAR(PoseEstimateFilter::getTheta(orientation), -M_PI_4, 1e-10);
 }
 
+TEST(PoseEstimateFilterTests, getAveragePosition)
+{
+  using geometry_msgs::PoseStamped;
+  std::list<PoseStamped> poses;
+  tf2::Quaternion q;
+  geometry_msgs::Point position;
+  PoseStamped pose;
+  position.z = 0.0;
+
+  position.x =  1.0; position.y = -2.0; pose.pose.position = position; poses.push_back(pose);
+  position.x = -1.0; position.y = -1.0; pose.pose.position = position; poses.push_back(pose);
+  position.x =  2.0; position.y =  1.0; pose.pose.position = position; poses.push_back(pose);
+  position.x = -2.0; position.y =  2.0; pose.pose.position = position; poses.push_back(pose);
+  ASSERT_NEAR(PoseEstimateFilter::getAveragePosition(poses).x, 0.0, 1e-10);
+  ASSERT_NEAR(PoseEstimateFilter::getAveragePosition(poses).y, 0.0, 1e-10);
+  ASSERT_NEAR(PoseEstimateFilter::getAveragePosition(poses).z, 0.0, 1e-10);
+
+  poses.clear();
+  position.x =  1.0; position.y =  1.0; pose.pose.position = position; poses.push_back(pose);
+  position.x =  2.0; position.y =  2.0; pose.pose.position = position; poses.push_back(pose);
+  ASSERT_NEAR(PoseEstimateFilter::getAveragePosition(poses).x, 1.5, 1e-10);
+  ASSERT_NEAR(PoseEstimateFilter::getAveragePosition(poses).y, 1.5, 1e-10);
+
+  poses.clear();
+  position.x =   1.0; position.y =  1.0; pose.pose.position = position; poses.push_back(pose);
+  position.x =  -2.0; position.y =  2.0; pose.pose.position = position; poses.push_back(pose);
+  ASSERT_NEAR(PoseEstimateFilter::getAveragePosition(poses).x, -0.5, 1e-10);
+  ASSERT_NEAR(PoseEstimateFilter::getAveragePosition(poses).y,  1.5, 1e-10);
+}
+
 int main(int argc, char **argv)
 {
   testing::InitGoogleTest(&argc, argv);
