@@ -261,11 +261,11 @@ Transform AprilTagTracker::getTransform()
     // Ignore stale detections
     if ((*tag_info)[i].getSeq() == current_seq)
     {
-      if ((*tag_info)[i].getID() == 1)
+      if ((*tag_info)[i].getID() == 0)
       {
         tag1 = i;
       }
-      else if ((*tag_info)[i].getID() == 3)
+      else if ((*tag_info)[i].getID() == 1)
       {
         tag2 = i;
       }

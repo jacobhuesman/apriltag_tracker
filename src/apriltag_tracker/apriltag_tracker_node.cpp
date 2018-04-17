@@ -154,10 +154,10 @@ int main(int argc, char **argv)
 
   // Initialize tags and transforms_cache cache
   std::vector<Tag> *tag_info = new std::vector<Tag>;
-  Tag tag1(1, 2, 0.42545);
-  Tag tag3(3, 1, 0.42545);
+  Tag tag0(0, 1, 0.4318);
+  Tag tag1(1, 2, 0.4318);
+  tag_info->push_back(tag0);
   tag_info->push_back(tag1);
-  tag_info->push_back(tag3);
   TransformsCache::initializeTagVector(tag_info);
   TransformsCache transforms_cache(nh);
 
