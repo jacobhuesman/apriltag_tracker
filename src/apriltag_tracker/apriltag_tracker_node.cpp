@@ -158,7 +158,6 @@ int main(int argc, char **argv)
   Tag tag1(1, 2, 0.4318);
   Tag tag2(2, 3, 0.015);
   Tag tag3(3, 4, 0.015);
-
   tag_info->push_back(tag0);
   tag_info->push_back(tag1);
   tag_info->push_back(tag2);

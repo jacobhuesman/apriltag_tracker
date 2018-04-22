@@ -276,19 +276,17 @@ Transform AprilTagTracker::getTransform()
       }
     }
   }
+  double dt = this->tracker_config->getMaxDt();
+  int f_sz = this->tracker_config->getFilterSize();
   if (tag0 != -1 && tag1 != -1)
   {
-    double dt = this->tracker_config->getMaxDt();
-    int f_sz = this->tracker_config->getFilterSize();
     return performThetaCorrection((*tag_info)[tag0].getMovingAverageTransform(f_sz, dt),
                                   (*tag_info)[tag1].getMovingAverageTransform(f_sz, dt),
                                   (*tag_info)[tag0].getMapToTagTf(), (*tag_info)[tag1].getMapToTagTf());
   }
   else
   {
-    throw unable_to_find_transform_error("Only using moving average transforms currently and can't find two tags");
-    // TODO fix first
-    //return (*tag_info)[best_tag].getMedianFilteredTransform();
+    return (*tag_info)[best_tag].getMovingAverageTransform(f_sz, dt);
   }
 }
 

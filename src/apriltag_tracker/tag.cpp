@@ -13,7 +13,6 @@ Tag::Tag(int id, int priority, double size)
   this->compare_mode = CompareType::distance;
 }
 
-// TODO add mutex check
 void Tag::addTransform(TagDetection detection, tf2::Stamped<tf2::Transform> tag_tf,
                        tf2::Stamped<tf2::Transform> servo_tf, unsigned int seq)
 {
