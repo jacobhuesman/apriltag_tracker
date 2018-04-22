@@ -132,6 +132,10 @@ void AprilTagTracker::updateTags(tf2::Stamped<tf2::Transform> servo_tf)
         tag_transform_msg.header.frame_id = "camera_optical";
         tag_transform_msg.child_frame_id = std::string("tag") + std::to_string((*tag_info)[j].getID())
                                            + "_estimate";
+        tag_transform_msg.header.frame_id = ros::this_node::getName() + "_camera_optical";
+        tag_transform_msg.child_frame_id = ros::this_node::getName() + "_tag"
+                                           + std::to_string((*tag_info)[j].getID()) + "_estimate";
+
         tag_transforms.push_back(tag_transform_msg);
 
         // Add transform to global tag_info object
