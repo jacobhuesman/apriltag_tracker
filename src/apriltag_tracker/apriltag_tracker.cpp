@@ -129,9 +129,6 @@ void AprilTagTracker::updateTags(tf2::Stamped<tf2::Transform> servo_tf)
         geometry_msgs::TransformStamped tag_transform_msg = tf2::toMsg(tag_transform);
         tag_transform_msg.header.seq = this->current_seq;
         tag_transform_msg.header.stamp = this->last_capture_time;
-        tag_transform_msg.header.frame_id = "camera_optical";
-        tag_transform_msg.child_frame_id = std::string("tag") + std::to_string((*tag_info)[j].getID())
-                                           + "_estimate";
         tag_transform_msg.header.frame_id = ros::this_node::getName() + "_camera_optical";
         tag_transform_msg.child_frame_id = ros::this_node::getName() + "_tag"
                                            + std::to_string((*tag_info)[j].getID()) + "_estimate";
@@ -259,7 +256,7 @@ Transform AprilTagTracker::getTransform()
   }
 
   // See if we can use two tags to correct the AprilTag angle, otherwise use the highest priority tag
-  int tag1 = -1, tag2 = -1, best_tag = 0;
+  int tag0 = -1, tag1 = -1, best_tag = 0;
   for (int i = 0; i < tag_info->size(); i++)
   {
     // Ignore stale detections
@@ -267,25 +264,25 @@ Transform AprilTagTracker::getTransform()
     {
       if ((*tag_info)[i].getID() == 0)
       {
-        tag1 = i;
+        tag0 = i;
       }
       else if ((*tag_info)[i].getID() == 1)
       {
-        tag2 = i;
+        tag1 = i;
       }
-      if ((*tag_info)[i].getPriority() > (*tag_info)[best_tag].getPriority())
+      if ((*tag_info)[i].getPriority() > (*tag_info)[best_tag].getPriority()) // TODO add distance limitations for each tag
       {
         best_tag = i;
       }
     }
   }
-  if (tag1 != -1 && tag2 != -1)
+  if (tag0 != -1 && tag1 != -1)
   {
     double dt = this->tracker_config->getMaxDt();
     int f_sz = this->tracker_config->getFilterSize();
-    return performThetaCorrection((*tag_info)[tag1].getMovingAverageTransform(f_sz, dt),
-                                  (*tag_info)[tag2].getMovingAverageTransform(f_sz, dt),
-                                  (*tag_info)[tag1].getMapToTagTf(), (*tag_info)[tag2].getMapToTagTf());
+    return performThetaCorrection((*tag_info)[tag0].getMovingAverageTransform(f_sz, dt),
+                                  (*tag_info)[tag1].getMovingAverageTransform(f_sz, dt),
+                                  (*tag_info)[tag0].getMapToTagTf(), (*tag_info)[tag1].getMapToTagTf());
   }
   else
   {
