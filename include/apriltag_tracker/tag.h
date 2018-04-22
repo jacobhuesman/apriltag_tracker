@@ -30,6 +30,17 @@ public:
   double getGoodness();
   double getPriority();
   double getSize();
+
+  // Helper methods for calculating the moving average transform
+  // These were copied from pose_estimate filter, which is a sin, but we're crunched for time
+  static void flushOldTransforms(std::list<apriltag_tracker::Transform> *transforms, ros::Time current_time,
+                                 ros::Duration max_dt);
+  static void getRPY(tf2::Quaternion q, double &roll, double &pitch, double &yaw);
+  static double getTheta(tf2::Quaternion orientation);
+  static tf2::Quaternion getAverageOrientation(std::list<apriltag_tracker::Transform> &transforms, int filter_size);
+  static tf2::Vector3 getAveragePosition(std::list<apriltag_tracker::Transform> &transforms, int filter_size);
+
+  // Transform getters
   std::vector<Transform> getTransforms();
   Transform getMovingAverageTransform();
   Transform getMovingAverageTransform(int number_of_transforms);

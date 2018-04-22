@@ -60,17 +60,15 @@ Transform Tag::getMedianFilteredTransform()
   return *it;
 }
 
-Transform Tag::getMovingAverageTransform(int n_tf, double max_dt)
+void Tag::flushOldTransforms(std::list<Transform> *transforms, ros::Time current_time, ros::Duration max_dt)
 {
-  mutex->lock();
-  // Flush old detections
-  auto it = transforms.begin();
+  auto it = transforms->begin();
   int good_tfs = 0;
   bool clean = false;
-  for (int i = 0; i < transforms.size(); i++, it++)
+  for (int i = 0; i < transforms->size(); i++, it++)
   {
-    ros::Duration time_diff(ros::Time::now() - it->getTagTf().stamp_);
-    if (time_diff > ros::Duration(max_dt))
+    ros::Duration time_diff(current_time - it->getTagTf().stamp_);
+    if (time_diff > max_dt)
     {
       clean = true;
       good_tfs = i;
@@ -79,45 +77,96 @@ Transform Tag::getMovingAverageTransform(int n_tf, double max_dt)
   }
   if (clean)
   {
-    int size = transforms.size();
-    for (int i = 0; (i + good_tfs) < size; i++)
+    for (int i = 0; (i + good_tfs) < transforms->size(); i++)
     {
-      transforms.pop_back();
+      transforms->pop_back();
     }
   }
+}
 
-  if (transforms.size() < n_tf)
+void Tag::getRPY(tf2::Quaternion q, double &roll, double &pitch, double &yaw)
+{
+  tf2::Matrix3x3 matrix;
+  matrix.setRotation(q);
+  matrix.getRPY(roll, pitch, yaw);
+}
+
+double Tag::getTheta(tf2::Quaternion orientation)
+{
+  double roll, pitch, yaw;
+  getRPY(orientation, roll, pitch, yaw);
+  return yaw;
+}
+
+// Assumes that the thetas are close enough not to negate each other
+tf2::Quaternion Tag::getAverageOrientation(std::list<Transform> &transforms, int filter_size)
+{
+  double x = 0.0, y = 0.0;
+  int i = 0;
+  for (auto it = transforms.begin(); i < filter_size && it != transforms.end(); i++, it++)
+  {
+    tf2::Quaternion orientation = it->getTagTf().getRotation();
+    x += cos(getTheta(orientation));
+    y += sin(getTheta(orientation));
+  }
+  tf2::Quaternion corrected_orientation;
+  corrected_orientation.setRPY(0.0, 0.0, atan2(y,x));
+  return corrected_orientation;
+}
+
+tf2::Vector3 Tag::getAveragePosition(std::list<Transform> &transforms, int filter_size)
+{
+  double x = 0.0, y = 0.0, z = 0.0;
+  int i = 0;
+  for (auto it = transforms.begin(); i < filter_size && it != transforms.end(); i++, it++)
+  {
+    tf2::Vector3 position = it->getTagTf().getOrigin();
+    x += position.x();
+    y += position.y();
+    z += position.z();
+  }
+  tf2::Vector3 position(x / filter_size, y / filter_size, z / filter_size);
+
+  return position;
+}
+
+Transform Tag::getMovingAverageTransform(int n_tf, double max_dt)
+{
+  mutex->lock();
+
+  try
+  {
+    flushOldTransforms(&transforms, ros::Time::now(), ros::Duration(max_dt));
+    if (transforms.size() < n_tf)
+    {
+      throw unable_to_find_transform_error("Moving average filter not populated");
+    }
+
+    this->compare_mode = CompareType::distance;
+
+    Transform transform = transforms.front();
+    TagDetection detection = transform.getDetection();
+    tf2::Transform map_to_tag_tf = transform.getMapToTagTf();
+    tf2::Stamped<tf2::Transform> tag_tf = transform.getTagTf();
+    tf2::Stamped<tf2::Transform> servo_tf = transform.getServoTf();
+    tf2::Transform average_transform(getAverageOrientation(transforms, n_tf), getAveragePosition(transforms, n_tf));
+    tf2::Stamped<tf2::Transform> stamped_transform(average_transform, ros::Time::now(), tag_tf.frame_id_);
+    Transform new_transform(detection, stamped_transform, servo_tf, map_to_tag_tf, &(this->compare_mode));
+
+    mutex->unlock();
+
+    return new_transform;
+  }
+  catch(unable_to_find_transform_error &e)
   {
     mutex->unlock();
-    throw unable_to_find_transform_error("Moving average filter not populated");
+    throw e;
   }
-  this->compare_mode = CompareType::distance;
-  it = transforms.begin();
-  if (n_tf <= 2)
+  catch (std::exception &e)
   {
-    // TODO add moving average filter for servo tfs
-    for (int i = 0; i < n_tf / 2; it++, i++); // Pick middle one so servo tf doesn't lead quite so badly
+    mutex->unlock();
+    throw e;
   }
-  else
-  {
-    it++; // TODO figure out what element this is actually grabbing...
-  }
-  Transform tag_transform = *it;
-  tf2::Stamped<tf2::Transform> tag_tf = tag_transform.getTagTf();
-  it = transforms.begin();
-  double x = 0, y = 0, z = 0;
-  for (int i = 0; i < n_tf; it++, i++)
-  {
-    tf2::Vector3 origin = it->getTagTf().getOrigin();
-    x += origin.getX();
-    y += origin.getY();
-    z += origin.getZ();
-  }
-  mutex->unlock();
-  tag_tf.setOrigin(tf2::Vector3(x / n_tf, y / n_tf, z / n_tf));
-  // TODO average the Quaternions?
-  return Transform(tag_transform.getDetection(), tag_tf, tag_transform.getServoTf(), tag_transform.getMapToTagTf(),
-                   &(this->compare_mode));
 }
 
 Transform Tag::getMovingAverageTransform(int n_tf)

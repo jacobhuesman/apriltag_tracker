@@ -286,7 +286,8 @@ Transform AprilTagTracker::getTransform()
   }
   else
   {
-    return (*tag_info)[best_tag].getMovingAverageTransform(f_sz, dt);
+    throw unable_to_find_transform_error("One tag estimates are currently disabled, unable to find two tags");
+    //return (*tag_info)[best_tag].getMovingAverageTransform(f_sz, dt);
   }
 }
 
