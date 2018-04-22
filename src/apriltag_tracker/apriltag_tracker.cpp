@@ -130,8 +130,9 @@ void AprilTagTracker::updateTags(tf2::Stamped<tf2::Transform> servo_tf)
         tag_transform_msg.header.seq = this->current_seq;
         tag_transform_msg.header.stamp = this->last_capture_time;
         tag_transform_msg.header.frame_id = ros::this_node::getName() + "_camera_optical";
-        tag_transform_msg.child_frame_id = ros::this_node::getName() + std::string("_tag")
+        tag_transform_msg.child_frame_id = ros::this_node::getName() + "_tag"
                                            + std::to_string((*tag_info)[j].getID()) + "_estimate";
+
         tag_transforms.push_back(tag_transform_msg);
 
         // Add transform to global tag_info object
@@ -279,14 +280,14 @@ Transform AprilTagTracker::getTransform()
   int f_sz = this->tracker_config->getFilterSize();
   if (tag0 != -1 && tag1 != -1)
   {
-
     return performThetaCorrection((*tag_info)[tag0].getMovingAverageTransform(f_sz, dt),
                                   (*tag_info)[tag1].getMovingAverageTransform(f_sz, dt),
                                   (*tag_info)[tag0].getMapToTagTf(), (*tag_info)[tag1].getMapToTagTf());
   }
   else
   {
-    return (*tag_info)[best_tag].getMovingAverageTransform(f_sz, dt);
+    throw unable_to_find_transform_error("One tag estimates are currently disabled, unable to find two tags");
+    //return (*tag_info)[best_tag].getMovingAverageTransform(f_sz, dt);
   }
 }
 

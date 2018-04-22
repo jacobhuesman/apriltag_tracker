@@ -63,7 +63,7 @@ Transform Tag::getMedianFilteredTransform()
 void Tag::flushOldTransforms(std::list<Transform> *transforms, ros::Time current_time, ros::Duration max_dt)
 {
   auto it = transforms->begin();
-  int good_poses = 0;
+  int good_tfs = 0;
   bool clean = false;
   for (int i = 0; i < transforms->size(); i++, it++)
   {
@@ -71,13 +71,13 @@ void Tag::flushOldTransforms(std::list<Transform> *transforms, ros::Time current
     if (time_diff > max_dt)
     {
       clean = true;
-      good_poses = i;
+      good_tfs = i;
       break;
     }
   }
   if (clean)
   {
-    for (int i = 0; (i + good_poses) < transforms->size(); i++)
+    for (int i = 0; (i + good_tfs) < transforms->size(); i++)
     {
       transforms->pop_back();
     }
@@ -143,27 +143,19 @@ Transform Tag::getMovingAverageTransform(int n_tf, double max_dt)
     }
 
     this->compare_mode = CompareType::distance;
-    auto it = transforms.begin();
-    if (n_tf > 2)
-    {
-      // TODO add moving average filter for servo tfs
-      for (int i = 0; i < n_tf / 2; it++, i++); // Pick middle one so servo tf doesn't lead quite so badly
-    }
-    else
-    {
-      it++;
-    }
 
-    TagDetection detection = it->getDetection();
-    tf2::Transform map_to_tag_tf = it->getMapToTagTf();
-    tf2::Stamped<tf2::Transform> tag_tf = it->getTagTf();
-    tf2::Stamped<tf2::Transform> servo_tf = it->getServoTf();
-    tf2::Transform transform(getAverageOrientation(transforms, n_tf), getAveragePosition(transforms, n_tf));
-    tf2::Stamped<tf2::Transform> stamped_transform(transform, ros::Time::now(), tag_tf.frame_id_);
+    Transform transform = transforms.front();
+    TagDetection detection = transform.getDetection();
+    tf2::Transform map_to_tag_tf = transform.getMapToTagTf();
+    tf2::Stamped<tf2::Transform> tag_tf = transform.getTagTf();
+    tf2::Stamped<tf2::Transform> servo_tf = transform.getServoTf();
+    tf2::Transform average_transform(getAverageOrientation(transforms, n_tf), getAveragePosition(transforms, n_tf));
+    tf2::Stamped<tf2::Transform> stamped_transform(average_transform, ros::Time::now(), tag_tf.frame_id_);
+    Transform new_transform(detection, stamped_transform, servo_tf, map_to_tag_tf, &(this->compare_mode));
 
     mutex->unlock();
 
-    return Transform(detection, stamped_transform, servo_tf, map_to_tag_tf, &(this->compare_mode));
+    return new_transform;
   }
   catch(unable_to_find_transform_error &e)
   {
@@ -175,7 +167,6 @@ Transform Tag::getMovingAverageTransform(int n_tf, double max_dt)
     mutex->unlock();
     throw e;
   }
-
 }
 
 Transform Tag::getMovingAverageTransform(int n_tf)
