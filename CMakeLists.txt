@@ -125,11 +125,6 @@ if (raspicam_FOUND AND OpenCV_FOUND)
   target_link_libraries(AprilTagTracker apriltags)
   target_link_libraries(AprilTagTracker CameraInfo)
   target_link_libraries(AprilTagTracker Tag)
-
-  add_library(PoseEstimateFilter src/pose_estimate_filter/pose_estimate_filter.cpp)
-  target_link_libraries(PoseEstimateFilter ${Eigen3_LIBS})
-  target_link_libraries(PoseEstimateFilter ${catkin_LIBRARIES})
-  target_link_libraries(PoseEstimateFilter ${OpenCV_LIBS})
 else()
   message("[WARNING] raspicam or OpenCV 3.4.0 not found, unable to build AprilTags library and node")
 endif()
@@ -165,9 +160,6 @@ endif()
 add_executable(transforms_publisher src/util/transforms_publisher.cpp)
 target_link_libraries(transforms_publisher ${catkin_LIBRARIES})
 
-add_executable(pose_estimate_filter src/pose_estimate_filter/pose_estimate_filter_node.cpp)
-target_link_libraries(pose_estimate_filter ${catkin_LIBRARIES})
-target_link_libraries(pose_estimate_filter PoseEstimateFilter)
 
 #########
 # Tests #
@@ -200,10 +192,4 @@ if (raspicam_FOUND AND OpenCV_FOUND)
     target_link_libraries(apriltag_tracker_tests AprilTagTracker)
     target_link_libraries(apriltag_tracker_tests TransformsCache)
   endif()
-endif()
-
-catkin_add_gtest(pose_estimate_filter_tests src/tests/pose_estimate_filter/pose_estimate_filter_tests.cpp)
-if(TARGET pose_estimate_filter_tests)
-  target_link_libraries(pose_estimate_filter_tests ${catkin_LIBRARIES})
-  target_link_libraries(pose_estimate_filter_tests PoseEstimateFilter)
 endif()
