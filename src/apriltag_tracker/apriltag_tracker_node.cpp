@@ -113,10 +113,11 @@ void servoThread(apriltag_tracker::Dynamixel *servo, std::vector<apriltag_tracke
       bool foundATag = false;
       for (int i = 0; i < tag_info->size(); i++)
       {
-        if ((*tag_info)[i].getTransformsListSize() >= 10)
+        if ((*tag_info)[i].getTransformsListSize() >= 5)
         {
           foundATag = true;
           theta = (*tag_info)[i].getAngleFromCenter(1);
+          break;
         }
       }
       if (foundATag)
