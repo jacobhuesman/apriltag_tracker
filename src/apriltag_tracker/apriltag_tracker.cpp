@@ -162,13 +162,15 @@ void AprilTagTracker::updateTags(tf2::Stamped<tf2::Transform> servo_tf)
     // Try to get average filtered transform
     try
     {
+      double dt = this->tracker_config->getMaxDt();
+      int f_sz = this->tracker_config->getFilterSize();
       geometry_msgs::TransformStamped tag_transform_msg =
-          tf2::toMsg((*tag_info)[i].getMovingAverageTransform().getTagTf());
+          tf2::toMsg((*tag_info)[i].getMovingAverageTransform(f_sz, dt).getTagTf());
       tag_transform_msg.header.seq = this->current_seq;
       tag_transform_msg.header.stamp = this->last_capture_time;
-      tag_transform_msg.header.frame_id = "camera_optical";
-      tag_transform_msg.child_frame_id = std::string("tag") + std::to_string((*tag_info)[i].getID())
-                                         + "_moving_average_estimate";
+      tag_transform_msg.header.frame_id = ros::this_node::getName() + "_camera_optical";
+      tag_transform_msg.child_frame_id = ros::this_node::getName() + "_tag"
+                                         + std::to_string((*tag_info)[i].getID()) + "_moving_average_estimate";
       tag_transforms.push_back(tag_transform_msg);
     }
     catch (unable_to_find_transform_error &e) {}
@@ -181,9 +183,9 @@ void AprilTagTracker::updateTags(tf2::Stamped<tf2::Transform> servo_tf)
     geometry_msgs::TransformStamped tag_transform_msg = tf2::toMsg(tag_transform.getTagTf());
     tag_transform_msg.header.seq = this->current_seq;
     tag_transform_msg.header.stamp = this->last_capture_time;
-    tag_transform_msg.header.frame_id = "camera_optical";
-    tag_transform_msg.child_frame_id = std::string("tag") + std::to_string(tag_transform.getDetection().id) // TODO more efficient way
-                                       + "_trig_estimate";
+    tag_transform_msg.header.frame_id = ros::this_node::getName() + "_camera_optical";
+    tag_transform_msg.child_frame_id = ros::this_node::getName() + "_tag"
+                                       + std::to_string(tag_transform.getDetection().id) + "_best_estimate";
     tag_transforms.push_back(tag_transform_msg);
   }
   catch (unable_to_find_transform_error &e) {}
@@ -286,8 +288,8 @@ Transform AprilTagTracker::getTransform()
   }
   else
   {
-    throw unable_to_find_transform_error("One tag estimates are currently disabled, unable to find two tags");
-    //return (*tag_info)[best_tag].getMovingAverageTransform(f_sz, dt);
+    //throw unable_to_find_transform_error("One tag estimates are currently disabled, unable to find two tags");
+    return (*tag_info)[best_tag].getMovingAverageTransform(f_sz, dt);
   }
 }
 
