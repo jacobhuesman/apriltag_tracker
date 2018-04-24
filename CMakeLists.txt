@@ -125,14 +125,17 @@ if (raspicam_FOUND AND OpenCV_FOUND)
   target_link_libraries(AprilTagTracker apriltags)
   target_link_libraries(AprilTagTracker CameraInfo)
   target_link_libraries(AprilTagTracker Tag)
+
+  add_library(PoseEstimateFilter src/pose_estimate_filter/pose_estimate_filter.cpp)
+  target_link_libraries(PoseEstimateFilter ${Eigen3_LIBS})
+  target_link_libraries(PoseEstimateFilter ${catkin_LIBRARIES})
+  target_link_libraries(PoseEstimateFilter ${OpenCV_LIBS})
 else()
   message("[WARNING] raspicam or OpenCV 3.4.0 not found, unable to build AprilTags library and node")
 endif()
 
 
-add_library(PoseEstimateFilter src/pose_estimate_filter/pose_estimate_filter.cpp)
-target_link_libraries(PoseEstimateFilter ${Eigen3_LIBS})
-target_link_libraries(PoseEstimateFilter ${catkin_LIBRARIES})
+
 
 
 ############

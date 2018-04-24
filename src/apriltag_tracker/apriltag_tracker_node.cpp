@@ -156,8 +156,8 @@ int main(int argc, char **argv)
   std::vector<Tag> *tag_info = new std::vector<Tag>;
   Tag tag0(0, 1, 0.4318);
   Tag tag1(1, 2, 0.4318);
-  Tag tag2(2, 3, 0.015);
-  Tag tag3(3, 4, 0.015);
+  Tag tag2(5, 3, 0.076);
+  Tag tag3(6, 4, 0.076);
   tag_info->push_back(tag0);
   tag_info->push_back(tag1);
   tag_info->push_back(tag2);
