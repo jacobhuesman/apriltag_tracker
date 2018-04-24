@@ -247,7 +247,7 @@ Transform AprilTagTracker::getTransform()
   int count = 0;
   for (int i = 0; i < tag_info->size(); i++)
   {
-    if ((*tag_info)[i].getSeq() == current_seq)
+    if ((*tag_info)[i].getSeq() >= current_seq - 20)
     {
       count++;
     }
@@ -258,11 +258,10 @@ Transform AprilTagTracker::getTransform()
   }
 
   // See if we can use two tags to correct the AprilTag angle, otherwise use the highest priority tag
-  int tag0 = -1, tag1 = -1, best_tag = 0;
+  int tag0 = -1, tag1 = -1, best_tag = -1;
   for (int i = 0; i < tag_info->size(); i++)
   {
-    // Ignore stale detections
-    if ((*tag_info)[i].getSeq() == current_seq)
+    if ((*tag_info)[i].getSeq() >= current_seq - 20)
     {
       if ((*tag_info)[i].getID() == 0)
       {
@@ -272,12 +271,21 @@ Transform AprilTagTracker::getTransform()
       {
         tag1 = i;
       }
-      if ((*tag_info)[i].getPriority() > (*tag_info)[best_tag].getPriority()) // TODO add distance limitations for each tag
+      if (best_tag == -1)
+      {
+        best_tag = i;
+      }
+      else if ((*tag_info)[i].getPriority() < (*tag_info)[best_tag].getPriority())
       {
         best_tag = i;
       }
     }
   }
+  if (best_tag == -1)
+  {
+    throw unable_to_find_transform_error("Not enough recent transforms available for any tag");
+  }
+
   double dt = this->tracker_config->getMaxDt();
   int f_sz = this->tracker_config->getFilterSize();
   if (tag0 != -1 && tag1 != -1)
@@ -288,7 +296,6 @@ Transform AprilTagTracker::getTransform()
   }
   else
   {
-    //throw unable_to_find_transform_error("One tag estimates are currently disabled, unable to find two tags");
     return (*tag_info)[best_tag].getMovingAverageTransform(f_sz, dt);
   }
 }
