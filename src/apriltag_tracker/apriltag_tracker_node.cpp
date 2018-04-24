@@ -95,6 +95,7 @@ void trackerThread(apriltag_tracker::Dynamixel *servo, TransformsCache transform
 void servoThread(apriltag_tracker::Dynamixel *servo, std::vector<apriltag_tracker::Tag> *tag_info)
 {
   ros::Rate rate(30);
+
   while(ros::ok())
   {
     rate.sleep();
@@ -107,17 +108,27 @@ void servoThread(apriltag_tracker::Dynamixel *servo, std::vector<apriltag_tracke
       ROS_WARN("%s", e.what());
     }
     double theta = 0.0;
-    ros::Time last_tag_update;
     try
     {
+      bool foundATag = false;
       for (int i = 0; i < tag_info->size(); i++)
       {
-        if ((*tag_info)[i].getID() == 1)
+        int numberOfGoodTransforms = (*tag_info)[i].getNumberOfGoodTransforms(ros::Duration(0.5));
+        if (numberOfGoodTransforms >= 5)
         {
+          foundATag = true;
           theta = (*tag_info)[i].getAngleFromCenter(1);
+          break;
         }
       }
-      servo->adjustCamera(-servo->calculateDesiredVelocity(theta));
+      if (foundATag)
+      {
+        servo->adjustCamera(-servo->calculateDesiredVelocity(theta));
+      }
+      else
+      {
+        throw unable_to_find_transform_error("Unable to find a good tag detection");
+      }
     }
     catch (unable_to_find_transform_error &e)
     {

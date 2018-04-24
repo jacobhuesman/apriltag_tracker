@@ -84,6 +84,19 @@ void Tag::flushOldTransforms(std::list<Transform> *transforms, ros::Time current
   }
 }
 
+int Tag::getNumberOfGoodTransforms(ros::Duration max_dt)
+{
+  auto it = transforms.begin();
+  for (int i = 0; i < transforms.size(); i++, it++)
+  {
+    ros::Duration time_diff(ros::Time::now() - it->getTagTf().stamp_);
+    if (time_diff > max_dt)
+    {
+      return i;
+    }
+  }
+}
+
 void Tag::getRPY(tf2::Quaternion q, double &roll, double &pitch, double &yaw)
 {
   tf2::Matrix3x3 matrix;

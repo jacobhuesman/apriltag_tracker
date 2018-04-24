@@ -30,6 +30,7 @@ public:
   double getGoodness();
   double getPriority();
   double getSize();
+  int getNumberOfGoodTransforms(ros::Duration max_dt);
 
   // Helper methods for calculating the moving average transform
   // These were copied from pose_estimate filter, which is a sin, but we're crunched for time
