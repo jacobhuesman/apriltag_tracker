@@ -95,7 +95,7 @@ double Tag::getTheta(tf2::Quaternion orientation)
 {
   double roll, pitch, yaw;
   getRPY(orientation, roll, pitch, yaw);
-  return yaw;
+  return pitch;
 }
 
 // Assumes that the thetas are close enough not to negate each other
@@ -109,9 +109,10 @@ tf2::Quaternion Tag::getAverageOrientation(std::list<Transform> &transforms, int
     x += cos(getTheta(orientation));
     y += sin(getTheta(orientation));
   }
-  tf2::Quaternion corrected_orientation;
-  corrected_orientation.setRPY(0.0, 0.0, atan2(y,x));
-  return corrected_orientation;
+  tf2::Quaternion start_orientation, corrected_orientation;
+  start_orientation.setRPY(0.0, M_PI, M_PI);
+  corrected_orientation.setRPY(0.0, -atan2(y,x), 0.0);
+  return start_orientation*corrected_orientation;
 }
 
 tf2::Vector3 Tag::getAveragePosition(std::list<Transform> &transforms, int filter_size)
