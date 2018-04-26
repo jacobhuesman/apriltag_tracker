@@ -20,6 +20,7 @@
 #include <apriltag_tracker/camera.h>
 
 using namespace apriltag_tracker;
+using dynamixel::Dynamixel;
 
 struct Publishers
 {
@@ -30,7 +31,7 @@ struct Publishers
 };
 Publishers *pubs;
 
-void trackerThread(apriltag_tracker::Dynamixel *servo, TransformsCache transforms_cache,
+void trackerThread(Dynamixel *servo, TransformsCache transforms_cache,
                    std::vector<Tag> *tag_info, AprilTagTrackerConfig *tracker_config,
                    Camera *camera)
 {
@@ -92,7 +93,7 @@ void trackerThread(apriltag_tracker::Dynamixel *servo, TransformsCache transform
   }
 }
 
-void servoThread(apriltag_tracker::Dynamixel *servo, std::vector<apriltag_tracker::Tag> *tag_info)
+void servoThread(Dynamixel *servo, std::vector<apriltag_tracker::Tag> *tag_info)
 {
   ros::Rate rate(30);
 
@@ -179,8 +180,8 @@ int main(int argc, char **argv)
   ros::NodeHandle dyn_nh("~servo");
   std::string name = ros::this_node::getName();
   Dynamixel *servo = new Dynamixel(0x11, name + "_dynamixel", name + "_camera_mount");
-  dynamic_reconfigure::Server<apriltag_tracker::DynamicServoConfig> server(dyn_nh);
-  dynamic_reconfigure::Server<DynamicServoConfig>::CallbackType f;
+  dynamic_reconfigure::Server<dynamixel::DynamicServoConfig> server(dyn_nh);
+  dynamic_reconfigure::Server<dynamixel::DynamicServoConfig>::CallbackType f;
   f = boost::bind(&Dynamixel::reconfigureCallback, servo, _1, _2 );
   server.setCallback(f);
 
