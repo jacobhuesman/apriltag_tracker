@@ -167,12 +167,16 @@ int main(int argc, char **argv)
   std::vector<Tag> *tag_info = new std::vector<Tag>;
   Tag tag0(0, 1, 0.4318);
   Tag tag1(1, 2, 0.4318);
-  Tag tag2(5, 3, 0.076);
-  Tag tag3(6, 4, 0.076);
+  Tag tag3(3, 3, 0.101);
+  Tag tag4(4, 3, 0.101);
+  Tag tag5(5, 3, 0.101);
+  Tag tag6(6, 3, 0.101);
   tag_info->push_back(tag0);
   tag_info->push_back(tag1);
-  tag_info->push_back(tag2);
   tag_info->push_back(tag3);
+  tag_info->push_back(tag4);
+  tag_info->push_back(tag5);
+  tag_info->push_back(tag6);
   TransformsCache::initializeTagVector(tag_info);
   TransformsCache transforms_cache(nh);
 
