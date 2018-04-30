@@ -108,26 +108,59 @@ void servoThread(Dynamixel *servo, std::vector<apriltag_tracker::Tag> *tag_info)
     {
       ROS_WARN("%s", e.what());
     }
-    double theta = 0.0;
+
     try
     {
-      bool foundATag = false;
+      int tag0 = -1, tag1 = -1, best_tag = -1;
       for (int i = 0; i < tag_info->size(); i++)
       {
         if ((*tag_info)[i].getTransformsListSize() >= 5)
         {
-          foundATag = true;
-          theta = (*tag_info)[i].getAngleFromCenter(1);
-          break;
+          if ((*tag_info)[i].getID() == 0)
+          {
+            tag0 = i;
+          }
+          else if ((*tag_info)[i].getID() == 1)
+          {
+            tag1 = i;
+          }
+          // Check that we aren't too close to the big tags
+          tf2::Vector3 tag_xyz = (*tag_info)[i].getMostRecentTransform().getTagTf().getOrigin();
+          double distance = pow(pow(tag_xyz.getX(), 2.0) + pow(tag_xyz.getZ(), 2.0), 0.5);
+          int id = (*tag_info)[i].getID();
+          if (distance <= 3.0 && (id == 0 || id == 1))
+          {
+            ROS_DEBUG("Big tag %i too close", id);
+            continue;
+          }
+          if (best_tag == -1)
+          {
+            best_tag = i;
+          }
+          else if ((*tag_info)[i].getPriority() < (*tag_info)[best_tag].getPriority())
+          {
+            best_tag = i;
+          }
         }
       }
-      if (foundATag)
+      if (best_tag == -1)
       {
+        throw unable_to_find_transform_error("Not enough recent transforms available for any tag");
+      }
+
+      double theta;
+      if (tag0 != -1 && tag1 != -1)
+      {
+        double theta0, theta1;
+        theta0 = (*tag_info)[tag0].getAngleFromCenter(1);
+        theta1 = (*tag_info)[tag1].getAngleFromCenter(1);
+        theta = (theta0 + theta1) / 2.0;
         servo->adjustCamera(-servo->calculateDesiredVelocity(theta));
       }
       else
       {
-        throw unable_to_find_transform_error("Unable to find a good tag detection");
+        theta = (*tag_info)[best_tag].getAngleFromCenter(1);
+        servo->adjustCamera(-servo->calculateDesiredVelocity(theta));
       }
     }
     catch (unable_to_find_transform_error &e)
