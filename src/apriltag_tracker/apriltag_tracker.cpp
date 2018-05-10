@@ -319,7 +319,7 @@ void AprilTagTracker::estimateRobotPose(geometry_msgs::PoseStamped *pose_estimat
     pose_estimate_msg->header.stamp = tag_transform.stamp_;
     pose_estimate_msg->pose.position.x = pose_estimate.getOrigin().getX();
     pose_estimate_msg->pose.position.y = pose_estimate.getOrigin().getY();
-    pose_estimate_msg->pose.position.z = pose_estimate.getOrigin().getY();
+    pose_estimate_msg->pose.position.z = pose_estimate.getOrigin().getZ();
     pose_estimate_msg->pose.orientation.x = pose_estimate.getRotation().getX();
     pose_estimate_msg->pose.orientation.y = pose_estimate.getRotation().getY();
     pose_estimate_msg->pose.orientation.z = pose_estimate.getRotation().getZ();
