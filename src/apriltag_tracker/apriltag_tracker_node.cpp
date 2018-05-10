@@ -125,13 +125,16 @@ void servoThread(Dynamixel *servo, std::vector<apriltag_tracker::Tag> *tag_info)
             tag1 = i;
           }
           // Check that we aren't too close to the big tags
-          tf2::Vector3 tag_xyz = (*tag_info)[i].getMostRecentTransform().getTagTf().getOrigin();
-          double distance = pow(pow(tag_xyz.getX(), 2.0) + pow(tag_xyz.getZ(), 2.0), 0.5);
           int id = (*tag_info)[i].getID();
-          if (distance <= 3.0 && (id == 0 || id == 1))
+          if (id == 0 || id == 1)
           {
-            ROS_DEBUG("Big tag %i too close", id);
-            continue;
+            tf2::Vector3 tag_xyz = (*tag_info)[i].getMostRecentTransform().getTagTf().getOrigin();
+            double distance = pow(pow(tag_xyz.getX(), 2.0) + pow(tag_xyz.getZ(), 2.0), 0.5);
+            if (distance <= 2.54) // TODO maybe do angle?
+            {
+              ROS_INFO("Big tag %i too close", id);
+              continue;
+            }
           }
           if (best_tag == -1)
           {
